@@ -18,6 +18,71 @@ Tipos: `[DECISIÓN]` | `[FALLO]` | `[ALTERNATIVA]` | `[BLOQUEANTE]` | `[VALIDADO
 
 ---
 
+## 🔥 Sesión 2026-03-28d — OptiX host overhaul, C++ cleanup, 16/16 training progress
+
+### [2026-03-28] [FALLO] OptiX host code: PTX concatenation is invalid
+
+**Contexto:** `optix_host.cpp` concatenaba los 4 strings PTX (raygen+hit+miss+anyhit) en un solo string y lo pasaba a `optixModuleCreate()`.
+
+**Problema:** PTX es un lenguaje con estructura de módulo. Concatenar dos archivos PTX produce PTX inválido (headers duplicados, conflictos de símbolos). Además, no existía ningún shader `__anyhit__alpha_bsh_ah` en el codebase.
+
+**Solución:** Reestructurar para crear 3 módulos OptiX separados (module_raygen_, module_closest_hit_, module_miss_). Cada program group referencia su propio módulo. Eliminada la referencia a any-hit y intersection shaders inexistentes.
+
+**Impacto:** `cuda/optix_host.cpp` — 156 líneas añadidas, 71 eliminadas.
+
+### [2026-03-28] [FALLO] Shader entry point name mismatch
+
+**Contexto:** El host code referenciaba `__raygen__alpha_bsh_rg`, `__closesthit__alpha_bsh_ch`, `__miss__alpha_bsh_ms` pero estos nombres solo existían dentro de un bloque de **código comentado** en `alpha_phase_a.cu` (líneas 262-435).
+
+**Problema:** Los shaders reales compilados en los PTX tienen nombres diferentes:
+- `__raygen__rg_optical_attention` (ray_generation.cu)
+- `__closesthit__ch_optical_attention` (closest_hit.cu)
+- `__miss__ms_optical_attention` (miss.cu)
+
+**Solución:** Actualizar los entry point names en el host code para coincidir con los shaders reales.
+
+**Impacto:** Sin este fix, `optixProgramGroupCreate()` fallaría en runtime al no encontrar los entry points.
+
+### [2026-03-28] [FALLO] optixPipelineCreate con nullptr para compile options
+
+**Contexto:** `buildPipeline()` pasaba `nullptr` como `pipelineCompileOptions` a `optixPipelineCreate()`.
+
+**Problema:** Las pipeline compile options DEBEN ser las mismas que se usaron para compilar los módulos. Pasar nullptr es UB o error de runtime.
+
+**Solución:** Almacenar `pipeline_compile_options_` como miembro de clase y pasarlo a `optixPipelineCreate()`.
+
+### [2026-03-28] [MEJORA] PTX file loader y factory from files
+
+**Contexto:** El pipeline completo necesita cargar los PTX compilados desde disco.
+
+**Solución:** Añadidas dos funciones:
+- `loadPTXFile()` — lee un .ptx de disco a string
+- `createLiquidBitOptixContextFromFiles()` — factory que carga 3 PTX y crea el contexto
+
+**Impacto:** Bridge directo entre `build/ptx/*.ptx` y el pipeline OptiX.
+
+### [2026-03-28] [FALLO] cudaEventCreate missing for end_phase_b (alpha_bsh.cpp)
+
+**Contexto:** En `src/alpha_bsh.cpp:452`, `end_phase_b` era declarado pero nunca inicializado con `cudaEventCreate()`.
+
+**Problema:** Si Phase A se ejecutaba sin pasar por Phase B, `cudaEventElapsedTime(&end_phase_b)` era UB.
+
+**Solución:** Añadir `cudaEventCreate(&end_phase_b)` junto al create del start event.
+
+### [2026-03-28] [MEJORA] Removed unused shared memory in ray_attention.cu
+
+**Contexto:** `shared_top_tokens` y `shared_top_weights` eran declarados en el kernel pero nunca referenciados.
+
+**Solución:** Eliminados, dejando solo `shared_hit_count` que SÍ se usa.
+
+### [2026-03-28] [EN PROGRESO] 16/16 layer BVH training
+
+**Estado:** 13/16 capas completadas (L0-9, L12, L15). Pendientes: L10, L11, L13, L14.
+Script: `scripts/train_remaining_layers.sh` corriendo en WSL.
+Target: PPL degradación <15% vs baseline.
+
+---
+
 ## 🔥 Sesión 2026-03-28c — Revisión completa, OptiX build, demo fix, 16/16 training
 
 ### [2026-03-28] [RESUELTO] OptiX SDK 9.1 — build completo sin errores
