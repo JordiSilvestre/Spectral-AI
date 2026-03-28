@@ -567,7 +567,7 @@ class RealHiddensDataset(Dataset):
 
     The .pt file contains:
         hidden_states: (N, 2048) fp16
-        gate_logits:   (N, 64) fp16  (actually softmax probabilities)
+        gate_logits:   (N, 64) fp16  (softmax probs over 64 experts, NOT raw logits)
         topk_ids:      (N, 8) int64
     """
 
