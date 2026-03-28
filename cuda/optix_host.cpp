@@ -28,15 +28,18 @@
 
 #include <optix.h>
 #include <optix_stubs.h>
+#include <cuda.h>
 #include <cuda_runtime.h>
 #include <iostream>
+#include <fstream>
 #include <sstream>
 #include <vector>
+#include <string>
 #include <cstring>
 #include <cassert>
 
-#include "include/token_geometry.h"
-#include "include/alpha_bsh.h"
+#include "token_geometry.h"
+#include "alpha_bsh.h"
 
 // ============================================================================
 // CONSTANTES Y CONFIGURACIÓN GLOBAL
@@ -135,7 +138,10 @@ public:
         : cuda_context_(nullptr),
           optix_context_(nullptr),
           pipeline_(nullptr),
-          module_(nullptr),
+          module_raygen_(nullptr),
+          module_closest_hit_(nullptr),
+          module_miss_(nullptr),
+          pipeline_compile_options_{},
           d_gas_output_buffer_(0),
           gas_output_buffer_size_(0),
           d_sbt_buffer_(0),
@@ -190,10 +196,9 @@ public:
     bool createPipeline(
         const char* ptx_raygen,
         const char* ptx_closest_hit,
-        const char* ptx_miss,
-        const char* ptx_any_hit) {
+        const char* ptx_miss) {
 
-        if (!createModule(ptx_raygen, ptx_closest_hit, ptx_miss, ptx_any_hit)) {
+        if (!createModule(ptx_raygen, ptx_closest_hit, ptx_miss)) {
             std::cerr << "[OptiX] Failed to create module" << std::endl;
             return false;
         }
@@ -377,7 +382,7 @@ public:
         void* output,
         uint32_t output_size) {
 
-        if (!pipeline_ || !module_ || gas_handle_ == 0) {
+        if (!pipeline_ || !module_raygen_ || gas_handle_ == 0) {
             std::cerr << "[OptiX] Pipeline or acceleration structure not initialized" << std::endl;
             return false;
         }
@@ -503,9 +508,17 @@ public:
             pipeline_ = nullptr;
         }
 
-        if (module_ != nullptr) {
-            optixModuleDestroy(module_);
-            module_ = nullptr;
+        if (module_raygen_ != nullptr) {
+            optixModuleDestroy(module_raygen_);
+            module_raygen_ = nullptr;
+        }
+        if (module_closest_hit_ != nullptr) {
+            optixModuleDestroy(module_closest_hit_);
+            module_closest_hit_ = nullptr;
+        }
+        if (module_miss_ != nullptr) {
+            optixModuleDestroy(module_miss_);
+            module_miss_ = nullptr;
         }
 
         if (d_gas_output_buffer_ != 0) {
@@ -547,7 +560,10 @@ private:
     CUcontext cuda_context_;                    ///< Contexto CUDA
     OptixDeviceContext optix_context_;          ///< Contexto de dispositivo OptiX
     OptixPipeline pipeline_;                    ///< Pipeline compilado OptiX
-    OptixModule module_;                        ///< Módulo PTX compilado
+    OptixModule module_raygen_;                  ///< Módulo PTX: raygen
+    OptixModule module_closest_hit_;             ///< Módulo PTX: closest-hit + any-hit + intersection
+    OptixModule module_miss_;                    ///< Módulo PTX: miss
+    OptixPipelineCompileOptions pipeline_compile_options_;  ///< Opciones de compilación (shared)
 
     CUdeviceptr d_gas_output_buffer_;           ///< Buffer GPU: estructura de aceleración (BVH)
     size_t gas_output_buffer_size_;             ///< Tamaño del BVH en bytes
@@ -622,54 +638,70 @@ private:
     }
 
     /**
-     * @brief Crea un módulo OptiX a partir de strings PTX.
+     * @brief Helper: creates a single OptiX module from a PTX string.
+     */
+    bool createSingleModule(const char* ptx, size_t ptx_size,
+                            const OptixModuleCompileOptions& mod_opts,
+                            OptixModule& out_module, const char* label) {
+        char log[2048];
+        size_t sizeof_log = sizeof(log);
+
+        if (optixModuleCreate(
+            optix_context_,
+            &mod_opts,
+            &pipeline_compile_options_,
+            ptx, ptx_size,
+            log, &sizeof_log,
+            &out_module) != OPTIX_SUCCESS) {
+            std::cerr << "[OptiX] Module creation failed (" << label << "):\n"
+                      << log << std::endl;
+            return false;
+        }
+
+        if (sizeof_log > 1) {
+            std::cout << "[OptiX] Module " << label << " log:\n" << log << std::endl;
+        }
+        return true;
+    }
+
+    /**
+     * @brief Crea módulos OptiX separados para cada PTX shader.
+     *
+     * Cada .cu se compila a su propio .ptx, y cada PTX se carga como un
+     * módulo OptiX independiente. Concatenar PTX es inválido.
      */
     bool createModule(
         const char* ptx_raygen,
         const char* ptx_closest_hit,
-        const char* ptx_miss,
-        const char* ptx_any_hit) {
-
-        // NOTA: Para simplicidad, concatenamos todos los PTX en uno solo.
-        // En una implementación real, podrías usar múltiples módulos.
-        std::string combined_ptx = std::string(ptx_raygen) +
-                                   std::string(ptx_closest_hit) +
-                                   std::string(ptx_miss) +
-                                   std::string(ptx_any_hit);
+        const char* ptx_miss) {
 
         OptixModuleCompileOptions module_compile_options = {};
         module_compile_options.maxRegisterCount = OPTIX_COMPILE_DEFAULT_MAX_REGISTER_COUNT;
         module_compile_options.optLevel = OPTIX_COMPILE_OPTIMIZATION_DEFAULT;
         module_compile_options.debugLevel = OPTIX_COMPILE_DEBUG_LEVEL_NONE;
 
-        OptixPipelineCompileOptions pipeline_compile_options = {};
-        pipeline_compile_options.usesMotionBlur = false;
-        pipeline_compile_options.traversableGraphFlags = OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_SINGLE_GAS;
-        pipeline_compile_options.numPayloadValues = 8;  // Tamaño del payload en words (32-bit)
-        pipeline_compile_options.numAttributeValues = 2;
-        pipeline_compile_options.exceptionFlags = OPTIX_EXCEPTION_FLAG_NONE;
-        pipeline_compile_options.pipelineLaunchParamsVariableName = "params";
-        pipeline_compile_options.usesPrimitiveTypeFlags = OPTIX_PRIMITIVE_TYPE_FLAGS_CUSTOM;
+        // Store pipeline compile options as member (needed by buildPipeline)
+        pipeline_compile_options_ = {};
+        pipeline_compile_options_.usesMotionBlur = false;
+        pipeline_compile_options_.traversableGraphFlags = OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_SINGLE_GAS;
+        pipeline_compile_options_.numPayloadValues = 8;
+        pipeline_compile_options_.numAttributeValues = 2;
+        pipeline_compile_options_.exceptionFlags = OPTIX_EXCEPTION_FLAG_NONE;
+        pipeline_compile_options_.pipelineLaunchParamsVariableName = "params";
+        pipeline_compile_options_.usesPrimitiveTypeFlags = OPTIX_PRIMITIVE_TYPE_FLAGS_CUSTOM;
 
-        char log[2048];
-        size_t sizeof_log = sizeof(log);
-
-        if (optixModuleCreate(
-            optix_context_,
-            &module_compile_options,
-            &pipeline_compile_options,
-            combined_ptx.c_str(),
-            combined_ptx.size(),
-            log,
-            &sizeof_log,
-            &module_) != OPTIX_SUCCESS) {
-            std::cerr << "[OptiX] Module creation failed:\n" << log << std::endl;
+        // Create separate module for each PTX shader
+        if (!createSingleModule(ptx_raygen, strlen(ptx_raygen),
+                                module_compile_options, module_raygen_, "raygen"))
             return false;
-        }
 
-        if (sizeof_log > 1) {
-            std::cout << "[OptiX] Module compilation log:\n" << log << std::endl;
-        }
+        if (!createSingleModule(ptx_closest_hit, strlen(ptx_closest_hit),
+                                module_compile_options, module_closest_hit_, "hitgroup"))
+            return false;
+
+        if (!createSingleModule(ptx_miss, strlen(ptx_miss),
+                                module_compile_options, module_miss_, "miss"))
+            return false;
 
         return true;
     }
@@ -683,8 +715,8 @@ private:
             OptixProgramGroupOptions pg_options = {};
             OptixProgramGroupDesc pg_desc = {};
             pg_desc.kind = OPTIX_PROGRAM_GROUP_KIND_RAYGEN;
-            pg_desc.raygen.module = module_;
-            pg_desc.raygen.entryFunctionName = "__raygen__alpha_bsh_rg";
+            pg_desc.raygen.module = module_raygen_;
+            pg_desc.raygen.entryFunctionName = "__raygen__rg_optical_attention";
 
             char log[2048];
             size_t sizeof_log = sizeof(log);
@@ -707,12 +739,14 @@ private:
             OptixProgramGroupOptions pg_options = {};
             OptixProgramGroupDesc pg_desc = {};
             pg_desc.kind = OPTIX_PROGRAM_GROUP_KIND_HITGROUP;
-            pg_desc.hitgroup.moduleCH = module_;
-            pg_desc.hitgroup.entryFunctionNameCH = "__closesthit__alpha_bsh_ch";
-            pg_desc.hitgroup.moduleIS = module_;
-            pg_desc.hitgroup.entryFunctionNameIS = "__intersection__alpha_bsh_is";
-            pg_desc.hitgroup.moduleAH = module_;
-            pg_desc.hitgroup.entryFunctionNameAH = "__anyhit__alpha_bsh_ah";
+            pg_desc.hitgroup.moduleCH = module_closest_hit_;
+            pg_desc.hitgroup.entryFunctionNameCH = "__closesthit__ch_optical_attention";
+            // No intersection program — using built-in AABB intersection
+            pg_desc.hitgroup.moduleIS = nullptr;
+            pg_desc.hitgroup.entryFunctionNameIS = nullptr;
+            // No any-hit program — all hits are processed in closest-hit
+            pg_desc.hitgroup.moduleAH = nullptr;
+            pg_desc.hitgroup.entryFunctionNameAH = nullptr;
 
             char log[2048];
             size_t sizeof_log = sizeof(log);
@@ -735,8 +769,8 @@ private:
             OptixProgramGroupOptions pg_options = {};
             OptixProgramGroupDesc pg_desc = {};
             pg_desc.kind = OPTIX_PROGRAM_GROUP_KIND_MISS;
-            pg_desc.miss.module = module_;
-            pg_desc.miss.entryFunctionName = "__miss__alpha_bsh_ms";
+            pg_desc.miss.module = module_miss_;
+            pg_desc.miss.entryFunctionName = "__miss__ms_optical_attention";
 
             char log[2048];
             size_t sizeof_log = sizeof(log);
@@ -776,7 +810,7 @@ private:
 
         if (optixPipelineCreate(
             optix_context_,
-            nullptr,  // pipelineCompileOptions (heredado del módulo)
+            &pipeline_compile_options_,
             &pipeline_link_options,
             program_groups.data(),
             program_groups.size(),
@@ -913,32 +947,50 @@ private:
 };
 
 // ============================================================================
-// FUNCIÓN GLOBAL: Factory para crear un contexto OptiX
+// UTILIDAD: Carga un archivo PTX desde disco
 // ============================================================================
 
 /**
- * @brief Crea e inicializa un contexto OptiX listo para uso.
+ * @brief Lee un archivo .ptx completo y devuelve su contenido como string.
  *
- * Esta es la función principal que debería ser llamada desde código cliente
- * para crear un contexto OptiX funcional.
- *
- * @param ptx_raygen String PTX del raygen
- * @param ptx_closest_hit String PTX del closest-hit
- * @param ptx_miss String PTX del miss
- * @param ptx_any_hit String PTX del any-hit
- *
- * @return Puntero a LiquidBitOptixContext (nuevo). Responsabilidad del caller: delete.
+ * @param filepath Ruta al archivo .ptx
+ * @param out_content String donde se almacena el contenido PTX
+ * @return true si la lectura fue exitosa
  */
+bool loadPTXFile(const std::string& filepath, std::string& out_content) {
+    std::ifstream file(filepath, std::ios::binary | std::ios::ate);
+    if (!file.is_open()) {
+        std::cerr << "[OptiX] Failed to open PTX file: " << filepath << std::endl;
+        return false;
+    }
+
+    std::streamsize size = file.tellg();
+    file.seekg(0, std::ios::beg);
+
+    out_content.resize(static_cast<size_t>(size));
+    if (!file.read(out_content.data(), size)) {
+        std::cerr << "[OptiX] Failed to read PTX file: " << filepath << std::endl;
+        return false;
+    }
+
+    std::cout << "[OptiX] Loaded PTX: " << filepath
+              << " (" << size << " bytes)" << std::endl;
+    return true;
+}
+
+// ============================================================================
+// FUNCIÓN GLOBAL: Factory desde strings PTX
+// ============================================================================
+
 LiquidBitOptixContext* createLiquidBitOptixContext(
     const char* ptx_raygen,
     const char* ptx_closest_hit,
-    const char* ptx_miss,
-    const char* ptx_any_hit) {
+    const char* ptx_miss) {
 
     try {
         LiquidBitOptixContext* context = new LiquidBitOptixContext();
 
-        if (!context->createPipeline(ptx_raygen, ptx_closest_hit, ptx_miss, ptx_any_hit)) {
+        if (!context->createPipeline(ptx_raygen, ptx_closest_hit, ptx_miss)) {
             delete context;
             return nullptr;
         }
@@ -948,6 +1000,39 @@ LiquidBitOptixContext* createLiquidBitOptixContext(
         std::cerr << "[OptiX] Exception during context creation: " << e.what() << std::endl;
         return nullptr;
     }
+}
+
+// ============================================================================
+// FUNCIÓN GLOBAL: Factory desde archivos PTX en disco
+// ============================================================================
+
+/**
+ * @brief Crea un contexto OptiX cargando .ptx directamente desde archivos.
+ *
+ * Uso típico:
+ *   auto* ctx = createLiquidBitOptixContextFromFiles(
+ *       "build/ptx/ray_generation.ptx",
+ *       "build/ptx/closest_hit.ptx",
+ *       "build/ptx/miss.ptx"
+ *   );
+ */
+LiquidBitOptixContext* createLiquidBitOptixContextFromFiles(
+    const std::string& ptx_raygen_path,
+    const std::string& ptx_closest_hit_path,
+    const std::string& ptx_miss_path) {
+
+    std::string ptx_raygen, ptx_closest_hit, ptx_miss;
+
+    if (!loadPTXFile(ptx_raygen_path, ptx_raygen) ||
+        !loadPTXFile(ptx_closest_hit_path, ptx_closest_hit) ||
+        !loadPTXFile(ptx_miss_path, ptx_miss)) {
+        return nullptr;
+    }
+
+    return createLiquidBitOptixContext(
+        ptx_raygen.c_str(),
+        ptx_closest_hit.c_str(),
+        ptx_miss.c_str());
 }
 
 // ============================================================================
