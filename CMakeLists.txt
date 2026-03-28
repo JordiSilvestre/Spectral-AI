@@ -349,6 +349,7 @@ int main(int argc, char** argv) {
     # ── RT Router benchmark executable ───────────────────────────
     file(WRITE ${CMAKE_BINARY_DIR}/rt_router_benchmark_main.cpp
 "// Auto-generated benchmark runner for RT Core Router
+#include <optix_function_table_definition.h>
 #include <iostream>
 #include <string>
 #include <cstdlib>

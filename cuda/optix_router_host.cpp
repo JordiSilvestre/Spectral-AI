@@ -151,7 +151,8 @@ public:
 
         CU_CHECK(cuCtxGetCurrent(&cu_context_));
         if (!cu_context_) {
-            CU_CHECK(cuCtxCreate(&cu_context_, 0, device));
+            // cuCtxCreate remapped to cuCtxCreate_v4 in CUDA 12.x+
+            CU_CHECK(cuCtxCreate_v4(&cu_context_, nullptr, 0, device));
         }
 
         // ── Init OptiX ─────────────────────────────────────────

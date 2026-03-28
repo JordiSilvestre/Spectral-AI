@@ -30,6 +30,21 @@ Tipos: `[DECISIÓN]` | `[FALLO]` | `[ALTERNATIVA]` | `[BLOQUEANTE]` | `[VALIDADO
 
 **Archivos:** `scripts/eval_all_16_layers.py`, `python/olmoe_e2e_eval.py`
 
+### [2026-03-28] [VALIDADO] RT Core benchmark: 64.6 us/batch, 236M queries/s at batch=16384
+
+**Contexto:** Primer benchmark real de OptiX RT Core routing en RTX 5070 Ti. Flat GAS con 64 AABBs (custom primitives), single-ray per query.
+
+**Resultados:** batch=256: 64.6us, batch=4096: 61.1us, batch=16384: 69.4us. Latencia casi constante — throughput escala linealmente con batch size. A batch=16384: 236M queries/s.
+
+**Sorpresa:** RT Cores son ~7x MAS LENTOS que CUDA kernel (8.84us) a 64 expertos. Razon: overhead de pipeline OptiX (context setup, launch, SBT dispatch) domina cuando N es pequeno. La ventaja de RT Cores emerge a N>>1000 expertos donde O(log N) hardware BVH traversal supera el scan lineal del CUDA kernel que hace O(N) comparaciones.
+
+**Fixes necesarios para build:**
+1. `cuCtxCreate` -> `cuCtxCreate_v4(ctx, nullptr, 0, device)` (CUDA 13.2 API change)
+2. Agregar `#include <optix_function_table_definition.h>` al benchmark main (symbol resolution)
+3. PTX con `compute_89` es forward-compatible con sm_120 via JIT (no necesita compute_120)
+
+**Impacto:** `cuda/optix_router_host.cpp`, `CMakeLists.txt`
+
 ### [2026-03-28] [FALLO] transformers 5.4.0 cambia API de OlmoeTopKRouter.forward()
 
 **Contexto:** `BVHGateWrapper.forward()` retornaba un unico tensor (logits), pero transformers 5.4.0 espera 3-tuple `(router_logits, top_k_weights, top_k_index)` en `OlmoeSparseMoeBlock.forward()`.
