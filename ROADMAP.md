@@ -189,7 +189,7 @@ Token N+1:              [RT Core: RUTA] -> [Tensor Core: GENERA]
 
 ---
 
-## FASE 7 — RT Cores Reales (OptiX) [COMPILADO — PENDIENTE INTEGRACION]
+## FASE 7 — RT Cores Reales (OptiX) [BENCHMARK COMPLETADO]
 
 **Objetivo:** Conectar el routing real con RT Cores via OptiX SDK.
 
@@ -230,18 +230,32 @@ vs ~80 ciclos en CUDA cores. Speedup teorico: 10-20x sobre kernel actual.
 - [x] Compilar shaders OptiX (.cu → .ptx) para ray_generation, closest_hit, miss, ray_attention
 - [x] Fix host code: multi-module, entry points, PTX loader, pipeline options
 - [x] Mapear sphere_centers → OptixAabb (en buildAccelerationStructure + test)
+- [x] **Benchmark: OptiX RT vs CUDA puro vs PyTorch — COMPLETADO**
+- [x] Rayo = embedding como origen + direccion (raygen shader con top-K fan)
+- [x] RT Cores devuelven hit mas cercano = expert_id (closesthit shader)
+- [x] Fix cuCtxCreate_v4 para CUDA 13.2 compatibility
+- [x] Fix optix_function_table_definition.h linkage
 - [ ] Construir IAS (Instance Acceleration Structure) jerarquico 4 niveles
-- [ ] Rayo = embedding como origen + direccion
-- [ ] RT Cores devuelven hit mas cercano = expert_id
-- [ ] Benchmark: OptiX RT vs CUDA puro vs PyTorch
+- [ ] Benchmark con N=1024+ expertos (crossover point vs CUDA kernel)
 
-**Speedup esperado:**
+**Benchmark RT Core (RTX 5070 Ti, 2026-03-28):**
 
-| Implementacion | Latencia batch=256 | vs PyTorch |
-|---|---|---|
-| PyTorch | 1,580 us | 1x |
-| CUDA kernel v2 | 8.84 us | 179x |
-| OptiX RT Cores | ~0.5-1 us (estimado) | ~1,500-3,000x |
+| Implementacion | batch=256 | batch=4096 | batch=16384 | vs PyTorch |
+|---|---|---|---|---|
+| PyTorch BVHRouter | 1,580 us | — | — | 1x |
+| CUDA kernel v2 | 8.84 us | — | — | 179x |
+| **OptiX RT Cores** | **64.6 us** | **61.1 us** | **69.4 us** | **24x** |
+
+**Analisis:** RT Cores son ~7x MAS LENTOS que CUDA kernel a batch=256. Esto es esperado:
+la flat GAS con 64 AABBs tiene overhead de pipeline OptiX (setup, launch) que domina a
+batch pequeno. La fortaleza de RT Cores emerge a N>>1000 expertos donde la complejidad
+O(log N) del BVH de hardware supera el scan lineal del CUDA kernel. Proximo: benchmark
+con N=1024 y N=4096 expertos para encontrar el crossover point.
+
+**Throughput (medido):**
+- batch=256: 3.96M queries/s
+- batch=4096: 67M queries/s
+- batch=16384: **236M queries/s** — latencia casi constante, escala linealmente
 
 ---
 
@@ -442,14 +456,19 @@ en vez de affine (128 params).
 
 **Degradacion ~1.08% por capa (superlinear).** Resultado real 16/16: PPL 8.38 (+17.3%).
 
-**16/16 PPL evaluation (2026-03-28, transformers 5.4.0):**
+**PPL scaling curve completa (2026-03-28, transformers 5.4.0):**
 
 | Configuracion | PPL | Delta vs baseline (7.15) | Capas |
 |---|---|---|---|
 | Baseline (gate lineal OLMoE) | 7.15 | — | 0/16 |
 | BVH Router 1 capa (L8) | 7.19 | **+0.6%** | 1/16 |
 | BVH Router 5 capas | 7.45 | **+4.2%** | 5/16 |
+| BVH Router 12 capas (skip worst 4) | 7.86 | **+10.0%** | 12/16 |
+| BVH Router 14 capas (skip L1,L2) | 8.12 | **+13.6%** | 14/16 |
 | **BVH Router 16 capas (ALL)** | **8.38** | **+17.3%** | **16/16** |
+
+**Hallazgo clave:** L1 (72.8% acc) y L2 (78.4% acc) causan degradacion desproporcionada
+por cascading error en capas tempranas. Skip L1+L2 ahorra 3.7% PPL.
 
 ### Precision por capa (re-training vs original)
 

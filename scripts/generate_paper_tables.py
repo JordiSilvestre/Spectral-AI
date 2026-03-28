@@ -92,9 +92,12 @@ def table_2_ppl_comparison() -> str:
     lines.append("| OLMoE-1B-7B baseline (linear gate) | 7.15 | -- | 0/16 |")
     lines.append("| BVH Router 1 layer (L8) | 7.19 | **+0.6%** | 1/16 |")
     lines.append("| BVH Router 5 layers (L0,4,8,12,15) | 7.45 | **+4.2%** | 5/16 |")
+    lines.append("| BVH Router 12 layers (skip worst 4) | 7.86 | **+10.0%** | 12/16 |")
+    lines.append("| BVH Router 14 layers (skip L1,L2) | 8.12 | **+13.6%** | 14/16 |")
     lines.append("| BVH Router 16 layers (all) | 8.38 | **+17.3%** | 16/16 |")
     lines.append("")
-    lines.append("*Degradation ~1.08% per layer (superlinear at higher counts). "
+    lines.append("*Superlinear degradation: early layers (L1=72.8%, L2=78.4%) account for "
+                 "disproportionate PPL loss due to error cascading. "
                  "Calibration: Linear(64,64) = 4,160 params per layer.*")
     return "\n".join(lines)
 
@@ -110,7 +113,7 @@ def table_3_routing_latency() -> str:
     lines.append("| CUDA Kernel Extension (zero-copy) | ~10 us | **158x** | CUDA Cores |")
     lines.append("| CUDA Kernel (isolated micro) | ~8.84 us | **179x** | CUDA Cores |")
     lines.append("| 3D PCA + Nearest Neighbor | ~50 us est. | ~32x | CUDA Cores |")
-    lines.append("| OptiX RT Cores (projected) | ~0.5-1 us | **1,500-3,000x** | RT Cores |")
+    lines.append("| **OptiX RT Cores (measured)** | **~65 us** | **24x** | **RT Cores** |")
     lines.append("")
     lines.append("*RTX 5070 Ti (sm_120, Blackwell). "
                  "RT Core estimate based on ~4 cycles/intersection at 2.4 GHz.*")
