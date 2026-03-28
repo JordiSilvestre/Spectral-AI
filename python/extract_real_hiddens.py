@@ -13,7 +13,7 @@ Usage:
     python extract_real_hiddens.py --model-dir /path/to/olmoe-1b-7b --layer 8
 
 Output:
-    data/real_hiddens_layer{N}.pt  (dict with 'hidden_states', 'gate_logits', 'topk_ids')
+    data/real_hiddens_layer{N}.pt  (dict with 'hidden_states', 'gate_logits' [softmax probs], 'topk_ids')
 
 Copyright (c) 2026 LiquidBit Studio -- Apache 2.0
 """
@@ -71,15 +71,17 @@ def extract_hidden_states(
     batch_seq_len: int = 512,
     device: str = "cuda",
     output_dir: str = "data",
-):
+) -> str:
     """
     Extract real hidden states from OLMoE model running on WikiText-2.
 
     1. Loads the full OLMoE model
     2. Hooks post_attention_layernorm at layer_idx
     3. Runs WikiText-2 tokens through the model
-    4. Captures hidden states + gate routing decisions
+    4. Captures hidden states + gate softmax probabilities
     5. Saves to disk
+
+    Returns path to saved .pt file.
     """
     from transformers import AutoModelForCausalLM, AutoTokenizer
 
@@ -129,13 +131,18 @@ def extract_hidden_states(
     # ── Find the target layer and hook ──────────────────────
     print(f"\n[3/4] Hooking layer {layer_idx} post_attention_layernorm...")
 
-    # Navigate model structure
+    # Navigate model structure with bounds check
     if hasattr(model, 'model') and hasattr(model.model, 'layers'):
-        target_layer = model.model.layers[layer_idx]
+        layers = model.model.layers
     elif hasattr(model, 'layers'):
-        target_layer = model.layers[layer_idx]
+        layers = model.layers
     else:
         raise AttributeError("Cannot find layers in model")
+
+    n_layers = len(layers)
+    if not (0 <= layer_idx < n_layers):
+        raise ValueError(f"--layer {layer_idx} out of range [0, {n_layers - 1}]")
+    target_layer = layers[layer_idx]
 
     # Hook the post_attention_layernorm (input to MoE block)
     ln = target_layer.post_attention_layernorm
@@ -153,13 +160,18 @@ def extract_hidden_states(
     t0 = time.time()
 
     all_hidden = []
-    all_gate_logits = []
+    all_gate_probs = []
     all_topk_ids = []
     n_captured = 0
 
+    # Pre-move gate weight to target device (avoid per-batch copy)
+    gate_weight = gate.weight.to(device=device, dtype=torch.float16)
+
     with torch.no_grad():
-        for start in range(0, len(all_token_ids) - batch_seq_len, batch_seq_len):
+        for start in range(0, len(all_token_ids), batch_seq_len):
             chunk = all_token_ids[start:start + batch_seq_len].unsqueeze(0)
+            if chunk.shape[1] == 0:
+                continue
             chunk = chunk.to(device)
 
             # Clear previous captures
@@ -172,6 +184,9 @@ def extract_hidden_states(
                 print(f"  WARNING: No hidden states captured at offset {start}")
                 continue
 
+            if len(capture.captured) > 1:
+                print(f"  WARNING: Multiple captures ({len(capture.captured)}) at offset {start}, using first")
+
             # Get the captured hidden states (B=1, S, H)
             h = capture.captured[0]  # (1, seq_len, hidden_size) in fp16 on CPU
             h_flat = h.squeeze(0)  # (seq_len, hidden_size)
@@ -179,12 +194,13 @@ def extract_hidden_states(
             # Get gate routing decisions for these exact hidden states
             h_gate = h_flat.to(device=device, dtype=torch.float16)
             # Run through the gate's linear layer only (not full forward which does topk)
-            gate_logits = F.linear(h_gate, gate.weight.to(h_gate.device))
-            gate_logits = F.softmax(gate_logits.float(), dim=-1)
-            _, topk_ids = gate_logits.topk(8, dim=-1)
+            # Result is full-distribution softmax probs (correct distillation target)
+            raw_logits = F.linear(h_gate, gate_weight)
+            gate_probs = F.softmax(raw_logits.float(), dim=-1)
+            _, topk_ids = gate_probs.topk(8, dim=-1)
 
             all_hidden.append(h_flat)
-            all_gate_logits.append(gate_logits.cpu().half())
+            all_gate_probs.append(gate_probs.cpu().half())
             all_topk_ids.append(topk_ids.cpu())
 
             n_captured += h_flat.shape[0]
@@ -195,7 +211,7 @@ def extract_hidden_states(
 
     # Concatenate all
     hidden_states = torch.cat(all_hidden, dim=0)  # (N, 2048)
-    gate_logits = torch.cat(all_gate_logits, dim=0)  # (N, 64)
+    gate_probs = torch.cat(all_gate_probs, dim=0)  # (N, 64) softmax probabilities
     topk_ids = torch.cat(all_topk_ids, dim=0)  # (N, 8)
 
     elapsed = time.time() - t0
@@ -207,9 +223,9 @@ def extract_hidden_states(
     Path(output_dir).mkdir(parents=True, exist_ok=True)
     out_path = Path(output_dir) / f"real_hiddens_layer{layer_idx}.pt"
     torch.save({
-        'hidden_states': hidden_states,  # (N, 2048) fp16
-        'gate_logits': gate_logits,  # (N, 64) fp16
-        'topk_ids': topk_ids,  # (N, 8) int64
+        'hidden_states': hidden_states,       # (N, 2048) fp16
+        'gate_logits': gate_probs,            # (N, 64) fp16 — NOTE: softmax probs, not raw logits
+        'topk_ids': topk_ids,                 # (N, 8) int64
         'layer_idx': layer_idx,
         'n_samples': hidden_states.shape[0],
     }, str(out_path))
