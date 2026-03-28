@@ -381,6 +381,7 @@ class EnhancedBVHRouter(nn.Module):
         # Combine all routing info for final expert selection
         combined = torch.cat([f3, p1, p2, p3], dim=-1)  # (B, 128+4+4+4)
         logits = self.expert_head(combined)  # (B, 64)
+        self._last_logits = logits
 
         if self.training:
             expert_probs = F.gumbel_softmax(
@@ -798,6 +799,9 @@ def train_bvh_distillation(
     print(f"  Hierarchy: {router.n_level1}x{router.n_level2}x{router.n_level3} = {router.n_experts} experts")
     print(f"  Feature dim: {router.feature_dim}")
     print(f"  Temperature: {router.temperature.item():.2f}")
+    alpha_soft = 0.7
+    weight_entropy = 0.01
+    weight_topk = 0.0
     print(f"  Distillation temp: {distill_temp}, alpha_soft: {alpha_soft}")
     print(f"  Weights: balance={weight_balance}, entropy={weight_entropy}, topk={weight_topk}")
     print(f"  LR: {lr}, Epochs: {epochs}, Batch: {batch_size}")
@@ -870,7 +874,7 @@ def train_bvh_distillation(
             epoch_hard += l_hard.item()
             epoch_bal += l_balance.item()
             epoch_ent += l_entropy.item()
-            epoch_topk += l_topk.item()
+            epoch_topk += 0.0  # topk loss not used in current config
             n_batches += 1
             global_step += 1
 
@@ -1105,14 +1109,23 @@ def main():
         # Step 2b: Sparse Upcycling — initialize router from gate weights
         if not args.no_upcycle and olmoe_layer is not None:
             print(f"\n[Step 2b] Sparse Upcycling — initializing from gate weights...")
-            gate_weight = olmoe_layer.gate.weight.data  # [64, 2048]
+            gate_weight = olmoe_layer.gate.weight.data.clone()  # [64, 2048]
             initialize_router_from_gate(router, gate_weight, verbose=True)
         else:
             print(f"\n[Step 2b] Skipping Sparse Upcycling")
 
+    # Free OLMoE layer if using real data (no longer needed, saves ~7GB VRAM)
+    if args.real_data is not None and olmoe_layer is not None:
+        olmoe_layer = None
+        import gc
+        gc.collect()
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+        print(f"\n  Freed OLMoE layer from memory (using pre-extracted real data)")
+
     # Step 3: Train
     router, best_acc = train_bvh_distillation(
-        olmoe_layer=olmoe_layer,
+        olmoe_layer=None,  # not needed when using real data
         router=router,
         n_train=args.n_train,
         n_val=args.n_val,

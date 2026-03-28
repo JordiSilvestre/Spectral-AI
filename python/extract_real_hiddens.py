@@ -230,7 +230,18 @@ def main():
                         help="Sequence length per batch")
     parser.add_argument("--device", type=str, default="cuda")
     parser.add_argument("--output-dir", type=str, default="data")
+    parser.add_argument("--output", type=str, default=None,
+                        help="Full output path (overrides --output-dir)")
     args = parser.parse_args()
+
+    # If --output is given, use its directory as output_dir
+    if args.output is not None:
+        out_path = Path(args.output)
+        args.output_dir = str(out_path.parent)
+        # Validate the filename matches expected pattern
+        expected_name = f"real_hiddens_layer{args.layer}.pt"
+        if out_path.name != expected_name:
+            print(f"  WARNING: --output filename '{out_path.name}' != expected '{expected_name}'")
 
     extract_hidden_states(
         model_dir=args.model_dir,

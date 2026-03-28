@@ -65,6 +65,137 @@ Tipos: `[DECISIÓN]` | `[FALLO]` | `[ALTERNATIVA]` | `[BLOQUEANTE]` | `[VALIDADO
 - Extrapolación: 16/16 capas → ~15% PPL → viable
 - Linear calibración (4160 params) >> affine (128 params)
 
+### [2026-03-28] [OBSERVACIÓN] Re-training accuracy inferior a sesión original
+
+**Contexto:** Tras recuperación del proyecto y re-entrenamiento con `regenerate_all.sh`, las accuracies de los routers son inferiores en top-8 pero mejoran en top-1 respecto a la sesión original.
+
+**Comparativa completa (5 capas):**
+
+| Layer | Orig top-8 | Re-train top-8 | Δ top-8 | Orig top-1 | Re-train top-1 | Δ top-1 |
+|-------|-----------|----------------|---------|-----------|----------------|---------|
+| L0 | 87.8% | 80.4% | **-7.4%** | 89.0% | 89.6% | +0.6% |
+| L4 | 86.4% | 80.2% | **-6.2%** | 73.0% | 79.6% | **+6.6%** |
+| L8 | 91.7% | 85.9% | **-5.8%** | 71.1% | 76.7% | **+5.6%** |
+| L12 | 92.2% | 88.8% | **-3.4%** | 74.5% | 77.4% | **+2.9%** |
+| L15 | 93.2% | 89.3% | **-3.9%** | 74.7% | 80.2% | **+5.5%** |
+
+**Objetivo original:** PPL 6.40 con 5 capas reemplazadas (vs baseline 6.11).
+
+**Patrón observado:**
+- Top-8 baja entre 3.4-7.4% (peor en capas tempranas L0/L4, mejor en capas tardías L12)
+- Top-1 **sube** en TODAS las capas (+0.6% a +6.6%) — el experto principal se predice mejor
+- La mejora en top-1 sugiere que el router aprende mejor el experto dominante pero pierde precisión en los 7 expertos secundarios
+
+**Posibles causas:**
+1. **Random seed diferente** — el sparse upcycling usa K-Means que es sensible a inicialización
+2. **Distribución de datos ligeramente diferente** — WikiText-2 tokenización puede variar con versión diferente de transformers (4.46.3 vs la versión anterior)
+3. **Versión de PyTorch** — PyTorch 2.11.0 (nuevo venv) vs versión anterior puede dar resultados numéricos ligeramente distintos
+4. **Desbalance L1 clusters** — en el re-training L0 muestra clusters 9/3/5/47 (muy desbalanceado, cluster 3 tiene 47 expertos). Esto puede limitar la capacidad discriminativa en niveles 2 y 3.
+5. **Temperatura final** — converge a 0.254 (baja). Podría beneficiarse de clamp mínimo ~0.3.
+
+**Posibles optimizaciones para mejorar top-8:**
+- Fijar random seed (`torch.manual_seed(42)`) para reproducibilidad
+- Probar K-Means++ init en sparse upcycling para clusters más balanceados
+- Añadir `--min-temperature 0.3` para evitar que softmax se colapse
+- Probar `--epochs 80` — la curva no se había aplanado completamente
+- Aumentar `feature_dim` de 128 a 192 (más capacidad, ~2M params vs 1.35M)
+- Balance loss más agresivo si clusters quedan desiguales (>30 expertos en un cluster L1)
+- Reducir `alpha_soft` de 0.7 a 0.5 para dar más peso al hard label (top-8 exacto)
+
+**Impacto:** La calibración linear (4160 params) compensa la pérdida de top-8. El PPL final es lo que importa — top-8 accuracy es un proxy intermedio.
+
+**Seguimiento:** ✅ RESUELTO — PPL single-layer +0.6% (mejor que original +0.8%). Ver entrada de PPL abajo.
+
+### [2026-03-28] [VALIDADO] Calibración Linear 64→64 — Resultados por capa
+
+**Contexto:** Calibración post-hoc con capa Linear(64,64) = 4,160 params por capa, 100 epochs, KL divergence loss.
+
+**Resultados de calibración:**
+
+| Layer | KL Loss | Cosine raw→cal | Top-8 raw→cal |
+|-------|---------|----------------|---------------|
+| L0 | 0.0474 | 0.56→**0.95** | 81.3%→75.5% |
+| L4 | 0.0395 | 0.45→**0.96** | 81.5%→73.9% |
+| L8 | 0.0315 | 0.45→**0.97** | 87.3%→81.5% |
+| L12 | 0.0474 | 0.54→**0.96** | 89.4%→84.9% |
+| L15 | 0.0463 | 0.53→**0.96** | 90.1%→86.3% |
+
+**Observaciones:**
+- Cosine similarity >0.95 en todas las capas — distribución de pesos muy similar al gate original
+- Top-8 overlap baja post-calibración porque KL loss optimiza distribución completa, no solo top-8 match
+- L8 tiene el mejor KL loss (0.0315) — capa más fácil de calibrar
+- La caída de top-8 post-calibración es aceptable: lo que importa es el PPL, no el overlap
+
+### [2026-03-28] [FALLO] BVHGateWrapper devolvía tupla — OLMoE espera logits puros
+
+**Contexto:** Al evaluar PPL con BVH router, `F.softmax(router_logits)` fallaba con `'tuple' object has no attribute 'softmax'`.
+**Problema:** BVHGateWrapper.forward() devolvía `(router_logits, router_scores, router_indices)` — una tupla de 3 elementos. Pero OLMoE's `SparseMoeBlock.forward()` espera que `self.gate(hidden_states)` devuelva un **tensor de logits puro** (pre-softmax). OLMoE aplica internamente softmax + topk + norm_topk_prob.
+**Solución:** Simplificar el wrapper para devolver solo `logits.to(hidden_states.dtype)`. Eliminar softmax, topk y norm_topk_prob del wrapper — OLMoE los maneja.
+**Impacto:** `olmoe_e2e_eval.py` — BVHGateWrapper.forward()
+**Lección:** SIEMPRE verificar qué espera el modelo host del gate. En OLMoE: gate → logits tensor → SparseMoeBlock hace softmax/topk.
+
+### [2026-03-28] [FALLO] EnhancedBVHRouter no guardaba _last_logits
+
+**Contexto:** `calibrate_router.py` accedía a `router._last_logits` pero `EnhancedBVHRouter.forward()` no lo guardaba (solo `SimpleBVHRouter` lo hacía).
+**Solución:** Añadir `self._last_logits = logits` en `EnhancedBVHRouter.forward()` después de calcular logits con `expert_head`.
+**Impacto:** `olmoe_bvh_distill.py` — EnhancedBVHRouter.forward()
+
+### [2026-03-28] [VALIDADO] PPL Single-Layer (L8) — Re-training supera al original
+
+**Contexto:** Evaluación PPL con router re-entrenado + calibración linear en layer 8.
+
+**Resultados:**
+
+| Métrica | Sesión original | Re-training | Mejora |
+|---------|----------------|-------------|--------|
+| Baseline PPL | 6.11 | 7.15 | — (diff versión transformers) |
+| BVH PPL | 6.16 | 7.19 | — |
+| **Delta** | **+0.8%** | **+0.6%** | **✅ Mejor delta** |
+
+**Nota sobre baseline 7.15 vs 6.11:**
+- La diferencia de baseline se debe a la versión de transformers (4.46.3 vs versión anterior)
+- Lo que importa es el **delta relativo** (+0.6% vs +0.8%), no el valor absoluto
+- El delta menor indica que la calibración linear captura mejor las interacciones entre expertos que el affine original
+
+### [2026-03-28] [VALIDADO] PPL Multi-Layer (5 capas) — Re-training supera al original
+
+**Contexto:** Evaluación PPL con 5 capas (0,4,8,12,15) reemplazadas con routers BVH re-entrenados + calibración linear.
+
+**Resultados:**
+
+| Métrica | Sesión original | Re-training | Mejora |
+|---------|----------------|-------------|--------|
+| Baseline PPL | 6.11 | 7.15 | — (diff versión transformers) |
+| BVH PPL (5 capas) | 6.40 | 7.45 | — |
+| **Delta** | **+4.8%** | **+4.2%** | **✅ Mejor delta** |
+
+**Conclusión:** A pesar de top-8 accuracy inferior (-3.4% a -7.4%), el PPL delta es MEJOR que el original (+4.2% vs +4.8%). La calibración linear (4160 params) compensa con creces la pérdida de overlap al capturar interacciones entre expertos que el affine (128 params) no podía.
+
+### [2026-03-28] [OBSERVACIÓN] Datos recuperados de transcript — posibles discrepancias
+
+**Contexto:** Todos los archivos del proyecto se perdieron el 2026-03-28 (sin git inicializado). Se recuperaron 77 archivos del transcript JSONL de Claude (`01429f56-ae9c-4e10-89e8-8fd7d04a20e7.jsonl`) mediante replay de 86 Writes + 219 Edits.
+
+**Qué se perdió y se regeneró:**
+- **Checkpoints entrenados** (.pt) — NO recuperables del transcript, re-entrenados desde cero
+- **Datos extraídos** (real_hiddens_*.pt, ~856 MB/capa) — NO recuperables, re-extraídos
+- **Código fuente** — Recuperado del transcript JSONL (77 archivos)
+- **10 archivos regenerados por agente:** kernel CUDA (`bvh_router_kernel.cu`), demo (`real_model_demo.py`), 3 patentes, 3 docs técnicos
+
+**Qué puede no cuadrar con resultados anteriores:**
+1. **Versión de transformers:** 4.46.3 (actual) vs versión anterior → baseline PPL diferente (7.15 vs 6.11)
+2. **Random seeds:** No fijados → sparse upcycling K-Means produce clusters diferentes → top-8 accuracy diferente
+3. **Datos de extracción:** WikiText-2 tokenización puede variar ligeramente entre versiones de transformers
+4. **PyTorch:** venv recreado con PyTorch 2.11.0 → posibles diferencias numéricas menores
+
+**Lo que SÍ es comparable:**
+- **Delta PPL** (BVH vs baseline) — mismo modelo, misma evaluación → comparable
+- **Cosine similarity** post-calibración — >0.95 en todas las capas
+- **Arquitectura del router** — idéntica (EnhancedBVHRouter 4×4×4, 1.35M params)
+
+**Lección:** SIEMPRE inicializar git. SIEMPRE hacer backup de checkpoints y datos. Los deltas relativos son robustos aunque los valores absolutos cambien entre entornos.
+
+---
+
 ### [2026-03-28] [FALLO] Pérdida de archivos del proyecto
 **Contexto:** Todos los archivos nuevos (post Mar 24) se borraron del disco.
 **Problema:** No había git repo inicializado. Sin backup.

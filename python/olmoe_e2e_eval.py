@@ -85,28 +85,24 @@ class BVHGateWrapper(nn.Module):
         self.weight = nn.Parameter(torch.empty(0), requires_grad=False)
 
     def forward(self, hidden_states: torch.Tensor):
+        """
+        Returns raw logits (pre-softmax) — OLMoE's SparseMoeBlock applies
+        softmax, topk, and norm_topk_prob internally.
+        """
         with torch.no_grad():
             if self.calibration_mode == "affine":
                 self.router(hidden_states.float())
                 raw_logits = self.router._last_logits
-                cal_logits = raw_logits * self.cal_scale + self.cal_bias
-                router_logits = F.softmax(cal_logits, dim=-1).to(hidden_states.dtype)
+                logits = raw_logits * self.cal_scale + self.cal_bias
             elif self.calibration_mode == "linear":
                 self.router(hidden_states.float())
                 raw_logits = self.router._last_logits
-                cal_logits = self.cal_linear(raw_logits)
-                router_logits = F.softmax(cal_logits, dim=-1).to(hidden_states.dtype)
+                logits = self.cal_linear(raw_logits)
             else:
-                probs, _ = self.router(hidden_states.float())
-                router_logits = probs.to(hidden_states.dtype)
+                self.router(hidden_states.float())
+                logits = self.router._last_logits
 
-        router_top_value, router_indices = torch.topk(router_logits, self.top_k, dim=-1)
-
-        if self.norm_topk_prob:
-            router_top_value = router_top_value / router_top_value.sum(dim=-1, keepdim=True)
-        router_scores = router_top_value.to(router_logits.dtype)
-
-        return router_logits, router_scores, router_indices
+        return logits.to(hidden_states.dtype)
 
 
 # ─────────────────────────────────────────────────────────────────
