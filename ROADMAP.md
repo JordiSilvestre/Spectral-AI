@@ -409,7 +409,7 @@ liquidbit-zero-matrix/
 
 ---
 
-## FASE A — OLMoE BVH Distillation [✅ VALIDADA — PPL +0.6% single, +4.2% multi]
+## FASE A — OLMoE BVH Distillation [✅ 16/16 COMPLETADA — PPL 8.38 (+17.3%)]
 
 **Objetivo:** Reemplazar el gate lineal de OLMoE-1B-7B (7B params, 64 expertos) con
 nuestro BVH Router geometrico y medir el impacto en perplexity real.
@@ -440,7 +440,16 @@ especializan con solo 5M tokens. OLMoE-1B-7B tiene 64 expertos SwiGLU ya especia
 mejores** en el re-training (+0.6% y +4.2%) gracias a calibracion linear (4160 params)
 en vez de affine (128 params).
 
-**Degradacion lineal ~0.8% por capa reemplazada.** Extrapolacion: 16/16 capas → ~13% PPL.
+**Degradacion ~1.08% por capa (superlinear).** Resultado real 16/16: PPL 8.38 (+17.3%).
+
+**16/16 PPL evaluation (2026-03-28, transformers 5.4.0):**
+
+| Configuracion | PPL | Delta vs baseline (7.15) | Capas |
+|---|---|---|---|
+| Baseline (gate lineal OLMoE) | 7.15 | — | 0/16 |
+| BVH Router 1 capa (L8) | 7.19 | **+0.6%** | 1/16 |
+| BVH Router 5 capas | 7.45 | **+4.2%** | 5/16 |
+| **BVH Router 16 capas (ALL)** | **8.38** | **+17.3%** | **16/16** |
 
 ### Precision por capa (re-training vs original)
 
@@ -490,15 +499,15 @@ python python/olmoe_e2e_eval.py --model-dir /path/to/olmoe-1b-7b \
 **Archivos:** `python/extract_real_hiddens.py`, `python/olmoe_bvh_distill.py`,
 `python/calibrate_router.py`, `python/olmoe_e2e_eval.py`
 
-### Estado actual: FASE 3 — Multi-layer (14/16 capas, 13/16 calibradas)
+### Estado actual: FASE 3 — Multi-layer (16/16 capas COMPLETADAS)
 
-- [x] 5 capas reemplazadas (0,4,8,12,15): PPL +4.2% (re-train) / +4.8% (original)
-- [x] 9 capas adicionales entrenadas: 1,2,3,5,6,7,9,10,11
-- [x] 13/16 capas calibradas (linear mode, 4160 params cada)
-- [ ] 2 capas restantes: L13, L14 (entrenando)
-- [ ] Calibrar L9, L10, L11, L13, L14 (automatico tras training)
-- [ ] 16/16 PPL evaluation: target <15% PPL degradation
-- [ ] Script: `python scripts/eval_all_16_layers.py --model-dir <path>`
+- [x] 5 capas originales (0,4,8,12,15): PPL +4.2% (re-train) / +4.8% (original)
+- [x] 11 capas adicionales: 1,2,3,5,6,7,9,10,11,13,14
+- [x] **16/16 capas entrenadas** (EnhancedBVHRouter, 1.35M params cada)
+- [x] **16/16 capas calibradas** (Linear 64x64, 4160 params cada, cosine >0.94)
+- [x] Checkpoint validator: `python scripts/validate_checkpoints.py`
+- [x] **16/16 PPL evaluation: PPL = 8.38 (+17.3% vs baseline 7.15)**
+- [ ] Target: <15% PPL degradation — actual 17.3%, needs optimization
 
 ### Recuperacion de datos (2026-03-28)
 
@@ -526,12 +535,12 @@ Los **deltas relativos son comparables** y de hecho mejores gracias a calibracio
 - PPL 6.16 (+0.8%) con 1 capa, 6.40 (+4.8%) con 5 capas
 - Pipeline completo: extract → train → calibrate → eval
 
-**Paso 2 — 16/16 capas** [🔄 EN PROGRESO — 14/16]
-- ✅ Re-generar checkpoints (perdidos 28-Mar): `bash scripts/regenerate_all.sh` — COMPLETADO
-- ✅ 5 capas validadas: PPL +4.2% (mejor que original +4.8%)
-- ✅ 14 capas entrenadas: L0-10, L12, L15. Pendientes: L11, L13, L14
-- 🔄 Script automatico: `bash scripts/train_remaining_layers.sh` (corriendo en WSL)
-- Target: PPL delta <15%
+**Paso 2 — 16/16 capas** [COMPLETADO]
+- Re-generar checkpoints (perdidos 28-Mar): `bash scripts/regenerate_all.sh`
+- 5 capas validadas: PPL +4.2% (mejor que original +4.8%)
+- **16/16 capas entrenadas y calibradas**
+- Avg accuracy: 82.4% top-8, 80.3% top-1
+- **16/16 PPL = 8.38 (+17.3%)** — all 16 linear gates replaced with BVH routers
 
 **Paso 2b — Arreglar demo** [✅ FIX APLICADO — PENDIENTE VERIFICACION]
 - `real_model_demo.py` tenia routing colapsado (todos Expert #11) por calibracion faltante

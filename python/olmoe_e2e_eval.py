@@ -86,23 +86,43 @@ class BVHGateWrapper(nn.Module):
 
     def forward(self, hidden_states: torch.Tensor):
         """
-        Returns raw logits (pre-softmax) — OLMoE's SparseMoeBlock applies
-        softmax, topk, and norm_topk_prob internally.
+        Returns (router_logits, top_k_weights, top_k_index) to match
+        OlmoeTopKRouter interface in transformers >=5.x.
+
+        For transformers <5.x compatibility, callers that expect a single
+        tensor can use result[0] or result directly (duck-typed).
         """
+        hidden_dim = hidden_states.shape[-1]
+        h2d = hidden_states.reshape(-1, hidden_dim)
+
         with torch.no_grad():
             if self.calibration_mode == "affine":
-                self.router(hidden_states.float())
+                self.router(h2d.float())
                 raw_logits = self.router._last_logits
                 logits = raw_logits * self.cal_scale + self.cal_bias
             elif self.calibration_mode == "linear":
-                self.router(hidden_states.float())
+                self.router(h2d.float())
                 raw_logits = self.router._last_logits
                 logits = self.cal_linear(raw_logits)
             else:
-                self.router(hidden_states.float())
+                self.router(h2d.float())
                 logits = self.router._last_logits
 
-        return logits.to(hidden_states.dtype)
+        logits = logits.to(hidden_states.dtype)
+
+        # Compute softmax + top-k (matching OlmoeTopKRouter behavior)
+        router_probs = F.softmax(logits, dtype=torch.float, dim=-1)
+        top_k_weights, top_k_index = torch.topk(
+            router_probs, self.top_k, dim=-1
+        )
+        if not self.norm_topk_prob:
+            top_k_weights = top_k_weights  # raw weights, no normalization
+        else:
+            top_k_weights = top_k_weights / top_k_weights.sum(
+                dim=-1, keepdim=True
+            )
+
+        return router_probs, top_k_weights.to(hidden_states.dtype), top_k_index
 
 
 # ─────────────────────────────────────────────────────────────────

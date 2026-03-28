@@ -18,6 +18,30 @@ Tipos: `[DECISIÓN]` | `[FALLO]` | `[ALTERNATIVA]` | `[BLOQUEANTE]` | `[VALIDADO
 
 ---
 
+## Sesion 2026-03-28g — 16/16 PPL evaluation, transformers 5.4.0 API fix
+
+### [2026-03-28] [VALIDADO] 16/16 BVH Router PPL = 8.38 (+17.3% vs baseline 7.15)
+
+**Contexto:** Evaluacion end-to-end reemplazando los 16 gates lineales de OLMoE-1B-7B con BVH Routers geometricos (EnhancedBVHRouter 4x4x4, 1.35M params cada).
+
+**Resultado:** PPL 8.38 con 16/16 capas. Degradacion +17.3% vs baseline 7.15. La degradacion es superlineal: +0.6% (1 capa), +4.2% (5 capas), +17.3% (16 capas) — promedio ~1.08% por capa pero las ultimas capas acumulan mas error.
+
+**Significado:** El BVH Router geometrico puede reemplazar TODOS los gates lineales de un MoE real con degradacion controlada. Para produccion, las capas mas sensibles podrian conservar el gate lineal (modo hibrido).
+
+**Archivos:** `scripts/eval_all_16_layers.py`, `python/olmoe_e2e_eval.py`
+
+### [2026-03-28] [FALLO] transformers 5.4.0 cambia API de OlmoeTopKRouter.forward()
+
+**Contexto:** `BVHGateWrapper.forward()` retornaba un unico tensor (logits), pero transformers 5.4.0 espera 3-tuple `(router_logits, top_k_weights, top_k_index)` en `OlmoeSparseMoeBlock.forward()`.
+
+**Error:** `ValueError: too many values to unpack (expected 3)` en `modeling_olmoe.py:371`
+
+**Fix:** Actualizar `BVHGateWrapper.forward()` para computar softmax + top-k internamente y retornar 3-tuple compatible. Mismo fix aplicado a `IdentityGateWrapper`. El parametro `norm_topk_prob=False` de OLMoE se respeta en el wrapper.
+
+**Impacto:** `python/olmoe_e2e_eval.py` — cualquier version de transformers >=5.x requiere este fix.
+
+---
+
 ## Sesion 2026-03-28f — Batch calibration, L11-14 training, FASE 6 async pipeline
 
 ### [2026-03-28] [FALLO] Unicode arrows crash calibrate_router.py on Windows cp1252

@@ -92,9 +92,9 @@ def table_2_ppl_comparison() -> str:
     lines.append("| OLMoE-1B-7B baseline (linear gate) | 7.15 | -- | 0/16 |")
     lines.append("| BVH Router 1 layer (L8) | 7.19 | **+0.6%** | 1/16 |")
     lines.append("| BVH Router 5 layers (L0,4,8,12,15) | 7.45 | **+4.2%** | 5/16 |")
-    lines.append("| BVH Router 16 layers (all) | TBD | **~13% est.** | 16/16 |")
+    lines.append("| BVH Router 16 layers (all) | 8.38 | **+17.3%** | 16/16 |")
     lines.append("")
-    lines.append("*Linear degradation ~0.84% per layer. "
+    lines.append("*Degradation ~1.08% per layer (superlinear at higher counts). "
                  "Calibration: Linear(64,64) = 4,160 params per layer.*")
     return "\n".join(lines)
 
