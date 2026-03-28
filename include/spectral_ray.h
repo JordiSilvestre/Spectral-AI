@@ -47,6 +47,8 @@
  */
 
 #pragma once
+#ifndef LIQUIDBIT_SPECTRAL_RAY_H_
+#define LIQUIDBIT_SPECTRAL_RAY_H_
 
 #include <cuda_runtime.h>
 #include <cuda_fp16.h>

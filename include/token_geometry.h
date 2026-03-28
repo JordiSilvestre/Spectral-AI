@@ -10,6 +10,8 @@
  */
 
 #pragma once
+#ifndef LIQUIDBIT_TOKEN_GEOMETRY_H_
+#define LIQUIDBIT_TOKEN_GEOMETRY_H_
 
 #include <cuda_runtime.h>
 #include <optix.h>

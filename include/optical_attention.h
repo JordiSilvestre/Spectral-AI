@@ -10,6 +10,8 @@
  */
 
 #pragma once
+#ifndef LIQUIDBIT_OPTICAL_ATTENTION_H_
+#define LIQUIDBIT_OPTICAL_ATTENTION_H_
 
 #include "token_geometry.h"
 #include "semantic_bvh.h"

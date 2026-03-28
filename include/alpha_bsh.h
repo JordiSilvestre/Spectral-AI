@@ -34,6 +34,8 @@
  */
 
 #pragma once
+#ifndef LIQUIDBIT_ALPHA_BSH_H_
+#define LIQUIDBIT_ALPHA_BSH_H_
 
 #include <optix.h>
 #include <cuda_runtime.h>

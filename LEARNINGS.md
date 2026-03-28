@@ -59,6 +59,29 @@ Tipos: `[DECISIÓN]` | `[FALLO]` | `[ALTERNATIVA]` | `[BLOQUEANTE]` | `[VALIDADO
 
 **Archivos afectados:** `python/real_model_demo.py`
 
+### [2026-03-28] [BLOQUEANTE] OptiX shaders no compilan — requiere migración a SDK 9.1
+
+**Contexto:** CMakeLists.txt actualizado para OptiX 9.1 + sm_120. Configure OK, pero build falla con ~50 errores.
+
+**Errores principales (5 categorías):**
+1. **`float3` redefinida** — `token_geometry.h` define struct float3 que colisiona con CUDA `vector_types.h`. Fix: eliminar el fallback float3, usar solo `#include <vector_types.h>`
+2. **`AttentionResult` incompleta** — los shaders usan `query_token_id`, `hit_count`, `total_attention`, `top_token_ids`, `top_attention_weights` pero el struct en `optical_attention.h` no los tiene
+3. **`RayPayload` no definida** — usada en ray_generation.cu y ray_attention.cu pero no existe en ningún header
+4. **`optixTrace` API cambió en SDK 9.1** — ahora usa typed payloads (`Payload&...`) en vez de uint32_t. Requiere migrar a `optixTrace(handle, origin, dir, tmin, tmax, time, mask, flags, sbtOffset, sbtStride, missSbtIdx, payload0, payload1, ...)` con references
+5. **Constantes faltantes** — `LIQUIDBIT_MAX_TOP_TOKENS`, `LIQUIDBIT_ENERGY_THRESHOLD`, `LIQUIDBIT_MAX_SEQUENCE_LENGTH`, `OptixAccelStruct`
+
+**Plan de fix (estimado ~3-4 horas):**
+1. Eliminar float3 fallback de token_geometry.h (usar CUDA's)
+2. Añadir miembros faltantes a AttentionResult
+3. Crear struct RayPayload en un header compartido
+4. Migrar optixTrace calls al API de OptiX 9.1 (typed payloads)
+5. Definir constantes faltantes en un header de config
+6. Verificar semantic_bvh.h: OptixAccelStruct → OptixTraversableHandle
+
+**Prioridad:** MEDIA — No bloquea FASE 3 (16/16 capas OLMoE). Hacer en sesión dedicada.
+
+**Archivos afectados:** `cuda/ray_generation.cu`, `cuda/closest_hit.cu`, `cuda/miss.cu`, `cuda/ray_attention.cu`, `include/token_geometry.h`, `include/optical_attention.h`, `include/semantic_bvh.h`
+
 ### [2026-03-28] [VALIDADO] Ternary POPCOUNT extension — correcta pero más lenta que F.linear
 
 **Contexto:** El kernel ternario POPCOUNT compila y produce resultados correctos (max diff 0.000031 vs PyTorch).

@@ -206,19 +206,19 @@ if(LIQUIDBIT_BUILD_OPTIX AND OptiX_INCLUDE_DIR)
         list(APPEND PTX_FILES ${PTX_FILE})
 
         add_custom_command(
-            OUTPUT ${PTX_FILE}
-            COMMAND ${CUDAToolkit_NVCC_EXECUTABLE}
+            OUTPUT "${PTX_FILE}"
+            COMMAND "${CUDAToolkit_NVCC_EXECUTABLE}"
                 --ptx
                 -O3
                 --use_fast_math
                 -std=c++17
-                -I${CMAKE_CURRENT_SOURCE_DIR}/include
-                -I${OptiX_INCLUDE_DIR}
-                -I${CUDAToolkit_INCLUDE_DIRS}
+                "-I${CMAKE_CURRENT_SOURCE_DIR}/include"
+                "-I${OptiX_INCLUDE_DIR}"
+                "-I${CUDAToolkit_INCLUDE_DIRS}"
                 -gencode=arch=compute_89,code=compute_89
-                ${OPTIX_SHADER_DIR}/${SHADER}
-                -o ${PTX_FILE}
-            DEPENDS ${OPTIX_SHADER_DIR}/${SHADER}
+                "${OPTIX_SHADER_DIR}/${SHADER}"
+                -o "${PTX_FILE}"
+            DEPENDS "${OPTIX_SHADER_DIR}/${SHADER}"
             COMMENT "Compiling OptiX shader ${SHADER} -> ${SHADER_NAME}.ptx"
             VERBATIM
         )
@@ -228,17 +228,17 @@ if(LIQUIDBIT_BUILD_OPTIX AND OptiX_INCLUDE_DIR)
     add_custom_target(optix_ptx ALL DEPENDS ${PTX_FILES})
     message(STATUS "Created target: optix_ptx (${OPTIX_SHADERS})")
 
-    # ── Combined PTX for optix_router_bridge.py ──────────────────
-    # Concatenate all PTX into a single file for the Python bridge
-    set(COMBINED_PTX ${CMAKE_BINARY_DIR}/liquidbit_kernels.ptx)
+    # ── Copy PTX to build root for easy access ─────────────────
+    # The Python bridge (optix_router_bridge.py) loads PTX from build/
+    set(COMBINED_PTX "${CMAKE_BINARY_DIR}/liquidbit_kernels.ptx")
     add_custom_command(
-        OUTPUT ${COMBINED_PTX}
-        COMMAND ${CMAKE_COMMAND} -E cat ${PTX_FILES} > ${COMBINED_PTX}
+        OUTPUT "${COMBINED_PTX}"
+        COMMAND ${CMAKE_COMMAND} -E copy "${PTX_OUTPUT_DIR}/ray_generation.ptx" "${COMBINED_PTX}"
         DEPENDS ${PTX_FILES}
-        COMMENT "Combining PTX shaders into liquidbit_kernels.ptx"
+        COMMENT "Copying ray_generation.ptx as liquidbit_kernels.ptx"
         VERBATIM
     )
-    add_custom_target(combined_ptx ALL DEPENDS ${COMBINED_PTX})
+    add_custom_target(combined_ptx ALL DEPENDS "${COMBINED_PTX}")
 
     # ── OptiX host code library ──────────────────────────────────
     add_library(liquidbit_optix STATIC

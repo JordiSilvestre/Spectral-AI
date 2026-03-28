@@ -11,6 +11,8 @@
  */
 
 #pragma once
+#ifndef LIQUIDBIT_SEMANTIC_BVH_H_
+#define LIQUIDBIT_SEMANTIC_BVH_H_
 
 #include "token_geometry.h"
 #include <cuda_runtime.h>
