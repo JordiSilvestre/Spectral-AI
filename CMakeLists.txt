@@ -365,8 +365,26 @@ if(LIQUIDBIT_BUILD_TESTS AND NOT MSVC)
 
     message(STATUS "Created target: liquidbit_benchmark")
 
+    # Test: OptiX RT pipeline integration test
+    add_executable(test_optix_pipeline tests/test_optix_pipeline.cpp)
+
+    target_include_directories(test_optix_pipeline PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/include
+        ${CUDAToolkit_INCLUDE_DIRS}
+        ${OptiX_INCLUDE}
+    )
+
+    target_link_libraries(test_optix_pipeline
+        liquidbit_core
+        CUDA::cudart
+        CUDA::cuda_driver
+    )
+
+    message(STATUS "Created target: test_optix_pipeline")
+
     enable_testing()
     add_test(NAME BenchmarkRayTracing COMMAND liquidbit_benchmark)
+    add_test(NAME OptixPipeline COMMAND test_optix_pipeline)
 endif()
 
 # ============================================================================
