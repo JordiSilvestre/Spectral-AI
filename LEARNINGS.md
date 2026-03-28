@@ -18,6 +18,60 @@ Tipos: `[DECISIÓN]` | `[FALLO]` | `[ALTERNATIVA]` | `[BLOQUEANTE]` | `[VALIDADO
 
 ---
 
+## 🔥 Sesión 2026-03-28b — Tests manuales y 11 capas restantes
+
+### [2026-03-28] [VALIDADO] Tests manuales post-recuperación — Resultados
+
+**Contexto:** Batería de tests manuales para verificar que los archivos regenerados funcionan.
+
+| Test | Resultado | Notas |
+|------|-----------|-------|
+| Kernel CUDA compila (`build_ext.py`) | ✅ OK | sm_120 (RTX 5070 Ti), 23.6 μs/iter |
+| Import extension (`bvh_router_ext`) | ⚠️ JIT only | Normal — se carga via `torch.utils.cpp_extension.load()`, no como paquete |
+| Expert ternario (`build_ternary_ext.py`) | ✅ OK | Max diff vs F.linear: 0.000031, POPCOUNT funcional |
+| Demo (`real_model_demo.py`) | ❌ ROTO | Ver entrada siguiente |
+| PPL single-layer (L8) | ✅ +0.6% | Mejor que original (+0.8%) |
+| PPL multi-layer (5 capas) | ✅ +4.2% | Mejor que original (+4.8%) |
+
+**Fix menor aplicado:** `total_mem` → `total_memory` en `real_model_demo.py` (PyTorch 2.11 API change).
+
+### [2026-03-28] [FALLO] real_model_demo.py regenerado — routing y output rotos
+
+**Contexto:** `real_model_demo.py` fue regenerado por agente desde la documentación y `bvh_torch_ext.cu` tras la pérdida de archivos. No es una copia exacta del original.
+
+**Síntomas:**
+1. **Routing colapsado** — TODOS los prompts van a Expert #11, Path [0,0,0]. El router no discrimina entre inputs diferentes.
+2. **Output gibberish** — texto completamente incoherente (mezcla de idiomas, caracteres random)
+3. **Velocidad inflada** — 316.8 tok/s (vs original 51.9 tok/s) porque no hay routing real
+4. **VRAM diferente** — 152x reducción (vs original 375x) por dimensiones de experto distintas (Qwen: 1536→8960 vs original)
+
+**Resultados originales (pre-pérdida):**
+- 6/6 prompts generaban código coherente (Fibonacci, Quicksort, hash tables, etc.)
+- 51.9 tok/s
+- 375x reducción VRAM (7.86 MB activo vs 2944 MB full model)
+
+**Causa raíz probable:**
+- El router se construye genérico (no entrenado para las MLPs de Qwen)
+- La lógica de selección de experto puede diferir del original
+- El pipeline de generación token-a-token puede tener bugs en el archivo regenerado
+
+**Prioridad:** MEDIA — No bloquea FASE 3 (OLMoE). Arreglar después de completar 16/16 capas.
+
+**Archivos afectados:** `python/real_model_demo.py`
+
+### [2026-03-28] [VALIDADO] Ternary POPCOUNT extension — correcta pero más lenta que F.linear
+
+**Contexto:** El kernel ternario POPCOUNT compila y produce resultados correctos (max diff 0.000031 vs PyTorch).
+
+**Benchmark (1024→2048→1024, batch=4):**
+- Ternary POPCOUNT: 189.5 μs/iter
+- PyTorch F.linear: 76.8 μs/iter
+- Speedup: **0.4x** (más lento)
+
+**Nota:** En batch=4 el overhead del kernel domina. Con batch más grande el POPCOUNT debería escalar mejor (operaciones bitwise vs FP multiply). El valor real es **zero FP multiply** y menor consumo energético, no velocidad pura en batch pequeño.
+
+---
+
 ## 🔥 Sesión 2026-03-28 — Fixes Críticos y FASE 3
 
 ### [2026-03-28] [FALLO] norm_topk_prob=False — Causa raíz del gap PPL 7.67→6.11
