@@ -1,0 +1,61 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+dist/
+*.egg
+
+# C++ / CUDA build
+build/
+*.obj
+*.pdb
+*.ilk
+*.exp
+*.lib
+*.dll
+*.exe
+*.ptx
+*.cubin
+*.fatbin
+
+# CMake
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+*.cmake
+!CMakeLists.txt
+
+# Generated binaries / scene files
+python/scene.bin
+python/results.bin
+
+# IDE
+.vs/
+.vscode/
+*.suo
+*.user
+*.sdf
+
+# Claude Code local settings
+.claude/settings.local.json
+
+# WSL virtual environments
+.venv_wsl/
+
+# Large data files (re-generate with extract_real_hiddens.py)
+data/real_hiddens_*.pt
+data/*.npz
+data/moe_best.pt
+data/inception_best.pt
+data/liquidbit_lm_checkpoint.pt
+
+# Compiled shared objects
+*.so
+*.o
+
+# Environment
+.env

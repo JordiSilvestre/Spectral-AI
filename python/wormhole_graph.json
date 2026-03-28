@@ -1,0 +1,116 @@
+{
+  "spheres": [
+    {
+      "id": 0,
+      "name": "Programaci\u00f3n",
+      "position": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "id": 1,
+      "name": "M\u00fasica",
+      "position": [
+        5.0,
+        5.0,
+        0.0
+      ]
+    },
+    {
+      "id": 2,
+      "name": "F\u00edsica",
+      "position": [
+        5.0,
+        0.0,
+        5.0
+      ]
+    }
+  ],
+  "concepts": [
+    {
+      "name": "bucle",
+      "concept_id": 17,
+      "spheres": [
+        0,
+        1
+      ],
+      "decision": "WORMHOLE",
+      "dupl_score": -1.7008014567226262,
+      "memory_delta_kb": -1.984375,
+      "wormhole_edges": [
+        {
+          "from_sphere": 0,
+          "to_sphere": 1,
+          "cost_bytes": 16
+        }
+      ]
+    },
+    {
+      "name": "energ\u00eda",
+      "concept_id": 18,
+      "spheres": [
+        1,
+        2
+      ],
+      "decision": "WORMHOLE",
+      "dupl_score": -1.7125243163243635,
+      "memory_delta_kb": -1.984375,
+      "wormhole_edges": [
+        {
+          "from_sphere": 1,
+          "to_sphere": 2,
+          "cost_bytes": 16
+        }
+      ]
+    },
+    {
+      "name": "frecuencia",
+      "concept_id": 19,
+      "spheres": [
+        0,
+        1,
+        2
+      ],
+      "decision": "WORMHOLE",
+      "dupl_score": -4.520427057386779,
+      "memory_delta_kb": -4.96875,
+      "wormhole_edges": [
+        {
+          "from_sphere": 0,
+          "to_sphere": 1,
+          "cost_bytes": 16
+        },
+        {
+          "from_sphere": 0,
+          "to_sphere": 2,
+          "cost_bytes": 16
+        },
+        {
+          "from_sphere": 1,
+          "to_sphere": 2,
+          "cost_bytes": 16
+        }
+      ]
+    },
+    {
+      "name": "amplitud",
+      "concept_id": 20,
+      "spheres": [
+        1,
+        2
+      ],
+      "decision": "WORMHOLE",
+      "dupl_score": -1.7273517696467664,
+      "memory_delta_kb": -1.984375,
+      "wormhole_edges": [
+        {
+          "from_sphere": 1,
+          "to_sphere": 2,
+          "cost_bytes": 16
+        }
+      ]
+    }
+  ]
+}

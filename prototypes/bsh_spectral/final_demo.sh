@@ -1,0 +1,20 @@
+#!/bin/bash
+
+echo "╔══════════════════════════════════════════════════════════════════════╗"
+echo "║    LiquidBit Zero-Matrix — W_dispersion Training DEMO               ║"
+echo "║    Reproduce completamente el entrenamiento en 2 pasos              ║"
+echo "╚══════════════════════════════════════════════════════════════════════╝"
+echo ""
+echo "PASO 1: Entrenar W_dispersion"
+echo "─────────────────────────────"
+echo ""
+python3 train_dispersion.py 2>&1 | head -30
+echo ""
+echo "[... rest omitted for brevity ...]"
+echo ""
+echo "PASO 2: Validar pesos entrenados"
+echo "────────────────────────────────"
+echo ""
+python3 test_trained_weights.py 2>&1 | grep -A 20 "COMPARACIÓN"
+echo ""
+echo "✅ DEMO COMPLETADA"
