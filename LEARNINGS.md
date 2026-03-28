@@ -18,7 +18,51 @@ Tipos: `[DECISIÓN]` | `[FALLO]` | `[ALTERNATIVA]` | `[BLOQUEANTE]` | `[VALIDADO
 
 ---
 
-## 🔥 Sesión 2026-03-28e — OptiX RT Router shaders, routing benchmark, 14/16 layers
+## Sesion 2026-03-28f — Batch calibration, L11-14 training, FASE 6 async pipeline
+
+### [2026-03-28] [FALLO] Unicode arrows crash calibrate_router.py on Windows cp1252
+
+**Contexto:** `calibrate_router.py` usaba caracteres Unicode (flecha) en `print()` que fallan en Windows cp1252 encoding. El crash ocurria DESPUES de computar la calibracion pero ANTES de guardar el checkpoint — perdiendo la calibracion calculada.
+
+**Fix dual:**
+1. Reemplazar `->` por `->` en todos los print statements
+2. Mover `torch.save()` ANTES de `evaluate_calibration()` para que la calibracion se guarde aunque falle el print
+
+**Leccion:** En scripts que escriben a disco, siempre guardar ANTES de prints opcionales.
+
+### [2026-03-28] [FALLO] Training scripts usan WSL path en Windows
+
+**Contexto:** `olmoe_bvh_distill.py` tenia default `--model-dir=/mnt/j/...` (WSL path). Cuando se ejecuta desde Windows Python, el path no existe.
+
+**Fix:** Auto-detect OS con `os.name == "nt"` y usar path Windows vs WSL.
+
+### [2026-03-28] [MEJORA] Batch calibration + training scripts
+
+Creados 3 scripts de automatizacion:
+- `scripts/calibrate_all_layers.py` — Calibra todos los layers sin calibracion
+- `scripts/train_missing_layers.py` — Entrena layers faltantes + calibra
+- `scripts/eval_all_16_layers.py` — Genera --multi-layer arg y ejecuta 16/16 eval
+
+### [2026-03-28] [DECISION] Async Pipeline FASE 6 — tri-core overlap design
+
+**Concepto:** Triple buffer con 3 CUDA streams a diferentes prioridades:
+- Stream 0 (alta): RT Core routing
+- Stream 1 (media): Scatter + calibracion (CUDA Cores)
+- Stream 2 (baja): Expert forward (Tensor Cores via cuBLAS)
+
+Steady-state: latencia = max(route, prep, expert) en vez de sum.
+Archivos: `cuda/async_pipeline.cu`, `python/async_pipeline_bridge.py`
+
+### [2026-03-28] [MEJORA] RT Router Python bridge
+
+`python/rt_router_bridge.py` — Bridge especializado para el RT Core Router.
+Extrae posiciones 3D de expertos del checkpoint entrenado, permite routing via:
+1. RT Cores (ctypes a libreria compilada, cuando disponible)
+2. 3D PCA + nearest-neighbor (fallback puro Python)
+
+---
+
+## Sesion 2026-03-28e — OptiX RT Router shaders, routing benchmark, 14/16 layers
 
 ### [2026-03-28] [DECISIÓN] OptiX RT Router: separate minimal pipeline for expert selection
 

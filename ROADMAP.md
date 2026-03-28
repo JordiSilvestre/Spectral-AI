@@ -155,20 +155,26 @@ fine-tuning con datos suficientes o expertos pre-entrenados (→ OLMoE approach)
 
 ---
 
-## FASE 6 — Pipeline Asincrono Completo [PENDIENTE]
+## FASE 6 — Pipeline Asincrono Completo [EN PROGRESO — DISEÑO COMPLETADO]
 
 **Objetivo:** Coreografia del silicio — RT Cores + CUDA Cores + Tensor Cores
 trabajando en paralelo.
 
 **El concepto:**
 ```
-Token N:   [RT Core: RUTA] → [Tensor Core: GENERA]
-Token N+1:              [RT Core: RUTA] → [Tensor Core: GENERA]
-                                    ↑ overlap ↑
+Token N:   [RT Core: RUTA] -> [Tensor Core: GENERA]
+Token N+1:              [RT Core: RUTA] -> [Tensor Core: GENERA]
+                                    ^ overlap ^
 ```
 
-**Tareas:**
-- [ ] Integrar `async_pipeline.cu` (triple buffer, 3 streams con prioridades)
+**Diseño completado (2026-03-28f):**
+- [x] `cuda/async_pipeline.cu` — Triple buffer CUDA kernel con 3 streams priorizados
+- [x] `python/async_pipeline_bridge.py` — Simulador Python para validacion de correctness
+- [x] Kernels: scatter_by_expert, weighted_combine, apply_calibration, softmax_topk
+- [x] Benchmark function: `benchmark_async_pipeline()` con synthetic data
+
+**Tareas pendientes:**
+- [ ] Integrar con optixLaunch() real (actualmente placeholder en stage_route)
 - [ ] Device-side expert dispatch (zero host synchronization)
 - [ ] Medir latencia total: routing(8us) + expert_forward(?) + overlap
 - [ ] CUDA Graph capture para pipeline completo
@@ -484,13 +490,15 @@ python python/olmoe_e2e_eval.py --model-dir /path/to/olmoe-1b-7b \
 **Archivos:** `python/extract_real_hiddens.py`, `python/olmoe_bvh_distill.py`,
 `python/calibrate_router.py`, `python/olmoe_e2e_eval.py`
 
-### Estado actual: FASE 3 — Multi-layer (14/16 capas)
+### Estado actual: FASE 3 — Multi-layer (14/16 capas, 13/16 calibradas)
 
 - [x] 5 capas reemplazadas (0,4,8,12,15): PPL +4.2% (re-train) / +4.8% (original)
-- [x] 9 capas adicionales entrenadas: 1,2,3,5,6,7,9,10 → checkpoints en `checkpoints/olmoe_distill_layer*/`
-- [ ] 3 capas restantes: L11, L13, L14 → `bash scripts/train_remaining_layers.sh` (corriendo)
-- [ ] Calibrar 16 routers (Step 3 automatico tras training)
+- [x] 9 capas adicionales entrenadas: 1,2,3,5,6,7,9,10,11
+- [x] 13/16 capas calibradas (linear mode, 4160 params cada)
+- [ ] 2 capas restantes: L13, L14 (entrenando)
+- [ ] Calibrar L9, L10, L11, L13, L14 (automatico tras training)
 - [ ] 16/16 PPL evaluation: target <15% PPL degradation
+- [ ] Script: `python scripts/eval_all_16_layers.py --model-dir <path>`
 
 ### Recuperacion de datos (2026-03-28)
 

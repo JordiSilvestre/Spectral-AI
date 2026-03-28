@@ -204,7 +204,7 @@ def evaluate_calibration(
         gate_p.float().flatten().unsqueeze(0),
         probs_cal.float().flatten().unsqueeze(0),
     ).item()
-    print(f"\n  Full distribution cosine: raw={cos_raw:.4f} → calibrated={cos_cal:.4f}")
+    print(f"\n  Full distribution cosine: raw={cos_raw:.4f} -> calibrated={cos_cal:.4f}")
 
     # Top-8 overlap
     overlap_raw = 0
@@ -213,7 +213,7 @@ def evaluate_calibration(
         g_set = set(gate_top8_ids[i].tolist())
         overlap_raw += len(g_set & set(raw_top8_ids[i].tolist())) / 8
         overlap_cal += len(g_set & set(cal_top8_ids[i].tolist())) / 8
-    print(f"  Top-8 overlap: raw={overlap_raw/n_samples*100:.1f}% → calibrated={overlap_cal/n_samples*100:.1f}%")
+    print(f"  Top-8 overlap: raw={overlap_raw/n_samples*100:.1f}% -> calibrated={overlap_cal/n_samples*100:.1f}%")
 
 
 def main():
@@ -273,11 +273,7 @@ def main():
         batch_size=args.batch_size, device=args.device,
     )
 
-    # Evaluate
-    print("\n[4/4] Evaluating calibration quality...")
-    evaluate_calibration(router, cal_data, hidden_states, gate_probs, args.device)
-
-    # Save to checkpoint
+    # Save to checkpoint (before evaluation to avoid losing data on print errors)
     ckpt["calibration_mode"] = cal_data["mode"]
     ckpt["calibration_state"] = {k: v.cpu() for k, v in cal_data["state"].items()}
     # Keep backward compat: also save as scale/bias if affine
@@ -292,6 +288,10 @@ def main():
     save_path = args.router_checkpoint
     torch.save(ckpt, save_path)
     print(f"\n  Saved {cal_data['mode']} calibration ({cal_data['n_params']:,} params) to {save_path}")
+
+    # Evaluate (optional — print quality metrics)
+    print("\n[4/4] Evaluating calibration quality...")
+    evaluate_calibration(router, cal_data, hidden_states, gate_probs, args.device)
 
 
 if __name__ == "__main__":
