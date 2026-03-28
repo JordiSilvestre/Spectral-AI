@@ -14,44 +14,40 @@
 #define LIQUIDBIT_TOKEN_GEOMETRY_H_
 
 #include <cuda_runtime.h>
+#include <cuda_fp16.h>
 #include <optix.h>
 #include <cstdint>
 #include <array>
 
 // ============================================================================
-// CUDA float3 helper (fallback si no está disponible en headers de CUDA)
+// float3 arithmetic operators (CUDA's vector_types.h defines float3 as a plain
+// C struct without operators; we provide them here as inline free functions.)
+//
+// The __host__ __device__ qualifiers are only valid under nvcc. Under MSVC
+// (pure C++ compilation of .cpp files), we omit them.
 // ============================================================================
 
-#ifndef __CUDA_INTERNAL_COMPILATION__
-    #ifndef float3
-    struct float3 {
-        float x, y, z;
-
-        __host__ __device__ float3() : x(0.0f), y(0.0f), z(0.0f) {}
-        __host__ __device__ float3(float x_, float y_, float z_) : x(x_), y(y_), z(z_) {}
-
-        __host__ __device__ float3 operator+(const float3& v) const {
-            return float3(x + v.x, y + v.y, z + v.z);
-        }
-
-        __host__ __device__ float3 operator-(const float3& v) const {
-            return float3(x - v.x, y - v.y, z - v.z);
-        }
-
-        __host__ __device__ float3 operator*(float s) const {
-            return float3(x * s, y * s, z * s);
-        }
-
-        __host__ __device__ float dot(const float3& v) const {
-            return x * v.x + y * v.y + z * v.z;
-        }
-
-        __host__ __device__ float length() const {
-            return sqrtf(x * x + y * y + z * z);
-        }
-    };
-    #endif
+#ifdef __CUDACC__
+#  define LIQUIDBIT_HD __host__ __device__
+#else
+#  define LIQUIDBIT_HD
 #endif
+
+LIQUIDBIT_HD inline float3 operator+(const float3& a, const float3& b) {
+    return make_float3(a.x + b.x, a.y + b.y, a.z + b.z);
+}
+
+LIQUIDBIT_HD inline float3 operator-(const float3& a, const float3& b) {
+    return make_float3(a.x - b.x, a.y - b.y, a.z - b.z);
+}
+
+LIQUIDBIT_HD inline float3 operator*(const float3& a, float s) {
+    return make_float3(a.x * s, a.y * s, a.z * s);
+}
+
+LIQUIDBIT_HD inline float3 operator*(float s, const float3& a) {
+    return make_float3(s * a.x, s * a.y, s * a.z);
+}
 
 // ============================================================================
 // Constantes globales de LiquidBit Zero-Matrix
@@ -68,6 +64,28 @@ constexpr float LIQUIDBIT_LAMBDA = 0.1f;
 
 /// Dimensión de la compresión PCA proyectada al espacio 3D
 constexpr uint32_t LIQUIDBIT_SPATIAL_DIM = 3;
+
+/// Número máximo de tokens en una secuencia de entrada
+constexpr uint32_t LIQUIDBIT_MAX_SEQUENCE_LENGTH = 131072;
+
+/// Umbral de energía mínima del rayo para continuar la traversal
+constexpr float LIQUIDBIT_ENERGY_THRESHOLD = 0.01f;
+
+/// Número máximo de tokens en el top-K por rayo (para resultados de atención)
+constexpr uint32_t LIQUIDBIT_MAX_TOP_TOKENS = 64;
+
+// ============================================================================
+// Macro de diagnóstico (host-side, no lanza excepción para no interrumpir GPU)
+// ============================================================================
+#ifndef LIQUIDBIT_CHECK
+#  include <cstdio>
+#  define LIQUIDBIT_CHECK(expr) \
+     do { \
+         if (!(expr)) { \
+             fprintf(stderr, "LIQUIDBIT_CHECK failed at %s:%d\n", __FILE__, __LINE__); \
+         } \
+     } while (0)
+#endif
 
 // ============================================================================
 // Estructura TokenNode: Representación geométrica de un token
@@ -206,13 +224,13 @@ struct TokenNode {
     // ========================================================================
 
     /// @brief Calcula el volumen del AABB del token.
-    __host__ __device__ float getAABBVolume() const {
+    LIQUIDBIT_HD float getAABBVolume() const {
         float3 size = aabb_max - aabb_min;
         return size.x * size.y * size.z;
     }
 
     /// @brief Comprueba si un punto está dentro del AABB.
-    __host__ __device__ bool containsPoint(const float3& p) const {
+    LIQUIDBIT_HD bool containsPoint(const float3& p) const {
         return (p.x >= aabb_min.x && p.x <= aabb_max.x) &&
                (p.y >= aabb_min.y && p.y <= aabb_max.y) &&
                (p.z >= aabb_min.z && p.z <= aabb_max.z);
@@ -315,7 +333,7 @@ struct SemanticRay {
  * @note Inline para uso en kernels CUDA sin overhead de llamada.
  * @note Esta distancia es un proxy de "irrelevancia semántica" en el espacio 3D.
  */
-__host__ __device__ inline float computeSemanticDistance(const float3& a, const float3& b) {
+LIQUIDBIT_HD inline float computeSemanticDistance(const float3& a, const float3& b) {
     float3 diff = a - b;
     return sqrtf(diff.x * diff.x + diff.y * diff.y + diff.z * diff.z);
 }
@@ -329,7 +347,7 @@ __host__ __device__ inline float computeSemanticDistance(const float3& a, const 
  *
  * @note Útil para comparaciones y búsquedas sin necesidad del valor exacto.
  */
-__host__ __device__ inline float computeSemanticDistanceSq(const float3& a, const float3& b) {
+LIQUIDBIT_HD inline float computeSemanticDistanceSq(const float3& a, const float3& b) {
     float3 diff = a - b;
     return diff.x * diff.x + diff.y * diff.y + diff.z * diff.z;
 }
@@ -345,7 +363,7 @@ __host__ __device__ inline float computeSemanticDistanceSq(const float3& a, cons
  * @note Fórmula clave del mecanismo de atención óptica.
  * @note El exponencial negativo asegura que distancias mayores → pesos menores.
  */
-__host__ __device__ inline float computeAttentionWeight(
+LIQUIDBIT_HD inline float computeAttentionWeight(
     float distance,
     float initial_energy = 1.0f,
     float lambda = LIQUIDBIT_LAMBDA) {

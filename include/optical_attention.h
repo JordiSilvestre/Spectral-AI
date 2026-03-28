@@ -119,8 +119,13 @@ struct AttentionConfig {
  * junto con sus pesos de atención normalizados.
  */
 struct AttentionResult {
-    /// Número máximo de resultados por consulta
+    /// Número máximo de resultados por consulta (alias de LIQUIDBIT_MAX_TOP_TOKENS)
     static constexpr uint32_t MAX_TOP_K = 64;
+
+    /**
+     * @brief ID del token query que originó esta consulta de atención.
+     */
+    uint32_t query_token_id;
 
     /**
      * @brief Array de índices de tokens en el top-K.
@@ -128,28 +133,33 @@ struct AttentionResult {
      * Contiene los token_ids de los tokens más relevantes encontrados
      * por los rayos. Los índices están ordenados por weight decreciente.
      *
-     * Rango válido: [0, num_hits - 1].
-     * Índices no utilizados: garbage (ignorar si idx >= num_hits).
+     * Rango válido: [0, hit_count - 1].
+     * Índices no utilizados: garbage (ignorar si idx >= hit_count).
      */
-    uint32_t top_k_tokens[MAX_TOP_K];
+    uint32_t top_token_ids[MAX_TOP_K];
 
     /**
      * @brief Pesos de atención normalizados para cada top-K token.
      *
-     * attention_weights[i] = peso normalizado para top_k_tokens[i].
-     * Suma: sum(attention_weights[0..num_hits-1]) ≈ 1.0 (si normalize=true).
+     * top_attention_weights[i] = peso normalizado para top_token_ids[i].
+     * Suma: sum(top_attention_weights[0..hit_count-1]) ≈ 1.0 (si normalize=true).
      *
      * Rango: [0.0, 1.0] (tipicamente).
      */
-    float attention_weights[MAX_TOP_K];
+    float top_attention_weights[MAX_TOP_K];
 
     /**
-     * @brief Número real de hits (tokens encontrados).
+     * @brief Número real de hits (tokens encontrados) acumulados por todos los rayos.
      *
      * Puede ser < MAX_TOP_K si hay pocos tokens relevantes en la secuencia.
      * Rango: [0, MAX_TOP_K].
      */
-    uint32_t num_hits;
+    uint32_t hit_count;
+
+    /**
+     * @brief Peso de atención total acumulado (suma bruta antes de normalización).
+     */
+    float total_attention;
 
     /**
      * @brief ID del rayo/query que generó este resultado.
@@ -166,6 +176,48 @@ struct AttentionResult {
      * Rango: [0.0, 1.0].
      */
     float final_energy;
+};
+
+// ============================================================================
+// RayPayload: Estado del rayo durante la traversal OptiX
+// ============================================================================
+
+/**
+ * @struct RayPayload
+ * @brief Estado del rayo propagado a través de los shaders OptiX.
+ *
+ * Este struct se divide en palabras de 32-bit que se pasan como payload
+ * en optixTrace(). Los shaders ClosestHit y Miss lo leen/modifican mediante
+ * optixGetPayload_N() / optixSetPayload_N().
+ *
+ * Palabras de payload usadas en optixTrace:
+ *   p0 = accumulated_attention (float bits como uint32)
+ *   p1 = energy_remaining      (float bits como uint32)
+ *   p2 = hit_count             (uint32 directo)
+ *   p3 = ray_origin_x          (float bits como uint32)
+ *   p4 = ray_origin_y          (float bits como uint32)
+ *   p5 = ray_origin_z          (float bits como uint32)
+ */
+struct RayPayload {
+    /// Peso de atención acumulado desde todos los hits previos
+    float    accumulated_attention;
+
+    /// Energía restante del rayo (decrece con cada hit)
+    float    energy_remaining;
+
+    /// Número de hits acumulados
+    uint32_t hit_count;
+
+    /// Origen del rayo (componentes almacenadas como bits de float para optixTrace)
+    uint32_t ray_origin_x;
+    uint32_t ray_origin_y;
+    uint32_t ray_origin_z;
+
+    /// Top tokens encontrados en este rayo (índices de token)
+    uint32_t top_tokens[LIQUIDBIT_MAX_TOP_TOKENS];
+
+    /// Pesos correspondientes a top_tokens
+    float    top_weights[LIQUIDBIT_MAX_TOP_TOKENS];
 };
 
 // ============================================================================

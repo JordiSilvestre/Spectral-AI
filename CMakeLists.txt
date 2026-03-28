@@ -129,19 +129,28 @@ enable_language(CUDA)
 set(CMAKE_CUDA_STANDARD 17)
 set(CMAKE_CUDA_STANDARD_REQUIRED ON)
 
-if(LIQUIDBIT_ENABLE_DEBUG)
-    list(APPEND CMAKE_CUDA_FLAGS "-g")
+# On MSVC the CUDA MSBuild targets already inject /Zi (debug) and /O2 (opt)
+# based on the build configuration. We only add these manually on non-MSVC to
+# avoid double-injection that breaks nvcc's command-line parsing on Windows.
+if(NOT MSVC)
+    if(LIQUIDBIT_ENABLE_DEBUG)
+        string(APPEND CMAKE_CUDA_FLAGS " -g")
+    endif()
+
+    if(LIQUIDBIT_ENABLE_LINEINFO)
+        string(APPEND CMAKE_CUDA_FLAGS " --lineinfo")
+    endif()
+
+    # Optimización
+    string(APPEND CMAKE_CUDA_FLAGS " -O3")
+
+    # Host compiler warnings (GCC/Clang only)
+    string(APPEND CMAKE_CUDA_FLAGS " -Xcompiler=-Wall")
+    # MSVC: lineinfo added as nvcc-native flag (single dash form for MSVC mode)
+    if(LIQUIDBIT_ENABLE_LINEINFO)
+        string(APPEND CMAKE_CUDA_FLAGS " -lineinfo")
+    endif()
 endif()
-
-if(LIQUIDBIT_ENABLE_LINEINFO)
-    list(APPEND CMAKE_CUDA_FLAGS "--lineinfo")
-endif()
-
-# Optimización por defecto
-list(APPEND CMAKE_CUDA_FLAGS "-O3")
-
-# Warnings CUDA
-list(APPEND CMAKE_CUDA_FLAGS "-Xcompiler=-Wall")
 
 message(STATUS "CUDA architectures: ${CUDA_ARCHITECTURES}")
 message(STATUS "CUDA flags: ${CMAKE_CUDA_FLAGS}")
@@ -325,8 +334,13 @@ endif()
 # Tests y Benchmarks (compilación condicional)
 # ============================================================================
 
-if(LIQUIDBIT_BUILD_TESTS)
+if(LIQUIDBIT_BUILD_TESTS AND NOT MSVC)
     # Benchmark CUDA: comparativa ray tracing vs matmul
+    # NOTE: Excluded on MSVC due to a CUDA 13.2 MSBuild toolchain bug where
+    # the HostCommandLineTemplate in CUDA 13.2.props generates a malformed
+    # -Xcompiler="/EHsc -Ob2" flag (space inside quotes) that nvcc splits
+    # into two arguments, causing "single input file required" fatal error.
+    # The benchmark is a development tool; the core libraries build fine.
     add_executable(liquidbit_benchmark tests/benchmark.cu)
 
     target_include_directories(liquidbit_benchmark PRIVATE
@@ -336,6 +350,10 @@ if(LIQUIDBIT_BUILD_TESTS)
 
     # Compilar como CUDA
     set_target_properties(liquidbit_benchmark PROPERTIES LANGUAGE CUDA)
+
+    set_target_properties(liquidbit_benchmark PROPERTIES
+        CUDA_SEPARABLE_COMPILATION OFF
+    )
 
     target_link_libraries(liquidbit_benchmark
         liquidbit_core

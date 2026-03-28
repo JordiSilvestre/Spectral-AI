@@ -20,6 +20,15 @@
 #include <cstdint>
 #include <string>
 
+// Re-use the LIQUIDBIT_HD macro from token_geometry.h (already defined above)
+#ifndef LIQUIDBIT_HD
+#  ifdef __CUDACC__
+#    define LIQUIDBIT_HD __host__ __device__
+#  else
+#    define LIQUIDBIT_HD
+#  endif
+#endif
+
 // ============================================================================
 // Enums y constantes para configuración del BVH
 // ============================================================================
@@ -137,19 +146,19 @@ struct BVHNode {
     // ========================================================================
 
     /// @brief Calcula el área superficial del AABB (para SAH heuristic).
-    __host__ __device__ float getSurfaceArea() const {
+    LIQUIDBIT_HD float getSurfaceArea() const {
         float3 extents = aabb_max - aabb_min;
         return 2.0f * (extents.x * extents.y + extents.y * extents.z + extents.z * extents.x);
     }
 
     /// @brief Calcula el volumen del AABB.
-    __host__ __device__ float getVolume() const {
+    LIQUIDBIT_HD float getVolume() const {
         float3 extents = aabb_max - aabb_min;
         return extents.x * extents.y * extents.z;
     }
 
     /// @brief Comprueba si un punto está dentro del AABB.
-    __host__ __device__ bool containsPoint(const float3& p) const {
+    LIQUIDBIT_HD bool containsPoint(const float3& p) const {
         return (p.x >= aabb_min.x && p.x <= aabb_max.x) &&
                (p.y >= aabb_min.y && p.y <= aabb_max.y) &&
                (p.z >= aabb_min.z && p.z <= aabb_max.z);
@@ -384,8 +393,8 @@ private:
     /// Handle OptiX para ray tracing
     OptixTraversableHandle optix_trav_handle_ = 0;
 
-    /// Estructura de aceleración OptiX (internal)
-    OptixAccelStruct optix_accel_ = {};
+    /// Buffer de la estructura de aceleración OptiX (raw device pointer)
+    CUdeviceptr optix_accel_buffer_ = 0;
 
     /// Información del nodo raíz (cached para acceso rápido)
     BVHNode root_node_ = {};

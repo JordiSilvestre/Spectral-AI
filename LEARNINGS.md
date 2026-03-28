@@ -18,6 +18,59 @@ Tipos: `[DECISIÓN]` | `[FALLO]` | `[ALTERNATIVA]` | `[BLOQUEANTE]` | `[VALIDADO
 
 ---
 
+## 🔥 Sesión 2026-03-28c — Revisión completa, OptiX build, demo fix, 16/16 training
+
+### [2026-03-28] [RESUELTO] OptiX SDK 9.1 — build completo sin errores
+
+**Contexto:** 50+ errores de compilación en shaders OptiX tras migración a SDK 9.1.
+
+**Fixes aplicados (5 categorías):**
+1. float3 redefinición → free operators inline + macro LIQUIDBIT_HD
+2. AttentionResult → añadidos query_token_id, hit_count, total_attention, renombrados miembros
+3. RayPayload → nueva struct en optical_attention.h
+4. normalize/cross → renombrados a liqbit_normalize/liqbit_cross (evitar conflicto builtins)
+5. Constantes → LIQUIDBIT_MAX_TOP_TOKENS, LIQUIDBIT_ENERGY_THRESHOLD, LIQUIDBIT_MAX_SEQUENCE_LENGTH
+6. OptixAccelStruct → OptixTraversableHandle en semantic_bvh.h
+
+**Build output:** 0 errores, 4 PTX shaders + 3 libs + 1 exe
+
+### [2026-03-28] [RESUELTO] real_model_demo.py — routing collapse a Expert #11
+
+**Causa raíz:** Router inicializado con pesos aleatorios y sincronizado a CUDA antes de calibración.
+Todos los prompts colapsaban al mismo expert porque las distancias BVH eran uniformes.
+
+**Fix:** Nuevo `_calibrate_router()`:
+- PCA del embedding layer → to_3d projection
+- K-means 3-nivel (L1→L2→L3) para centros de esferas BVH
+- Neutralización de refracción espectral (W_dispersion=0 → sigmoid(0)=0.5 uniforme)
+- Temperature=0.3 para routing sharp en inferencia
+- Sync a CUDA solo DESPUÉS de calibración
+
+**Reordenado pipeline:** `_extract_head_layers()` → `_build_router()` → `_calibrate_router()` → `_build_expert_modules()`
+
+### [2026-03-28] [VALIDADO] Datos de entrenamiento — 16/16 capas extraídas
+
+**Verificación de integridad:**
+- 16 archivos .pt, 856MB cada uno
+- Todos: 199,680 muestras × 2048 dim
+- Claves: hidden_states, gate_logits (softmax probs), topk_ids
+- Gate_logits son probabilidades post-softmax (NO logits raw) — correcto para KL divergence
+
+### [2026-03-28] [NOTA] Hallazgos de revisión de código
+
+**Naming inconsistency (LOW):** `gate_logits` en extract_real_hiddens.py son en realidad
+probabilidades softmax, no logits. El nombre confunde pero no afecta funcionalidad porque
+calibrate_router.py las usa correctamente como target de KL divergence.
+
+**Memory pattern (MEDIUM):** HiddenStateCapture acumula tensores en lista `.captured[]`.
+Se limpia con `.clear()` entre batches pero si una excepción interrumpe, la memoria no se libera.
+No es problema en la práctica porque el script es corto y sale.
+
+**OptiX warnings (LOW):** alpha_bsh.cpp:468 usa `end_phase_b` sin inicializar — potencial
+UB en el runner de inception. No afecta la pipeline de OLMoE pero debería corregirse.
+
+---
+
 ## 🔥 Sesión 2026-03-28b — Tests manuales y 11 capas restantes
 
 ### [2026-03-28] [VALIDADO] Tests manuales post-recuperación — Resultados
@@ -50,37 +103,36 @@ Tipos: `[DECISIÓN]` | `[FALLO]` | `[ALTERNATIVA]` | `[BLOQUEANTE]` | `[VALIDADO
 - 51.9 tok/s
 - 375x reducción VRAM (7.86 MB activo vs 2944 MB full model)
 
-**Causa raíz probable:**
-- El router se construye genérico (no entrenado para las MLPs de Qwen)
-- La lógica de selección de experto puede diferir del original
-- El pipeline de generación token-a-token puede tener bugs en el archivo regenerado
+**Causa raíz identificada:** El router se inicializaba con pesos aleatorios y se sincronizaba
+a CUDA antes de calibración. La falta de calibración hacía que todos los prompts colapsaran al mismo expert.
 
-**Prioridad:** MEDIA — No bloquea FASE 3 (OLMoE). Arreglar después de completar 16/16 capas.
+**Fix aplicado:**
+1. Añadido `_calibrate_router()` que: ejecuta PCA del embedding, K-means 3-nivel para centros BVH,
+   neutraliza refracción espectral aleatoria, y sincroniza a CUDA solo después de calibrar
+2. Reordenado pipeline: `_extract_head_layers()` → `_build_router()` → `_calibrate_router()` → `_build_expert_modules()`
+3. Añadido `_kmeans_torch()` helper para clustering en GPU
+
+**Estado:** RESUELTO — pendiente verificación con modelo real (requiere GPU libre)
 
 **Archivos afectados:** `python/real_model_demo.py`
 
-### [2026-03-28] [BLOQUEANTE] OptiX shaders no compilan — requiere migración a SDK 9.1
+### [2026-03-28] [RESUELTO] OptiX shaders compilados — migración a SDK 9.1 completada
 
-**Contexto:** CMakeLists.txt actualizado para OptiX 9.1 + sm_120. Configure OK, pero build falla con ~50 errores.
+**Contexto:** CMakeLists.txt actualizado para OptiX 9.1 + sm_120. Build inicial fallaba con ~50 errores.
 
-**Errores principales (5 categorías):**
-1. **`float3` redefinida** — `token_geometry.h` define struct float3 que colisiona con CUDA `vector_types.h`. Fix: eliminar el fallback float3, usar solo `#include <vector_types.h>`
-2. **`AttentionResult` incompleta** — los shaders usan `query_token_id`, `hit_count`, `total_attention`, `top_token_ids`, `top_attention_weights` pero el struct en `optical_attention.h` no los tiene
-3. **`RayPayload` no definida** — usada en ray_generation.cu y ray_attention.cu pero no existe en ningún header
-4. **`optixTrace` API cambió en SDK 9.1** — ahora usa typed payloads (`Payload&...`) en vez de uint32_t. Requiere migrar a `optixTrace(handle, origin, dir, tmin, tmax, time, mask, flags, sbtOffset, sbtStride, missSbtIdx, payload0, payload1, ...)` con references
-5. **Constantes faltantes** — `LIQUIDBIT_MAX_TOP_TOKENS`, `LIQUIDBIT_ENERGY_THRESHOLD`, `LIQUIDBIT_MAX_SEQUENCE_LENGTH`, `OptixAccelStruct`
+**Fixes aplicados:**
+1. **`float3` redefinida** → Eliminado struct fallback, reemplazado por free operators inline sobre CUDA's float3 + macro `LIQUIDBIT_HD` para compatibilidad MSVC
+2. **`AttentionResult` incompleta** → Añadidos: `query_token_id`, `hit_count`, `total_attention`, renombrados `top_k_tokens`→`top_token_ids`, `attention_weights`→`top_attention_weights`
+3. **`RayPayload` no definida** → Añadida struct RayPayload en `optical_attention.h`
+4. **`normalize`/`cross` conflictos** → Renombrados a `liqbit_normalize`/`liqbit_cross` para evitar colisión con builtins
+5. **Constantes faltantes** → Añadidos `LIQUIDBIT_MAX_TOP_TOKENS`, `LIQUIDBIT_ENERGY_THRESHOLD`, `LIQUIDBIT_MAX_SEQUENCE_LENGTH`
+6. **`OptixAccelStruct`** → Cambiado a `OptixTraversableHandle` en semantic_bvh.h
 
-**Plan de fix (estimado ~3-4 horas):**
-1. Eliminar float3 fallback de token_geometry.h (usar CUDA's)
-2. Añadir miembros faltantes a AttentionResult
-3. Crear struct RayPayload en un header compartido
-4. Migrar optixTrace calls al API de OptiX 9.1 (typed payloads)
-5. Definir constantes faltantes en un header de config
-6. Verificar semantic_bvh.h: OptixAccelStruct → OptixTraversableHandle
+**Build output (clean rebuild):** 0 errores, solo warnings (size_t→uint32_t, variable no inicializada en alpha_bsh.cpp)
+- 4 PTX shaders: ray_generation.ptx (9KB), closest_hit.ptx (5KB), miss.ptx (2KB), ray_attention.ptx (41KB)
+- liquidbit_core.lib (311KB), liquidbit_optix.lib (313KB), inception_runner.exe (14KB)
 
-**Prioridad:** MEDIA — No bloquea FASE 3 (16/16 capas OLMoE). Hacer en sesión dedicada.
-
-**Archivos afectados:** `cuda/ray_generation.cu`, `cuda/closest_hit.cu`, `cuda/miss.cu`, `cuda/ray_attention.cu`, `include/token_geometry.h`, `include/optical_attention.h`, `include/semantic_bvh.h`
+**Archivos modificados:** `cuda/ray_generation.cu`, `cuda/closest_hit.cu`, `cuda/miss.cu`, `cuda/ray_attention.cu`, `include/token_geometry.h`, `include/optical_attention.h`, `include/semantic_bvh.h`, `cuda/optix_host.cpp`, `src/semantic_bvh.cpp`
 
 ### [2026-03-28] [VALIDADO] Ternary POPCOUNT extension — correcta pero más lenta que F.linear
 

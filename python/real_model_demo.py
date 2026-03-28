@@ -415,9 +415,10 @@ class LiquidBitRealPipeline:
         """Load model, extract experts, build router and expert modules."""
         self._load_hf_model()
         self._extract_experts()
+        self._extract_head_layers()  # Must come before _calibrate_router (needs embed_layer)
         self._build_router()
+        self._calibrate_router()
         self._build_expert_modules()
-        self._extract_head_layers()
         self._free_hf_model()
 
     def _load_hf_model(self) -> None:
@@ -465,7 +466,11 @@ class LiquidBitRealPipeline:
         )
 
     def _build_router(self) -> None:
-        """Build BVH Router sized for the number of experts."""
+        """Build BVH Router sized for the number of experts.
+
+        Note: Does NOT sync to CUDA yet -- that happens after _calibrate_router()
+        sets meaningful weights. Syncing random weights causes routing collapse.
+        """
         n_experts = len(self._expert_data)
 
         # Compute BVH tree shape: find n_level1, n_level2, n_level3 such that
@@ -485,26 +490,210 @@ class LiquidBitRealPipeline:
 
         self._router = HybridBVHRouter(cfg, device=self.device)
         self._router = self._router.to(self.device)
+
+        log.info(
+            "Router built: %d experts (%dx%dx%d), awaiting calibration...",
+            cfg.n_experts, n_l1, n_l2, n_l3,
+        )
+
+    def _calibrate_router(self) -> None:
+        """Calibrate the BVH router using actual model embeddings.
+
+        This is CRITICAL: without calibration, the router has random weights
+        and all prompts collapse to the same expert (routing collapse bug).
+
+        Calibration steps:
+          1. Run calibration prompts through the embedding layer
+          2. Compute mean-pooled hidden states -> prompt embeddings
+          3. Fit the to_3d projection via PCA of the embeddings
+          4. Set BVH sphere centers via k-means on the 3D-projected points
+          5. Sync calibrated weights to the CUDA backend
+        """
+        if self._embed_layer is None or self._router is None:
+            log.warning("Cannot calibrate: embed_layer or router not ready.")
+            return
+
+        router = self._router.pytorch_router
+        cfg = router.cfg
+
+        # Collect diverse calibration embeddings from the model
+        calibration_texts = CODING_PROMPTS + [
+            "Explain the theory of relativity in simple terms.",
+            "What is the capital of France?",
+            "Describe the process of photosynthesis.",
+            "How does a neural network learn?",
+            "Write a poem about the ocean.",
+            "What are the main differences between TCP and UDP?",
+            "Explain recursion to a five year old.",
+            "Summarize the plot of Romeo and Juliet.",
+            "What is quantum computing?",
+            "Describe the water cycle.",
+            "How do databases handle concurrent transactions?",
+            "What is the difference between a stack and a queue?",
+            "Explain gradient descent in machine learning.",
+            "Write a SQL query to find duplicate rows.",
+            "What causes earthquakes?",
+            "How does encryption work?",
+            "Describe the MVC design pattern.",
+            "What is the Big O notation?",
+            "Explain how a compiler works.",
+            "What is the difference between HTTP and HTTPS?",
+        ]
+
+        log.info("Calibrating router with %d sample texts...", len(calibration_texts))
+
+        embeddings_list = []
+        with torch.no_grad():
+            for text in calibration_texts:
+                tokens = self._tokenizer(
+                    text, return_tensors="pt", truncation=True, max_length=128
+                )
+                input_ids = tokens["input_ids"].to(self.device)
+                hidden = self._embed_layer(input_ids)  # (1, S, H)
+                prompt_emb = hidden.mean(dim=1).float()  # (1, H)
+                embeddings_list.append(prompt_emb)
+
+        # Stack all calibration embeddings: (N_cal, H)
+        all_embs = torch.cat(embeddings_list, dim=0)
+        N_cal, H = all_embs.shape
+
+        # Step 1: Fit to_3d projection using PCA of the embeddings
+        # This ensures the 3D space preserves maximum variance
+        emb_centered = all_embs - all_embs.mean(dim=0, keepdim=True)
+        # Use SVD for PCA (more numerically stable than covariance)
+        U, S_vals, Vt = torch.linalg.svd(emb_centered, full_matrices=False)
+        # Top 3 principal components -> to_3d weight
+        pca_weight = Vt[:3, :]  # (3, H)
+        # Scale so the projected points have reasonable magnitude
+        scale = S_vals[:3].clamp(min=1e-6)
+        pca_weight = pca_weight / scale.unsqueeze(1) * 0.5
+
+        with torch.no_grad():
+            router.to_3d.weight.copy_(pca_weight.to(router.to_3d.weight.device))
+            router.to_3d.bias.zero_()
+
+        # Step 2: Project all calibration points to 3D
+        with torch.no_grad():
+            all_3d = router.to_3d(all_embs)  # (N_cal, 3)
+
+        # Step 3: Set BVH sphere centers using k-means clustering
+        # Level 1: cluster into n_level1 groups
+        n_l1 = cfg.n_level1
+        n_l2 = cfg.n_level2
+        n_l3 = cfg.n_level3
+
+        l1_centers, l1_assignments = _kmeans_torch(all_3d, n_l1, n_iters=50)
+        with torch.no_grad():
+            router.level1.centers.copy_(l1_centers.to(router.level1.centers.device))
+            # Set radii based on cluster spread
+            for k in range(n_l1):
+                mask = l1_assignments == k
+                if mask.any():
+                    spread = all_3d[mask].std()
+                    router.level1.log_radii.data[k] = torch.log(
+                        torch.tensor(max(spread.item(), 0.1))
+                    )
+
+        # Level 2: for each L1 cluster, sub-cluster into n_level2 groups
+        total_l2 = n_l1 * n_l2
+        l2_centers = torch.zeros(total_l2, 3, device=all_3d.device)
+        l2_all_assignments = torch.full((N_cal,), -1, dtype=torch.long, device=all_3d.device)
+
+        for parent in range(n_l1):
+            parent_mask = l1_assignments == parent
+            parent_points = all_3d[parent_mask]
+
+            if parent_points.shape[0] >= n_l2:
+                sub_centers, sub_assign = _kmeans_torch(parent_points, n_l2, n_iters=30)
+            else:
+                # Not enough points: spread evenly around parent center
+                sub_centers = l1_centers[parent].unsqueeze(0) + torch.randn(
+                    n_l2, 3, device=all_3d.device
+                ) * 0.3
+                sub_assign = torch.arange(parent_points.shape[0], device=all_3d.device) % n_l2
+
+            base_idx = parent * n_l2
+            l2_centers[base_idx:base_idx + n_l2] = sub_centers
+
+            # Map back to global assignment
+            parent_indices = parent_mask.nonzero(as_tuple=True)[0]
+            for local_i, global_i in enumerate(parent_indices):
+                l2_all_assignments[global_i] = base_idx + sub_assign[local_i]
+
+        with torch.no_grad():
+            router.level2.centers.copy_(l2_centers.to(router.level2.centers.device))
+            for k in range(total_l2):
+                mask = l2_all_assignments == k
+                if mask.any():
+                    spread = all_3d[mask].std()
+                    router.level2.log_radii.data[k] = torch.log(
+                        torch.tensor(max(spread.item(), 0.05))
+                    )
+
+        # Level 3: for each L2 cluster, sub-cluster into n_level3 groups
+        total_l3 = n_l1 * n_l2 * n_l3
+        l3_centers = torch.zeros(total_l3, 3, device=all_3d.device)
+
+        for parent_l2 in range(total_l2):
+            parent_mask = l2_all_assignments == parent_l2
+            parent_points = all_3d[parent_mask]
+
+            if parent_points.shape[0] >= n_l3:
+                sub_centers, _ = _kmeans_torch(parent_points, n_l3, n_iters=20)
+            else:
+                # Spread around parent L2 center
+                sub_centers = l2_centers[parent_l2].unsqueeze(0) + torch.randn(
+                    n_l3, 3, device=all_3d.device
+                ) * 0.15
+
+            base_idx = parent_l2 * n_l3
+            l3_centers[base_idx:base_idx + n_l3] = sub_centers
+
+        with torch.no_grad():
+            router.level3.centers.copy_(l3_centers.to(router.level3.centers.device))
+            # Use small radii at the leaf level for sharp routing
+            router.level3.log_radii.data.fill_(
+                torch.log(torch.tensor(0.1)).item()
+            )
+
+        # Step 3b: Neutralize spectral refraction to avoid random bias
+        # With random W_dispersion weights, sigmoid(W * spectral) produces
+        # inconsistent multipliers that can override the distance-based routing.
+        # Zero out dispersion weights so refraction output = sigmoid(0) = 0.5
+        # (uniform across all spheres = neutral, routing purely distance-based).
+        for refract in [router.refract1, router.refract2, router.refract3]:
+            refract.W_dispersion.weight.data.zero_()
+            refract.W_dispersion.bias.data.zero_()
+
+        # Step 4: Set temperature low for sharp routing in inference
+        router.temperature.fill_(0.3)
+
+        # Step 5: Put router in eval mode and sync to CUDA backend
         self._router.eval()
 
-        # Sync to fastest available CUDA backend
         try:
             if HAS_TORCH_EXT:
                 self._router.sync_to_torch_ext()
-                log.info("Router: synced to bvh_router_ext (zero-copy, fastest)")
+                log.info("Router: synced calibrated weights to bvh_router_ext (zero-copy)")
             elif HAS_CUDA_ROUTER:
                 self._router.sync_to_cuda(batch_size=1)
-                log.info("Router: synced to CUDABVHRouter (ctypes)")
+                log.info("Router: synced calibrated weights to CUDABVHRouter (ctypes)")
             else:
                 log.info("Router: using PyTorch fallback (no CUDA extension)")
         except Exception as exc:
             log.warning("Router CUDA sync failed, using PyTorch fallback: %s", exc)
 
-        log.info(
-            "Router built: %d experts (%dx%dx%d), status=%s",
-            cfg.n_experts, n_l1, n_l2, n_l3,
-            self._router.status(),
-        )
+        # Verify calibration: route the calibration texts and check diversity
+        with torch.no_grad():
+            route_result = self._router(all_embs)
+            unique_experts = route_result.expert_id.unique().numel()
+            log.info(
+                "Router calibrated: %d/%d unique experts for %d calibration texts. Status=%s",
+                unique_experts,
+                cfg.n_experts,
+                N_cal,
+                self._router.status(),
+            )
 
     def _build_expert_modules(self) -> None:
         """Build ternary expert modules, preferring CUDA POPCOUNT extension."""
@@ -609,9 +798,9 @@ class LiquidBitRealPipeline:
         route_path = route_result.route_path[0].tolist()
         confidence = route_result.confidence[0].item()
 
-        # Activate selected expert on GPU
-        expert_id_clamped = min(expert_id, len(self._experts) - 1)
-        expert = self._experts[expert_id_clamped].to(self.device)
+        # Activate selected expert on GPU (modulo maps BVH leaf to actual expert)
+        expert_idx = expert_id % len(self._experts)
+        expert = self._experts[expert_idx].to(self.device)
         expert.eval()
 
         # Generation loop
@@ -719,6 +908,76 @@ class LiquidBitRealPipeline:
 # =============================================================================
 # Utilities
 # =============================================================================
+
+def _kmeans_torch(
+    data: torch.Tensor,
+    k: int,
+    n_iters: int = 50,
+) -> Tuple[torch.Tensor, torch.Tensor]:
+    """
+    Simple k-means clustering on GPU using PyTorch.
+
+    Args:
+        data: (N, D) tensor of points
+        k: number of clusters
+        n_iters: max iterations
+
+    Returns:
+        centers: (k, D) cluster centers
+        assignments: (N,) cluster assignment per point
+    """
+    N, D = data.shape
+    device = data.device
+
+    if N <= k:
+        # Fewer points than clusters: each point is its own center, pad rest
+        centers = torch.zeros(k, D, device=device)
+        centers[:N] = data
+        # Fill remaining centers with random perturbations of existing data
+        if N > 0:
+            for i in range(N, k):
+                centers[i] = data[i % N] + torch.randn(D, device=device) * 0.1
+        assignments = torch.arange(N, device=device)
+        return centers, assignments
+
+    # Initialize centers using k-means++ style: spread out initial centers
+    indices = [torch.randint(N, (1,), device=device).item()]
+    for _ in range(1, k):
+        dists = torch.cdist(data, data[indices])  # (N, len(indices))
+        min_dists = dists.min(dim=1).values  # (N,)
+        # Pick the point farthest from any existing center
+        next_idx = min_dists.argmax().item()
+        indices.append(next_idx)
+
+    centers = data[indices].clone()  # (k, D)
+
+    for _ in range(n_iters):
+        # Assign each point to nearest center
+        dists = torch.cdist(data, centers)  # (N, k)
+        assignments = dists.argmin(dim=1)  # (N,)
+
+        # Update centers
+        new_centers = torch.zeros_like(centers)
+        for c in range(k):
+            mask = assignments == c
+            if mask.any():
+                new_centers[c] = data[mask].mean(dim=0)
+            else:
+                # Empty cluster: reinitialize to a random data point
+                new_centers[c] = data[torch.randint(N, (1,), device=device)]
+
+        # Check convergence
+        shift = (new_centers - centers).norm(dim=1).max()
+        centers = new_centers
+        if shift < 1e-6:
+            break
+
+    # Final assignment
+    dists = torch.cdist(data, centers)
+    assignments = dists.argmin(dim=1)
+
+    return centers, assignments
+
 
 def _compute_bvh_shape(n_experts: int) -> Tuple[int, int, int]:
     """

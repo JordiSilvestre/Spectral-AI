@@ -131,12 +131,12 @@ float SemanticBVH::computeAABBSurfaceArea(const float3& min, const float3& max) 
  * @param max_out Esquina máxima del AABB (salida)
  */
 void SemanticBVH::computeBounds(uint32_t start, uint32_t end, float3& min_out, float3& max_out) const {
-    min_out = float3(std::numeric_limits<float>::max(),
-                     std::numeric_limits<float>::max(),
-                     std::numeric_limits<float>::max());
-    max_out = float3(std::numeric_limits<float>::lowest(),
-                     std::numeric_limits<float>::lowest(),
-                     std::numeric_limits<float>::lowest());
+    min_out = make_float3(std::numeric_limits<float>::max(),
+                          std::numeric_limits<float>::max(),
+                          std::numeric_limits<float>::max());
+    max_out = make_float3(std::numeric_limits<float>::lowest(),
+                          std::numeric_limits<float>::lowest(),
+                          std::numeric_limits<float>::lowest());
 
     for (uint32_t i = start; i < end; ++i) {
         const TokenNode* node = sorted_nodes[i];

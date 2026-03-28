@@ -44,7 +44,9 @@
 #include <cstdint>
 #include <cmath>
 #include <array>
+#include <string>
 #include <vector>
+#include "token_geometry.h"
 
 // ============================================================================
 // CONSTANTES DE CONFIGURACIÓN GLOBAL

@@ -55,6 +55,22 @@ constexpr unsigned int NUM_RAY_TYPES = 2;  // RADIANCE (0) y otra (1)
 constexpr unsigned int RAY_TYPE_RADIANCE = 0;
 
 // ============================================================================
+// PLANTILLA SBT: Patrón estándar de OptiX SDK (no existe en el SDK como tipo)
+// ============================================================================
+
+/**
+ * @brief Registro del SBT con cabecera alineada y datos de usuario.
+ *
+ * La cabecera debe ser rellenada con optixSbtRecordPackHeader().
+ * El campo data contiene los datos específicos del programa.
+ */
+template <typename T>
+struct OptixSbtRecord {
+    alignas(OPTIX_SBT_RECORD_ALIGNMENT) char header[OPTIX_SBT_RECORD_HEADER_SIZE];
+    T data;
+};
+
+// ============================================================================
 // ESTRUCTURA AUXILIAR: Handle Logger
 // ============================================================================
 
@@ -120,9 +136,9 @@ public:
           optix_context_(nullptr),
           pipeline_(nullptr),
           module_(nullptr),
-          d_gas_output_buffer_(nullptr),
+          d_gas_output_buffer_(0),
           gas_output_buffer_size_(0),
-          d_sbt_buffer_(nullptr),
+          d_sbt_buffer_(0),
           sbt_buffer_size_(0) {
 
         if (!initializeCUDA()) {
@@ -239,7 +255,7 @@ public:
 
         // Copiar AABBs a GPU
         CUdeviceptr d_aabbs;
-        if (cudaMalloc(&d_aabbs, aabbs.size() * sizeof(OptixAabb)) != cudaSuccess) {
+        if (cudaMalloc(reinterpret_cast<void**>(&d_aabbs), aabbs.size() * sizeof(OptixAabb)) != cudaSuccess) {
             std::cerr << "[OptiX] Failed to allocate AABB buffer on GPU" << std::endl;
             return false;
         }
@@ -284,18 +300,18 @@ public:
 
         // Alocar buffers: temp (construcción) y output (resultado)
         CUdeviceptr d_temp_buffer;
-        if (cudaMalloc(&d_temp_buffer, gas_buffer_sizes.tempSizeInBytes) != cudaSuccess) {
+        if (cudaMalloc(reinterpret_cast<void**>(&d_temp_buffer), gas_buffer_sizes.tempSizeInBytes) != cudaSuccess) {
             std::cerr << "[OptiX] Failed to allocate temp buffer for GAS" << std::endl;
             cudaFree(reinterpret_cast<void*>(d_aabbs));
             return false;
         }
 
         // Liberar buffer de salida anterior si existe
-        if (d_gas_output_buffer_ != nullptr) {
+        if (d_gas_output_buffer_ != 0) {
             cudaFree(reinterpret_cast<void*>(d_gas_output_buffer_));
         }
 
-        if (cudaMalloc(&d_gas_output_buffer_, gas_buffer_sizes.outputSizeInBytes) != cudaSuccess) {
+        if (cudaMalloc(reinterpret_cast<void**>(&d_gas_output_buffer_), gas_buffer_sizes.outputSizeInBytes) != cudaSuccess) {
             std::cerr << "[OptiX] Failed to allocate output buffer for GAS" << std::endl;
             cudaFree(reinterpret_cast<void*>(d_temp_buffer));
             cudaFree(reinterpret_cast<void*>(d_aabbs));
@@ -368,13 +384,13 @@ public:
 
         // Alocar buffers GPU para entrada y salida
         CUdeviceptr d_rays;
-        if (cudaMalloc(&d_rays, num_rays * sizeof(SemanticRay)) != cudaSuccess) {
+        if (cudaMalloc(reinterpret_cast<void**>(&d_rays), num_rays * sizeof(SemanticRay)) != cudaSuccess) {
             std::cerr << "[OptiX] Failed to allocate rays buffer" << std::endl;
             return false;
         }
 
         CUdeviceptr d_output;
-        if (cudaMalloc(&d_output, output_size) != cudaSuccess) {
+        if (cudaMalloc(reinterpret_cast<void**>(&d_output), output_size) != cudaSuccess) {
             std::cerr << "[OptiX] Failed to allocate output buffer" << std::endl;
             cudaFree(reinterpret_cast<void*>(d_rays));
             return false;
@@ -407,7 +423,7 @@ public:
         };
 
         CUdeviceptr d_launch_params;
-        if (cudaMalloc(&d_launch_params, sizeof(LaunchParams)) != cudaSuccess) {
+        if (cudaMalloc(reinterpret_cast<void**>(&d_launch_params), sizeof(LaunchParams)) != cudaSuccess) {
             std::cerr << "[OptiX] Failed to allocate launch params buffer" << std::endl;
             cudaFree(reinterpret_cast<void*>(d_rays));
             cudaFree(reinterpret_cast<void*>(d_output));
@@ -430,8 +446,8 @@ public:
         // Parámetros: context, stream, launch_params_ptr, launch_params_size,
         //            SBT, launch_width, launch_height, launch_depth
         if (optixLaunch(
-            optix_context_,
-            nullptr,  // stream (nullptr = stream por defecto)
+            pipeline_,
+            0,  // stream (0 = stream por defecto)
             d_launch_params,
             sizeof(LaunchParams),
             &sbt_,
@@ -492,14 +508,14 @@ public:
             module_ = nullptr;
         }
 
-        if (d_gas_output_buffer_ != nullptr) {
+        if (d_gas_output_buffer_ != 0) {
             cudaFree(reinterpret_cast<void*>(d_gas_output_buffer_));
-            d_gas_output_buffer_ = nullptr;
+            d_gas_output_buffer_ = 0;
         }
 
-        if (d_sbt_buffer_ != nullptr) {
+        if (d_sbt_buffer_ != 0) {
             cudaFree(reinterpret_cast<void*>(d_sbt_buffer_));
-            d_sbt_buffer_ = nullptr;
+            d_sbt_buffer_ = 0;
         }
 
         if (optix_context_ != nullptr) {
@@ -565,7 +581,9 @@ private:
             return false;
         }
 
-        if (cuCtxCreate(&cuda_context_, 0, device) != CUDA_SUCCESS) {
+        // cuCtxCreate was remapped to cuCtxCreate_v4 in CUDA 12.x+
+        // Pass nullptr for CUctxCreateParams to use default settings
+        if (cuCtxCreate_v4(&cuda_context_, nullptr, 0, device) != CUDA_SUCCESS) {
             std::cerr << "[CUDA] Failed to create context" << std::endl;
             return false;
         }
@@ -751,7 +769,7 @@ private:
 
         OptixPipelineLinkOptions pipeline_link_options = {};
         pipeline_link_options.maxTraceDepth = 16;
-        pipeline_link_options.debugLevel = OPTIX_COMPILE_DEBUG_LEVEL_NONE;
+        // debugLevel was removed in OptiX 8.0; debug level is now set in module compile options
 
         char log[2048];
         size_t sizeof_log = sizeof(log);
@@ -791,24 +809,19 @@ private:
      *   [RaygenRecord] [HitgroupRecord] [MissRecord]
      */
     bool buildShaderBindingTable() {
-        // Obtener shader handle sizes
-        size_t raygen_record_size = optixSbtRecordPackingOptions.raygenRecordSize;
-        size_t hitgroup_record_size = optixSbtRecordPackingOptions.hitgroupRecordSize;
-        size_t miss_record_size = optixSbtRecordPackingOptions.missRecordSize;
-
-        // Asumir tamaño de registro (64 bytes es típico)
-        raygen_record_size = 64;
-        hitgroup_record_size = 64;
-        miss_record_size = 64;
+        // Tamaños fijos de registro SBT (header 32 bytes + datos alineados a 16)
+        size_t raygen_record_size    = sizeof(OptixSbtRecord<RayGenRecord>);
+        size_t hitgroup_record_size  = sizeof(OptixSbtRecord<HitGroupRecord>);
+        size_t miss_record_size      = sizeof(OptixSbtRecord<MissRecord>);
 
         size_t sbt_size = raygen_record_size + hitgroup_record_size + miss_record_size;
 
         // Alocar buffer SBT en GPU
-        if (d_sbt_buffer_ != nullptr) {
+        if (d_sbt_buffer_ != 0) {
             cudaFree(reinterpret_cast<void*>(d_sbt_buffer_));
         }
 
-        if (cudaMalloc(&d_sbt_buffer_, sbt_size) != cudaSuccess) {
+        if (cudaMalloc(reinterpret_cast<void**>(&d_sbt_buffer_), sbt_size) != cudaSuccess) {
             std::cerr << "[OptiX] Failed to allocate SBT buffer" << std::endl;
             return false;
         }
@@ -816,12 +829,12 @@ private:
         sbt_buffer_size_ = sbt_size;
 
         // Rellenar registros del SBT en host
-        std::vector<unsigned char> sbt_host(sbt_size);
+        std::vector<unsigned char> sbt_host(sbt_size, 0);
 
         // Raygen record
         {
-            OptixSbtRecord<RayGenRecord> raygen_record;
-            raygen_record.header = optixSbtRecordPackingOptions.raygenRecordSize;
+            OptixSbtRecord<RayGenRecord> raygen_record = {};
+            optixSbtRecordPackHeader(pg_raygen_, &raygen_record);
             raygen_record.data.num_rays = 1;  // Alpha genera 1 rayo
 
             std::memcpy(sbt_host.data(), &raygen_record, sizeof(raygen_record));
@@ -829,8 +842,8 @@ private:
 
         // Hitgroup record
         {
-            OptixSbtRecord<HitGroupRecord> hitgroup_record;
-            hitgroup_record.header = optixSbtRecordPackingOptions.hitgroupRecordSize;
+            OptixSbtRecord<HitGroupRecord> hitgroup_record = {};
+            optixSbtRecordPackHeader(pg_closest_hit_, &hitgroup_record);
             hitgroup_record.data.sphere_id = 0;  // Será actualizado según tokens
 
             std::memcpy(
@@ -841,8 +854,8 @@ private:
 
         // Miss record
         {
-            OptixSbtRecord<MissRecord> miss_record;
-            miss_record.header = optixSbtRecordPackingOptions.missRecordSize;
+            OptixSbtRecord<MissRecord> miss_record = {};
+            optixSbtRecordPackHeader(pg_miss_, &miss_record);
 
             std::memcpy(
                 sbt_host.data() + raygen_record_size + hitgroup_record_size,

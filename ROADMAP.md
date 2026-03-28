@@ -181,7 +181,7 @@ Token N+1:              [RT Core: RUTA] → [Tensor Core: GENERA]
 
 ---
 
-## FASE 7 — RT Cores Reales (OptiX) [LISTO PARA COMPILAR]
+## FASE 7 — RT Cores Reales (OptiX) [COMPILADO — PENDIENTE INTEGRACION]
 
 **Objetivo:** Conectar el routing real con RT Cores via OptiX SDK.
 
@@ -193,13 +193,18 @@ vs ~80 ciclos en CUDA cores. Speedup teorico: 10-20x sobre kernel actual.
 - ✅ OptiX SDK 9.1.0
 - ✅ Visual Studio C++ tools
 
+**Build completado (2026-03-28):**
+- ✅ 4 PTX shaders compilados: ray_generation (9KB), closest_hit (5KB), miss (2KB), ray_attention (41KB)
+- ✅ liquidbit_core.lib + liquidbit_optix.lib + inception_runner.exe
+- ✅ 0 errores de compilacion (solo warnings menores)
+
 **Tareas:**
 - [x] Instalar CUDA Toolkit 12.8
 - [x] Instalar OptiX SDK 9.1
-- [ ] Fix CMakeLists.txt (sm_120, OptiX 9.1 path, alpha_bsh.cpp, optix_host.cpp)
-- [ ] Fix include paths en `cuda/optix_host.cpp`
-- [ ] `cmake --build .` sin errores
-- [ ] Compilar shaders OptiX (.cu → .ptx) para ray_generation, closest_hit, miss, any_hit
+- [x] Fix CMakeLists.txt (sm_120, OptiX 9.1 path, alpha_bsh.cpp, optix_host.cpp)
+- [x] Fix include paths en `cuda/optix_host.cpp`
+- [x] `cmake --build .` sin errores
+- [x] Compilar shaders OptiX (.cu → .ptx) para ray_generation, closest_hit, miss, ray_attention
 - [ ] Mapear sphere_centers → OptixAabb
 - [ ] Construir IAS (Instance Acceleration Structure) jerarquico 4 niveles
 - [ ] Rayo = embedding como origen + direccion
@@ -499,13 +504,15 @@ Los **deltas relativos son comparables** y de hecho mejores gracias a calibracio
 - 🔄 Entrenar 11 capas restantes: `bash scripts/train_remaining_layers.sh`
 - Target: PPL delta <15%
 
-**Paso 2b — Arreglar demo** [❌ PENDIENTE]
-- `real_model_demo.py` regenerado tiene routing colapsado (todos Expert #11)
-- Output gibberish — necesita debugging del pipeline de generacion
+**Paso 2b — Arreglar demo** [✅ FIX APLICADO — PENDIENTE VERIFICACION]
+- `real_model_demo.py` tenia routing colapsado (todos Expert #11) por calibracion faltante
+- Fix: PCA + K-means calibracion del router antes de sync a CUDA
+- Pendiente: verificar con modelo real cuando GPU este libre
 
-**Paso 3 — Build C++/CUDA con CMake** [✅ COMPILADO — 11 targets]
+**Paso 3 — Build C++/CUDA con CMake** [✅ COMPILADO — TODOS LOS TARGETS]
 - CUDA 13.2, OptiX 9.1, CMake 4.2.3, MSVC 18.4, sm_89+sm_120
-- Shaders OptiX → PTX: pendiente integrar con optixModuleCreate()
+- ✅ 4 PTX shaders compilados, liquidbit_core.lib, liquidbit_optix.lib, inception_runner.exe
+- Pendiente: integrar PTX con optixModuleCreate() y benchmark RT vs CUDA
 
 ### DESPUES DEL PROTOTIPO
 

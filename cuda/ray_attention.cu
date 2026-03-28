@@ -42,6 +42,47 @@ extern "C" __constant__ uint32_t c_num_tokens;
 extern "C" __constant__ uint32_t c_rays_per_query;
 
 /* ============================================================================
+ * FUNCIÓN HELPER: insert_top_token
+ *
+ * Inserta un token en la lista top-K mantenida en orden descendente de peso.
+ * Si la lista está llena, descarta el token con menor peso si el nuevo es mayor.
+ * ============================================================================
+ */
+__device__ static void insert_top_token(
+    uint32_t* top_tokens,
+    float*    top_weights,
+    uint32_t& count,
+    uint32_t  token_id,
+    float     weight
+) {
+    // Buscar posición de inserción (lista ordenada descendentemente)
+    uint32_t capacity = LIQUIDBIT_MAX_TOP_TOKENS;
+
+    if (count < capacity) {
+        // Lista no llena: insertar en la posición correcta
+        uint32_t pos = count;
+        while (pos > 0 && top_weights[pos - 1] < weight) {
+            top_tokens[pos]  = top_tokens[pos - 1];
+            top_weights[pos] = top_weights[pos - 1];
+            pos--;
+        }
+        top_tokens[pos]  = token_id;
+        top_weights[pos] = weight;
+        count++;
+    } else if (weight > top_weights[capacity - 1]) {
+        // Lista llena pero el nuevo peso supera al mínimo: reemplazar
+        uint32_t pos = capacity - 1;
+        while (pos > 0 && top_weights[pos - 1] < weight) {
+            top_tokens[pos]  = top_tokens[pos - 1];
+            top_weights[pos] = top_weights[pos - 1];
+            pos--;
+        }
+        top_tokens[pos]  = token_id;
+        top_weights[pos] = weight;
+    }
+}
+
+/* ============================================================================
  * KERNEL PRINCIPAL: ray_traced_attention_kernel
  *
  * Entrada:
@@ -162,26 +203,31 @@ __global__ void ray_traced_attention_kernel(
         float t_min = 0.001f;      // Offset pequeño para evitar auto-intersecciones
         float t_max = 1e16f;       // Distancia "infinita"
 
+        // Convertir payload a uint32_t para optixTrace (requiere variables lvalue)
+        uint32_t p0 = __float_as_uint(ray_payload.accumulated_attention);
+        uint32_t p1 = __float_as_uint(ray_payload.energy_remaining);
+        uint32_t p2 = ray_payload.hit_count;
+
         // Lanzar el rayo
         optixTrace(
-            c_bvh_handle,           // Acceleration structure (BVH)
-            query_position,         // Ray origin (posición del query)
-            ray_direction,          // Ray direction (normalizada)
-            t_min,                  // t_min
-            t_max,                  // t_max
-            0.0f,                   // ray_time (no usamos temporal)
+            c_bvh_handle,              // Acceleration structure (BVH)
+            query_position,            // Ray origin (posición del query)
+            ray_direction,             // Ray direction (normalizada)
+            t_min,                     // t_min
+            t_max,                     // t_max
+            0.0f,                      // ray_time (no usamos temporal)
             OptixVisibilityMask(255),  // Visibility mask (todos los objetos visibles)
-            OPTIX_RAY_FLAG_NONE,    // Ray flags
-            0,                      // SBT offset
-            0,                      // SBT stride
-            0,                      // Miss SBT index
-            // Payloads (punteros y buffer del RayPayload)
-            (uint32_t)(ray_payload.accumulated_attention),
-            (uint32_t)(ray_payload.energy_remaining),
-            (uint32_t)(ray_payload.hit_count)
+            OPTIX_RAY_FLAG_NONE,       // Ray flags
+            0,                         // SBT offset
+            0,                         // SBT stride
+            0,                         // Miss SBT index
+            p0, p1, p2                 // Payloads (uint32_t por referencia)
         );
 
-        // Después de optixTrace, los payloads han sido actualizados por ClosestHit o Miss
+        // Después de optixTrace, p0/p1/p2 han sido actualizados por ClosestHit o Miss
+        ray_payload.accumulated_attention = __uint_as_float(p0);
+        ray_payload.energy_remaining      = __uint_as_float(p1);
+        ray_payload.hit_count             = p2;
 
         // Acumular resultados de este rayo a los totales de la query
         total_attention_weight += ray_payload.accumulated_attention;

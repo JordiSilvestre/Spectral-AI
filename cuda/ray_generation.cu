@@ -53,6 +53,28 @@ extern "C" __constant__ uint32_t c_num_tokens;
  */
 
 /**
+ * Función auxiliar para normalizar un vector 3D
+ */
+__device__ static float3 liqbit_normalize(const float3& v) {
+    float len = sqrtf(v.x * v.x + v.y * v.y + v.z * v.z);
+    if (len > 1e-6f) {
+        return make_float3(v.x / len, v.y / len, v.z / len);
+    }
+    return v;
+}
+
+/**
+ * Producto cruz 3D
+ */
+__device__ static float3 liqbit_cross(const float3& a, const float3& b) {
+    return make_float3(
+        a.y * b.z - a.z * b.y,
+        a.z * b.x - a.x * b.z,
+        a.x * b.y - a.y * b.x
+    );
+}
+
+/**
  * Genera una dirección normalizada en un hemisferio usando distribución uniforme.
  *
  * Parámetros:
@@ -120,32 +142,10 @@ __device__ void create_orthonormal_basis(
     }
 
     // Primera base usando producto cruz
-    u = normalize(cross(orthogonal, w));
+    u = liqbit_normalize(liqbit_cross(orthogonal, w));
 
     // Segunda base usando producto cruz
-    v = cross(w, u);
-}
-
-/**
- * Función auxiliar para normalizar un vector 3D
- */
-__device__ float3 normalize(const float3& v) {
-    float len = sqrtf(v.x * v.x + v.y * v.y + v.z * v.z);
-    if (len > 1e-6f) {
-        return make_float3(v.x / len, v.y / len, v.z / len);
-    }
-    return v;
-}
-
-/**
- * Producto cruz 3D
- */
-__device__ float3 cross(const float3& a, const float3& b) {
-    return make_float3(
-        a.y * b.z - a.z * b.y,
-        a.z * b.x - a.x * b.z,
-        a.x * b.y - a.y * b.x
-    );
+    v = liqbit_cross(w, u);
 }
 
 /* ============================================================================
@@ -207,7 +207,7 @@ extern "C" __global__ void __raygen__rg_optical_attention() {
     float3 ray_direction = generate_hemisphere_direction(ray_in_query, c_rays_per_query);
 
     // Normalizar dirección (debería ya estar normalizada)
-    ray_direction = normalize(ray_direction);
+    ray_direction = liqbit_normalize(ray_direction);
 
     // ========================================================================
     // INICIALIZAR PAYLOAD DEL RAYO
@@ -319,7 +319,7 @@ extern "C" __global__ void __raygen__rg_optical_attention_gaussian() {
     float sin_theta = sinf(theta);
     float cos_theta = cosf(theta);
 
-    float3 ray_direction = normalize(make_float3(
+    float3 ray_direction = liqbit_normalize(make_float3(
         sin_phi * cos_theta,
         sin_phi * sin_theta,
         cos_phi

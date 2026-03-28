@@ -80,7 +80,7 @@ extern "C" __global__ void __miss__ms_optical_attention() {
 
     // Escribir el payload final (sin cambios respecto a la entrada)
     optixSetPayload_0(__float_as_uint(accumulated_attention));
-    optixSetPayload_1(__float_as_float(energy_remaining));
+    optixSetPayload_1(__float_as_uint(energy_remaining));
     optixSetPayload_2(hit_count);
 
     // El rayo termina automáticamente después del miss
