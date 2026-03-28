@@ -144,10 +144,7 @@ __global__ void ray_traced_attention_kernel(
     result.hit_count = 0;
     result.total_attention = 0.0f;
 
-    // Memoria compartida para reducción local de top-K tokens
-    // Cada thread usa una fila de shared memory
-    __shared__ uint32_t shared_top_tokens[256][LIQUIDBIT_MAX_TOP_TOKENS];
-    __shared__ float shared_top_weights[256][LIQUIDBIT_MAX_TOP_TOKENS];
+    // Memoria compartida para reducción local de hit count
     __shared__ uint32_t shared_hit_count[256];
 
     // Inicializar shared memory

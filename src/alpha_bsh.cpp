@@ -451,6 +451,7 @@ AlphaExecutionResult AlphaBSH::execute(
 
     cudaEvent_t start_phase_b, end_phase_b;
     cudaEventCreate(&start_phase_b);
+    cudaEventCreate(&end_phase_b);
 
     if (phase_a_result.hit_sphere_id != UINT32_MAX) {
         // ====================================================================

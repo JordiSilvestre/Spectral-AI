@@ -187,7 +187,7 @@ int32_t SemanticBVH::buildRecursive(uint32_t start, uint32_t end, uint32_t depth
         leaf.right_child = -1;    // Marca como hoja
         leaf.depth = depth;
 
-        int32_t node_idx = bvh_nodes.size();
+        int32_t node_idx = static_cast<int32_t>(bvh_nodes.size());
         bvh_nodes.push_back(leaf);
         return node_idx;
     }
@@ -239,7 +239,7 @@ int32_t SemanticBVH::buildRecursive(uint32_t start, uint32_t end, uint32_t depth
     internal.right_child = right_idx;
     internal.depth = depth;
 
-    int32_t node_idx = bvh_nodes.size();
+    int32_t node_idx = static_cast<int32_t>(bvh_nodes.size());
     bvh_nodes.push_back(internal);
 
     return node_idx;
