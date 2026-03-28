@@ -18,6 +18,52 @@ Tipos: `[DECISIÓN]` | `[FALLO]` | `[ALTERNATIVA]` | `[BLOQUEANTE]` | `[VALIDADO
 
 ---
 
+## 🔥 Sesión 2026-03-28e — OptiX RT Router shaders, routing benchmark, 14/16 layers
+
+### [2026-03-28] [DECISIÓN] OptiX RT Router: separate minimal pipeline for expert selection
+
+**Contexto:** El código OptiX existente (`optix_host.cpp`, `ray_generation.cu`, etc.) implementa la atención óptica completa (multi-ray, energy decay, top-K tokens). Pero para el router MoE solo necesitamos: 1 rayo → closest expert AABB → expert_id.
+
+**Decisión:** Crear un pipeline OptiX separado y minimalista para routing:
+- `optix_router_raygen.cu` — raygen con single-ray (top-1) y multi-ray fan (top-K)
+- `optix_router_hitgroup.cu` — closesthit devuelve `primitiveIndex` = expert_id, miss devuelve sentinel
+- `optix_router_host.cpp` — clase `RTCoreRouter` auto-contenida con GAS build + benchmark
+- Payload mínimo: solo 2 registros (expert_id + distance) vs 6 del pipeline completo
+
+**Impacto:** Nuevos archivos en `cuda/`, nuevo target `liquidbit_rt_router` + `rt_router_benchmark` en CMakeLists.txt. No afecta al pipeline de atención existente.
+
+### [2026-03-28] [MEJORA] Benchmark de routing backends para el paper
+
+**Contexto:** FASE 10 (paper) necesita tabla comparativa de latencia de routing.
+
+**Decisión:** Creado `python/benchmark_routing_backends.py` que mide:
+1. PyTorch BVHRouter (eval, argmax)
+2. CUDA kernel extension (bvh_torch_ext, zero-copy)
+3. 3D PCA + distance (simula OptiX RT Core)
+4. OptiX RT Cores (via ejecutable C++)
+
+Produce tabla con speedup relativo para batch sizes 1-1024.
+
+**Impacto:** Nuevo archivo `python/benchmark_routing_backends.py`. Feed directo al paper.
+
+### [2026-03-28] [VALIDADO] Training 14/16 capas completado
+
+**Contexto:** Script `train_remaining_layers.sh` entrenando 11 capas adicionales.
+
+**Estado:** 14/16 capas con checkpoint (L0-10, L12, L15 en per-layer dirs + L8 en main dir). Pendientes: L11, L13, L14. Script sigue corriendo en WSL.
+
+**Impacto:** Una vez L11/L13/L14 terminen, el script ejecuta calibración automática (Step 3) y evaluación PPL 16/16 (Step 4).
+
+### [2026-03-28] [FALLO] Bare except clauses en benchmark scripts
+
+**Contexto:** `benchmark.py:207` y `benchmark_scaling.py:113` usaban `except:` (bare except) que silencia cualquier error incluyendo KeyboardInterrupt y SystemExit.
+
+**Solución:** Cambiado a `except OSError:` que es el tipo correcto para fallos de `os.unlink()`.
+
+**Impacto:** `python/benchmark.py`, `python/benchmark_scaling.py`.
+
+---
+
 ## 🔥 Sesión 2026-03-28d — OptiX host overhaul, C++ cleanup, 16/16 training progress
 
 ### [2026-03-28] [FALLO] OptiX host code: PTX concatenation is invalid

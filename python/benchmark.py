@@ -204,7 +204,7 @@ def benchmark_optix_batch(db: EmbeddingDB, sentences: List[str],
         try:
             os.unlink(batch_path)
             os.unlink(results_path)
-        except:
+        except OSError:
             pass
 
 # ─────────────────────────────────────────────────────────────────

@@ -206,6 +206,8 @@ if(LIQUIDBIT_BUILD_OPTIX AND OptiX_INCLUDE_DIR)
         closest_hit.cu
         miss.cu
         ray_attention.cu
+        optix_router_raygen.cu
+        optix_router_hitgroup.cu
     )
 
     set(PTX_FILES "")
@@ -320,6 +322,83 @@ int main(int argc, char** argv) {
 
     add_dependencies(inception_runner combined_ptx)
     message(STATUS "Created target: inception_runner")
+
+    # ── RT Core Router library ───────────────────────────────────
+    # Minimal OptiX pipeline for expert selection via hardware RT Cores
+    # Uses optix_router_raygen.ptx + optix_router_hitgroup.ptx
+
+    add_library(liquidbit_rt_router STATIC
+        cuda/optix_router_host.cpp
+    )
+
+    target_include_directories(liquidbit_rt_router PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/include
+        ${OptiX_INCLUDE_DIR}
+        ${CUDAToolkit_INCLUDE_DIRS}
+    )
+
+    target_link_libraries(liquidbit_rt_router PUBLIC
+        liquidbit_core
+        CUDA::cudart
+        CUDA::cuda_driver
+    )
+
+    add_dependencies(liquidbit_rt_router optix_ptx)
+    message(STATUS "Created target: liquidbit_rt_router (RT Core expert routing)")
+
+    # ── RT Router benchmark executable ───────────────────────────
+    file(WRITE ${CMAKE_BINARY_DIR}/rt_router_benchmark_main.cpp
+"// Auto-generated benchmark runner for RT Core Router
+#include <iostream>
+#include <string>
+#include <cstdlib>
+
+extern \"C\" bool rtcore_router_benchmark(
+    unsigned int num_experts, unsigned int batch_size,
+    unsigned int num_warmup, unsigned int num_iters,
+    const char* ptx_raygen, const char* ptx_hitgroup);
+
+int main(int argc, char** argv) {
+    unsigned int num_experts = 64;
+    unsigned int batch_size  = 256;
+    unsigned int num_warmup  = 10;
+    unsigned int num_iters   = 100;
+
+    std::string ptx_dir = \".\";
+    if (argc > 1) ptx_dir = argv[1];
+    if (argc > 2) batch_size = static_cast<unsigned int>(std::atoi(argv[2]));
+    if (argc > 3) num_iters = static_cast<unsigned int>(std::atoi(argv[3]));
+
+    std::string ptx_raygen   = ptx_dir + \"/ptx/optix_router_raygen.ptx\";
+    std::string ptx_hitgroup = ptx_dir + \"/ptx/optix_router_hitgroup.ptx\";
+
+    std::cout << \"RT Core Router Benchmark\" << std::endl;
+    std::cout << \"PTX raygen:   \" << ptx_raygen << std::endl;
+    std::cout << \"PTX hitgroup: \" << ptx_hitgroup << std::endl;
+
+    if (!rtcore_router_benchmark(num_experts, batch_size, num_warmup,
+                                  num_iters, ptx_raygen.c_str(),
+                                  ptx_hitgroup.c_str())) {
+        std::cerr << \"Benchmark FAILED\" << std::endl;
+        return 1;
+    }
+
+    return 0;
+}
+")
+
+    add_executable(rt_router_benchmark
+        ${CMAKE_BINARY_DIR}/rt_router_benchmark_main.cpp
+    )
+
+    target_link_libraries(rt_router_benchmark
+        liquidbit_rt_router
+        CUDA::cudart
+        CUDA::cuda_driver
+    )
+
+    add_dependencies(rt_router_benchmark optix_ptx)
+    message(STATUS "Created target: rt_router_benchmark")
 
 else()
     message(STATUS "OptiX build DISABLED — set OptiX_INSTALL_DIR or install OptiX SDK 9.1")
