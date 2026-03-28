@@ -88,11 +88,13 @@ de racks de H100.
 | Kernel | Funcion | Latencia | Estado |
 |---|---|---|---|
 | `bvh_router_kernel.cu` | Router 3 niveles, constant mem | 8.83 us | Compilado |
-| `bvh_router_deep.cu` | Router 3-8 niveles (65K expertos) | ~15 us | Compilado |
-| `async_pipeline.cu` | Pipeline tri-core triple buffer | TBD | Compilado |
-| `ternary_expert.cu` | BitNet 1.58 POPCOUNT | TBD | Compilado |
-| `liquid_expert.cu` | Experto ODE adaptativo | TBD | Por compilar |
-| `optix_bvh_router.cu` | RT Cores via OptiX | TBD | SDK instalado, pendiente build |
+| `bvh_router_deep.cu` | Router 3-8 niveles (65K expertos) | ~15 us | No creado (FASE 8) |
+| `async_pipeline.cu` | Pipeline tri-core triple buffer | TBD | No creado (FASE 6) |
+| `ternary_expert.cu` | BitNet 1.58 POPCOUNT (PyTorch ext) | TBD | Compilado (ternary_torch_ext.cu) |
+| `liquid_expert.cu` | Experto ODE adaptativo | TBD | No creado (FASE 9) |
+| `optix_bvh_router.cu` | RT Cores via OptiX (full attn) | TBD | SDK instalado, pendiente build |
+| `optix_router_raygen.cu` | RT Core expert selection | TBD | Shader creado, pendiente PTX |
+| `optix_router_hitgroup.cu` | RT Core hit/miss programs | TBD | Shader creado, pendiente PTX |
 
 ---
 
@@ -205,6 +207,13 @@ vs ~80 ciclos en CUDA cores. Speedup teorico: 10-20x sobre kernel actual.
 - ✅ Add loadPTXFile() + createLiquidBitOptixContextFromFiles() factory
 - ✅ Fix pipeline compile options (was nullptr → stored as member)
 - ✅ test_optix_pipeline.cpp: integration test with GAS build + CPU baseline
+
+**RT Core Router (2026-03-28e):**
+- ✅ optix_router_raygen.cu: minimal raygen (single-ray + top-K multi-ray fan)
+- ✅ optix_router_hitgroup.cu: closesthit returns primitiveIndex, miss returns sentinel
+- ✅ optix_router_host.cpp: RTCoreRouter class with GAS build + benchmark
+- ✅ CMakeLists.txt: liquidbit_rt_router lib + rt_router_benchmark executable
+- ✅ benchmark_routing_backends.py: compare PyTorch vs CUDA ext vs 3D-PCA vs OptiX
 
 **Tareas:**
 - [x] Instalar CUDA Toolkit 12.8
@@ -475,11 +484,13 @@ python python/olmoe_e2e_eval.py --model-dir /path/to/olmoe-1b-7b \
 **Archivos:** `python/extract_real_hiddens.py`, `python/olmoe_bvh_distill.py`,
 `python/calibrate_router.py`, `python/olmoe_e2e_eval.py`
 
-### Estado actual: FASE 3 — Multi-layer (5/16 capas)
+### Estado actual: FASE 3 — Multi-layer (14/16 capas)
 
 - [x] 5 capas reemplazadas (0,4,8,12,15): PPL +4.2% (re-train) / +4.8% (original)
-- [ ] Entrenar capas restantes: 1,2,3,5,6,7,9,10,11,13,14 → `bash scripts/train_remaining_layers.sh`
-- [ ] 16/16 capas: target <15% PPL degradation
+- [x] 9 capas adicionales entrenadas: 1,2,3,5,6,7,9,10 → checkpoints en `checkpoints/olmoe_distill_layer*/`
+- [ ] 3 capas restantes: L11, L13, L14 → `bash scripts/train_remaining_layers.sh` (corriendo)
+- [ ] Calibrar 16 routers (Step 3 automatico tras training)
+- [ ] 16/16 PPL evaluation: target <15% PPL degradation
 
 ### Recuperacion de datos (2026-03-28)
 
@@ -507,11 +518,11 @@ Los **deltas relativos son comparables** y de hecho mejores gracias a calibracio
 - PPL 6.16 (+0.8%) con 1 capa, 6.40 (+4.8%) con 5 capas
 - Pipeline completo: extract → train → calibrate → eval
 
-**Paso 2 — 16/16 capas** [🔄 EN PROGRESO — 13/16]
+**Paso 2 — 16/16 capas** [🔄 EN PROGRESO — 14/16]
 - ✅ Re-generar checkpoints (perdidos 28-Mar): `bash scripts/regenerate_all.sh` — COMPLETADO
 - ✅ 5 capas validadas: PPL +4.2% (mejor que original +4.8%)
-- ✅ 13 capas entrenadas: L0-9, L12, L15. Pendientes: L10, L11, L13, L14
-- 🔄 Script automatico: `bash scripts/train_remaining_layers.sh`
+- ✅ 14 capas entrenadas: L0-10, L12, L15. Pendientes: L11, L13, L14
+- 🔄 Script automatico: `bash scripts/train_remaining_layers.sh` (corriendo en WSL)
 - Target: PPL delta <15%
 
 **Paso 2b — Arreglar demo** [✅ FIX APLICADO — PENDIENTE VERIFICACION]
