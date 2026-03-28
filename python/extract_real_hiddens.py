@@ -95,11 +95,8 @@ def extract_hidden_states(
         torch_dtype=torch.float16,
         device_map="auto",
         trust_remote_code=True,
-        local_files_only=True,
     )
-    tokenizer = AutoTokenizer.from_pretrained(
-        model_dir, trust_remote_code=True, local_files_only=True
-    )
+    tokenizer = AutoTokenizer.from_pretrained(model_dir, trust_remote_code=True)
     model.eval()
     elapsed = time.time() - t0
     print(f"  Loaded in {elapsed:.1f}s")
