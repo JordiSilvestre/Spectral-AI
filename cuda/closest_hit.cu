@@ -58,7 +58,7 @@ extern "C" __constant__ float c_lambda;
  *
  * Modifica:
  *   - OptixSetPayload_0/1/2: Actualiza datos del rayo
- *   - optixIgnoreIntersection(): Descarta el hit si energía es muy baja
+ *   - Early return if energy too low or primitive index invalid
  * ============================================================================
  */
 extern "C" __global__ void __closesthit__ch_optical_attention() {
@@ -90,7 +90,7 @@ extern "C" __global__ void __closesthit__ch_optical_attention() {
 
     // Verificar que el índice es válido
     if (primitive_idx >= LIQUIDBIT_MAX_SEQUENCE_LENGTH) {
-        optixIgnoreIntersection();
+        // In closest-hit, intersection is already committed — just return early
         return;
     }
 
@@ -136,7 +136,7 @@ extern "C" __global__ void __closesthit__ch_optical_attention() {
     // Aplicar threshold de energía mínima
     if (attention_weight < LIQUIDBIT_ENERGY_THRESHOLD) {
         // Energía muy baja: ignorar este hit y continuar con la traversal
-        optixIgnoreIntersection();
+        // In closest-hit, intersection is already committed — just return early
         return;
     }
 
@@ -208,7 +208,7 @@ extern "C" __global__ void __closesthit__ch_optical_attention_topk() {
     uint32_t primitive_idx = optixGetPrimitiveIndex();
 
     if (primitive_idx >= LIQUIDBIT_MAX_SEQUENCE_LENGTH) {
-        optixIgnoreIntersection();
+        // In closest-hit, intersection is already committed — just return early
         return;
     }
 
@@ -230,7 +230,7 @@ extern "C" __global__ void __closesthit__ch_optical_attention_topk() {
     float attention_weight = energy_remaining * expf(-c_lambda * semantic_distance);
 
     if (attention_weight < LIQUIDBIT_ENERGY_THRESHOLD) {
-        optixIgnoreIntersection();
+        // In closest-hit, intersection is already committed — just return early
         return;
     }
 
