@@ -1,5 +1,5 @@
 # LiquidBit Zero-Matrix — ROADMAP
-> Hoja de ruta completa del proyecto. Ultima actualizacion: 2026-03-27
+> Hoja de ruta completa del proyecto. Ultima actualizacion: 2026-03-28
 > Para decisiones y fallos: LEARNINGS.md | Para arquitectura: CLAUDE.md
 
 ---
@@ -380,61 +380,99 @@ liquidbit-zero-matrix/
 
 ---
 
-## FASE A v2 — OLMoE Expert Distillation [✅ PRUEBA DE CONCEPTO VALIDADA]
+## FASE A — OLMoE BVH Distillation [✅ VALIDADA — PPL +0.8% single, +4.8% multi]
 
-**Objetivo:** Usar expertos REALES pre-entrenados en vez de entrenarlos desde cero.
+**Objetivo:** Reemplazar el gate lineal de OLMoE-1B-7B (7B params, 64 expertos) con
+nuestro BVH Router geometrico y medir el impacto en perplexity real.
 
-**Contexto:** FASE A v1 (MoE from scratch, 16 expertos) llego a ceiling PPL=186 con alpha
-decayendo a 0.11. Los expertos no se especializan con solo 5M tokens de training.
-OLMoE-1B-7B tiene 64 expertos SwiGLU ya especializados tras pre-training.
+**Contexto:** FASE A v1 (MoE from scratch) llego a ceiling PPL=186. Los expertos no se
+especializan con solo 5M tokens. OLMoE-1B-7B tiene 64 expertos SwiGLU ya especializados.
 
-**Resultados finales v2.1 (30 epochs, 500K samples):**
+### Resultado principal (PPL end-to-end)
 
-| Metrica | v1 (fallo) | v2.1 (exito) | Baseline |
+| Configuracion | PPL | Delta vs baseline (6.11) | Estado |
 |---|---|---|---|
-| Top-8 overlap | 13% | **74.4%** | 12.5% |
-| Top-1 accuracy | ~1.6% | **74.0%** | 1.6% |
-| Output cosine sim | — | **0.8127** | ~0 |
-| Experts activos | — | 64/64 | — |
+| Baseline (gate lineal OLMoE) | 6.11 | — | Referencia |
+| BVH Router 1 capa (L8) | 6.16 | **+0.8%** | ✅ Validado |
+| BVH Router 2 capas (L4,8) | 6.23 | **+2.0%** | ✅ Validado |
+| BVH Router 5 capas (L0,4,8,12,15) | 6.40 | **+4.8%** | ✅ Validado |
 
-**Conclusion:** El routing geometrico BVH puede sustituir gates lineales con calidad
-comparable (81% cosine similarity en output). La clave fue preservar features 128-dim
-a traves de la jerarquia en vez de comprimir todo a 3D.
+**Degradacion lineal ~1% por capa reemplazada.** Extrapolacion: 16/16 capas → ~15% PPL.
 
-**Tareas:**
-- [x] Extraccion de OLMoE layer 8: 193 tensores, 805 MB, forward verificado
-- [x] BVH Router v1: FALLO — 13% overlap (= aleatorio). Cuello de botella 2048->3D
-- [x] EnhancedBVHRouter v2.1: 74.4% top-8, 74.0% top-1, 0.81 cosine sim
-- [ ] End-to-end: BVH Router + frozen OLMoE experts → medir PPL real
+### Precision por capa
 
-**Archivos:** `python/olmoe_extract.py`, `python/olmoe_bvh_distill.py`, `python/inspect_olmoe.py`
+| Capa | Top-8 | Top-1 | Calibracion cosine |
+|---|---|---|---|
+| L0 | 87.8% | 89.0% | 0.97 |
+| L4 | 86.4% | 73.0% | 0.97 |
+| L8 | 91.7% | 71.1% | 0.97 |
+| L12 | 92.2% | 74.5% | 0.97 |
+| L15 | 93.2% | 74.7% | 0.97 |
+
+### Componentes clave
+
+- **EnhancedBVHRouter**: Jerarquia 4x4x4 = 64 expertos, ~1.35M params, 128-dim features
+- **Sparse Upcycling**: Inicializacion del router desde pesos del gate (SVD + K-Means)
+- **Calibracion Linear**: Capa 64→64 (4160 params) que ajusta distribucion de pesos → cosine 0.97
+- **`norm_topk_prob=False`**: Critico — OLMoE usa pesos raw softmax, NO normalizados
+- **Full softmax**: Softmax sobre 64 expertos completos, luego `.gather()` los top-k
+
+### Bugs criticos resueltos
+
+| Bug | Impacto | Solucion |
+|---|---|---|
+| `norm_topk_prob=False` ignorado | PPL 7.67 en vez de 6.11 | Leer atributo del gate original |
+| Softmax restringido en hybrid | Pesos inflados (16 vs 64 expertos) | Softmax completo + gather |
+| Distribucion de pesos BVH | PPL 134 sin calibrar | Calibracion linear 64→64 (4160 params) |
+
+### Pipeline
+
+```bash
+# 1. Extraer hidden states reales
+python python/extract_real_hiddens.py --model-dir /path/to/olmoe-1b-7b --layer 8
+
+# 2. Entrenar router BVH (50 epochs, sparse upcycling)
+python python/olmoe_bvh_distill.py --layer 8 --real-data data/real_hiddens_layer8.pt
+
+# 3. Calibrar pesos (linear 4160 params)
+python python/calibrate_router.py --mode linear --epochs 100 --real-data data/real_hiddens_layer8.pt
+
+# 4. Evaluar PPL end-to-end
+python python/olmoe_e2e_eval.py --model-dir /path/to/olmoe-1b-7b \
+    --router-checkpoint checkpoints/olmoe_distill/bvh_router_best.pt
+```
+
+**Archivos:** `python/extract_real_hiddens.py`, `python/olmoe_bvh_distill.py`,
+`python/calibrate_router.py`, `python/olmoe_e2e_eval.py`
+
+### Estado actual: FASE 3 — Multi-layer (5/16 capas)
+
+- [x] 5 capas reemplazadas (0,4,8,12,15): PPL 6.40 (+4.8%)
+- [ ] Entrenar capas restantes: 1,2,3,5,6,7,9,10,11,13,14
+- [ ] 16/16 capas: target <15% PPL degradation
 
 ---
 
-## Proximos pasos inmediatos (actualizado 2026-03-27)
+## Proximos pasos inmediatos (actualizado 2026-03-28)
 
-### PRIORIDAD MAXIMA: Prototipo 100% Operativo
+### PRIORIDAD MAXIMA: Completar 16/16 capas
 
-> "Antes de mover nada tenemos que tener el prototipo 100% operativo"
+**Paso 1 — OLMoE Distillation** [✅ COMPLETADO]
+- PPL 6.16 (+0.8%) con 1 capa, 6.40 (+4.8%) con 5 capas
+- Pipeline completo: extract → train → calibrate → eval
 
-**Paso 1 — OLMoE Distillation v2.1** [✅ COMPLETADO — 74.4% top-8]
-- EnhancedBVHRouter con 128-dim features + knowledge distillation
-- Resultado: 74.4% top-8, 74.0% top-1, 0.8127 cosine sim — PRUEBA DE CONCEPTO VALIDADA
-- Siguiente: end-to-end con expertos reales (medir PPL)
+**Paso 2 — 16/16 capas** [🔄 EN PROGRESO — 5/16]
+- Re-generar checkpoints (perdidos 28-Mar): `bash scripts/regenerate_all.sh`
+- Entrenar 11 capas restantes: 1,2,3,5,6,7,9,10,11,13,14
+- Target: PPL <7.0 (≈+15% degradacion)
 
-**Paso 2 — Build C++/CUDA con CMake** [✅ COMPLETADO — 0 errores]
+**Paso 3 — Build C++/CUDA con CMake** [✅ COMPILADO — 11 targets]
 - CUDA 13.2, OptiX 9.1, CMake 4.2.3, MSVC 18.4, sm_89+sm_120
-- 11 targets compilados: benchmark 1.7-2.5x speedup en RTX 5070 Ti
-- Struct alignment validado via print_struct_sizes.exe
-
-**Paso 3 — Shaders OptiX → PTX** [DESPUES DEL BUILD]
-- Compilar ray_generation.cu, closest_hit.cu, miss.cu, any_hit.cu a PTX
-- Integrar con optixModuleCreate() en optix_host.cpp
-- Benchmark: RT Cores vs CUDA kernel actual
+- Shaders OptiX → PTX: pendiente integrar con optixModuleCreate()
 
 ### DESPUES DEL PROTOTIPO
 
-4. **Patentes:** Filing 3 provisionales USPTO ($1,050 total). Patent 3 reforzada con Claims 21-33
+4. **Patentes:** Filing 3 provisionales USPTO ($1,050 total)
 5. **Pipeline async (Fase 6):** RT + CUDA + Tensor Cores en paralelo
 6. **Escalado (Fase 8):** 64 → 65K expertos con bvh_router_deep.cu
 7. **Paper (Fase 10):** NeurIPS/ICML 2027

@@ -168,8 +168,11 @@ def load_olmoe_model(model_dir: str, device: str = "cuda"):
         torch_dtype=torch.float16,
         device_map="auto",
         trust_remote_code=True,
+        local_files_only=True,
     )
-    tokenizer = AutoTokenizer.from_pretrained(model_dir, trust_remote_code=True)
+    tokenizer = AutoTokenizer.from_pretrained(
+        model_dir, trust_remote_code=True, local_files_only=True
+    )
 
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
