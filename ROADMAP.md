@@ -380,7 +380,7 @@ liquidbit-zero-matrix/
 
 ---
 
-## FASE A — OLMoE BVH Distillation [✅ VALIDADA — PPL +0.8% single, +4.8% multi]
+## FASE A — OLMoE BVH Distillation [✅ VALIDADA — PPL +0.6% single, +4.2% multi]
 
 **Objetivo:** Reemplazar el gate lineal de OLMoE-1B-7B (7B params, 64 expertos) con
 nuestro BVH Router geometrico y medir el impacto en perplexity real.
@@ -390,6 +390,8 @@ especializan con solo 5M tokens. OLMoE-1B-7B tiene 64 expertos SwiGLU ya especia
 
 ### Resultado principal (PPL end-to-end)
 
+**Sesion original (pre-pérdida datos):**
+
 | Configuracion | PPL | Delta vs baseline (6.11) | Estado |
 |---|---|---|---|
 | Baseline (gate lineal OLMoE) | 6.11 | — | Referencia |
@@ -397,17 +399,31 @@ especializan con solo 5M tokens. OLMoE-1B-7B tiene 64 expertos SwiGLU ya especia
 | BVH Router 2 capas (L4,8) | 6.23 | **+2.0%** | ✅ Validado |
 | BVH Router 5 capas (L0,4,8,12,15) | 6.40 | **+4.8%** | ✅ Validado |
 
-**Degradacion lineal ~1% por capa reemplazada.** Extrapolacion: 16/16 capas → ~15% PPL.
+**Re-training (post-recuperación, transformers 4.46.3):**
 
-### Precision por capa
-
-| Capa | Top-8 | Top-1 | Calibracion cosine |
+| Configuracion | PPL | Delta vs baseline (7.15) | Estado |
 |---|---|---|---|
-| L0 | 87.8% | 89.0% | 0.97 |
-| L4 | 86.4% | 73.0% | 0.97 |
-| L8 | 91.7% | 71.1% | 0.97 |
-| L12 | 92.2% | 74.5% | 0.97 |
-| L15 | 93.2% | 74.7% | 0.97 |
+| Baseline (gate lineal OLMoE) | 7.15 | — | Referencia |
+| BVH Router 1 capa (L8) | 7.19 | **+0.6%** | ✅ Validado |
+| BVH Router 5 capas (L0,4,8,12,15) | 7.45 | **+4.2%** | ✅ Validado |
+
+**Nota:** Baseline diferente (7.15 vs 6.11) por version de transformers. Los **deltas son
+mejores** en el re-training (+0.6% y +4.2%) gracias a calibracion linear (4160 params)
+en vez de affine (128 params).
+
+**Degradacion lineal ~0.8% por capa reemplazada.** Extrapolacion: 16/16 capas → ~13% PPL.
+
+### Precision por capa (re-training vs original)
+
+| Capa | Orig top-8 | Re-train top-8 | Orig top-1 | Re-train top-1 | Cal cosine |
+|---|---|---|---|---|---|
+| L0 | 87.8% | 80.4% | 89.0% | 89.6% | 0.95 |
+| L4 | 86.4% | 80.2% | 73.0% | 79.6% | 0.96 |
+| L8 | 91.7% | 85.9% | 71.1% | 76.7% | 0.97 |
+| L12 | 92.2% | 88.8% | 74.5% | 77.4% | 0.96 |
+| L15 | 93.2% | 89.3% | 74.7% | 80.2% | 0.96 |
+
+**Patron:** Top-8 baja 3-7% pero top-1 sube en TODAS las capas. PPL delta mejora.
 
 ### Componentes clave
 
@@ -447,9 +463,25 @@ python python/olmoe_e2e_eval.py --model-dir /path/to/olmoe-1b-7b \
 
 ### Estado actual: FASE 3 — Multi-layer (5/16 capas)
 
-- [x] 5 capas reemplazadas (0,4,8,12,15): PPL 6.40 (+4.8%)
-- [ ] Entrenar capas restantes: 1,2,3,5,6,7,9,10,11,13,14
+- [x] 5 capas reemplazadas (0,4,8,12,15): PPL +4.2% (re-train) / +4.8% (original)
+- [ ] Entrenar capas restantes: 1,2,3,5,6,7,9,10,11,13,14 → `bash scripts/train_remaining_layers.sh`
 - [ ] 16/16 capas: target <15% PPL degradation
+
+### Recuperacion de datos (2026-03-28)
+
+⚠️ **Los checkpoints y datos fueron re-generados** tras perdida de archivos. Los valores
+absolutos de PPL cambiaron (baseline 7.15 vs 6.11) por version de transformers (4.46.3).
+Los **deltas relativos son comparables** y de hecho mejores gracias a calibracion linear.
+
+**Tests manuales post-recuperacion:**
+
+| Test | Estado | Notas |
+|------|--------|-------|
+| Kernel CUDA (`build_ext.py`) | ✅ | sm_120, 23.6 μs/iter |
+| Expert ternario (`build_ternary_ext.py`) | ✅ | POPCOUNT OK, max diff 0.000031 |
+| PPL single-layer (L8) | ✅ | +0.6% delta |
+| PPL multi-layer (5 capas) | ✅ | +4.2% delta |
+| Demo (`real_model_demo.py`) | ❌ | Routing colapsado, output garbage — POR ARREGLAR |
 
 ---
 
@@ -462,9 +494,14 @@ python python/olmoe_e2e_eval.py --model-dir /path/to/olmoe-1b-7b \
 - Pipeline completo: extract → train → calibrate → eval
 
 **Paso 2 — 16/16 capas** [🔄 EN PROGRESO — 5/16]
-- Re-generar checkpoints (perdidos 28-Mar): `bash scripts/regenerate_all.sh`
-- Entrenar 11 capas restantes: 1,2,3,5,6,7,9,10,11,13,14
-- Target: PPL <7.0 (≈+15% degradacion)
+- ✅ Re-generar checkpoints (perdidos 28-Mar): `bash scripts/regenerate_all.sh` — COMPLETADO
+- ✅ 5 capas validadas: PPL +4.2% (mejor que original +4.8%)
+- 🔄 Entrenar 11 capas restantes: `bash scripts/train_remaining_layers.sh`
+- Target: PPL delta <15%
+
+**Paso 2b — Arreglar demo** [❌ PENDIENTE]
+- `real_model_demo.py` regenerado tiene routing colapsado (todos Expert #11)
+- Output gibberish — necesita debugging del pipeline de generacion
 
 **Paso 3 — Build C++/CUDA con CMake** [✅ COMPILADO — 11 targets]
 - CUDA 13.2, OptiX 9.1, CMake 4.2.3, MSVC 18.4, sm_89+sm_120
