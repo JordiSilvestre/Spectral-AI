@@ -198,6 +198,14 @@ vs ~80 ciclos en CUDA cores. Speedup teorico: 10-20x sobre kernel actual.
 - ✅ liquidbit_core.lib + liquidbit_optix.lib + inception_runner.exe
 - ✅ 0 errores de compilacion (solo warnings menores)
 
+**Host code overhaul (2026-03-28d):**
+- ✅ optix_host.cpp: split single module → 3 modules (raygen, hitgroup, miss)
+- ✅ Fix entry point names (alpha_bsh_* → optical_attention matching real shaders)
+- ✅ Remove non-existent __anyhit__ and __intersection__ references
+- ✅ Add loadPTXFile() + createLiquidBitOptixContextFromFiles() factory
+- ✅ Fix pipeline compile options (was nullptr → stored as member)
+- ✅ test_optix_pipeline.cpp: integration test with GAS build + CPU baseline
+
 **Tareas:**
 - [x] Instalar CUDA Toolkit 12.8
 - [x] Instalar OptiX SDK 9.1
@@ -205,7 +213,8 @@ vs ~80 ciclos en CUDA cores. Speedup teorico: 10-20x sobre kernel actual.
 - [x] Fix include paths en `cuda/optix_host.cpp`
 - [x] `cmake --build .` sin errores
 - [x] Compilar shaders OptiX (.cu → .ptx) para ray_generation, closest_hit, miss, ray_attention
-- [ ] Mapear sphere_centers → OptixAabb
+- [x] Fix host code: multi-module, entry points, PTX loader, pipeline options
+- [x] Mapear sphere_centers → OptixAabb (en buildAccelerationStructure + test)
 - [ ] Construir IAS (Instance Acceleration Structure) jerarquico 4 niveles
 - [ ] Rayo = embedding como origen + direccion
 - [ ] RT Cores devuelven hit mas cercano = expert_id
@@ -498,10 +507,11 @@ Los **deltas relativos son comparables** y de hecho mejores gracias a calibracio
 - PPL 6.16 (+0.8%) con 1 capa, 6.40 (+4.8%) con 5 capas
 - Pipeline completo: extract → train → calibrate → eval
 
-**Paso 2 — 16/16 capas** [🔄 EN PROGRESO — 5/16]
+**Paso 2 — 16/16 capas** [🔄 EN PROGRESO — 13/16]
 - ✅ Re-generar checkpoints (perdidos 28-Mar): `bash scripts/regenerate_all.sh` — COMPLETADO
 - ✅ 5 capas validadas: PPL +4.2% (mejor que original +4.8%)
-- 🔄 Entrenar 11 capas restantes: `bash scripts/train_remaining_layers.sh`
+- ✅ 13 capas entrenadas: L0-9, L12, L15. Pendientes: L10, L11, L13, L14
+- 🔄 Script automatico: `bash scripts/train_remaining_layers.sh`
 - Target: PPL delta <15%
 
 **Paso 2b — Arreglar demo** [✅ FIX APLICADO — PENDIENTE VERIFICACION]
