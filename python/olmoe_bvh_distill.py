@@ -560,6 +560,52 @@ class GateDistillationDataset(Dataset):
         )
 
 
+class RealHiddensDataset(Dataset):
+    """
+    Load pre-extracted real hidden states from extract_real_hiddens.py.
+
+    The .pt file contains:
+        hidden_states: (N, 2048) fp16
+        gate_logits:   (N, 64) fp16  (actually softmax probabilities)
+        topk_ids:      (N, 8) int64
+    """
+
+    def __init__(self, path: str, max_samples: int = None):
+        super().__init__()
+        print(f"  Loading real hidden states from {path}...")
+        t0 = time.time()
+
+        data = torch.load(path, map_location="cpu", weights_only=False)
+        self.hidden_states = data["hidden_states"].float()
+        self.gate_logits = data["gate_logits"].float()
+        self.topk_ids = data["topk_ids"]
+
+        if max_samples and len(self.hidden_states) > max_samples:
+            idx = torch.randperm(len(self.hidden_states))[:max_samples]
+            self.hidden_states = self.hidden_states[idx]
+            self.gate_logits = self.gate_logits[idx]
+            self.topk_ids = self.topk_ids[idx]
+
+        self.top1_labels = self.topk_ids[:, 0]
+        self.n_samples = len(self.hidden_states)
+
+        elapsed = time.time() - t0
+        print(f"  Loaded {self.n_samples:,} samples in {elapsed:.1f}s")
+        print(f"  Hidden: {self.hidden_states.shape}")
+        print(f"  Top-1 expert distribution: {self.top1_labels.unique().numel()} unique experts used")
+
+    def __len__(self):
+        return self.n_samples
+
+    def __getitem__(self, idx):
+        return (
+            self.hidden_states[idx],
+            self.gate_logits[idx],
+            self.topk_ids[idx],
+            self.top1_labels[idx],
+        )
+
+
 # ─────────────────────────────────────────────────────────────────
 # Loss functions
 # ─────────────────────────────────────────────────────────────────
@@ -689,9 +735,14 @@ def train_bvh_distillation(
     distill_temp: float = 4.0,
     device: str = "cuda",
     save_dir: str = "checkpoints",
+    real_data_path: str = None,
 ):
     """
     Train enhanced BVH router to match OLMoE gate via knowledge distillation.
+
+    If real_data_path is provided, loads pre-extracted hidden states instead of
+    generating synthetic random data. Real data gives dramatically better results
+    (91.7% vs 74.4% top-8 accuracy).
     """
     print("\n" + "=" * 60)
     print("  Enhanced BVH Router Distillation from OLMoE Gate")
@@ -699,16 +750,28 @@ def train_bvh_distillation(
 
     dtype = torch.float16 if device == "cuda" else torch.float32
 
-    # Generate datasets
-    print("\n[1/4] Generating training data...")
-    train_ds = GateDistillationDataset(
-        olmoe_layer, n_samples=n_train, device=device, dtype=dtype
-    )
-
-    print("\n[2/4] Generating validation data...")
-    val_ds = GateDistillationDataset(
-        olmoe_layer, n_samples=n_val, device=device, dtype=dtype
-    )
+    if real_data_path is not None:
+        # Use pre-extracted real hidden states
+        print("\n[1/4] Loading REAL hidden states (pre-extracted)...")
+        full_ds = RealHiddensDataset(real_data_path)
+        # Split into train/val
+        n_total = len(full_ds)
+        n_val_actual = min(n_val, n_total // 10)
+        n_train_actual = n_total - n_val_actual
+        train_ds, val_ds = torch.utils.data.random_split(
+            full_ds, [n_train_actual, n_val_actual]
+        )
+        print(f"\n[2/4] Split: {n_train_actual:,} train + {n_val_actual:,} val")
+    else:
+        # Generate synthetic data from OLMoE gate
+        print("\n[1/4] Generating training data (synthetic)...")
+        train_ds = GateDistillationDataset(
+            olmoe_layer, n_samples=n_train, device=device, dtype=dtype
+        )
+        print("\n[2/4] Generating validation data (synthetic)...")
+        val_ds = GateDistillationDataset(
+            olmoe_layer, n_samples=n_val, device=device, dtype=dtype
+        )
 
     train_loader = DataLoader(train_ds, batch_size=batch_size, shuffle=True,
                               num_workers=0, pin_memory=False)
@@ -984,6 +1047,9 @@ def main():
                         default="/mnt/j/Proyectos/models/olmoe-1b-7b")
     parser.add_argument("--layer", type=int, default=8,
                         help="OLMoE layer to extract (0-15)")
+    parser.add_argument("--real-data", type=str, default=None,
+                        help="Path to pre-extracted real hidden states (.pt). "
+                             "If provided, skips loading full OLMoE model.")
     parser.add_argument("--epochs", type=int, default=30)
     parser.add_argument("--n-train", type=int, default=500_000)
     parser.add_argument("--n-val", type=int, default=10_000)
@@ -995,19 +1061,29 @@ def main():
                         help="Run output quality benchmark after training")
     parser.add_argument("--distill-temp", type=float, default=4.0,
                         help="Distillation temperature")
+    parser.add_argument("--mlp-baseline", action="store_true",
+                        help="Use MLP baseline instead of BVH (sanity check)")
+    parser.add_argument("--no-upcycle", action="store_true",
+                        help="Skip sparse upcycling initialization")
     args = parser.parse_args()
 
     print("=" * 60)
     print("  LiquidBit FASE A v2.1 -- Enhanced BVH Distillation")
     print("=" * 60)
 
-    # Step 1: Load OLMoE layer
-    print(f"\n[Step 1] Loading OLMoE layer {args.layer}...")
-    olmoe_layer = load_olmoe_layer(
-        args.model_dir, args.layer,
-        device=args.device,
-        dtype=torch.float16 if args.device == "cuda" else torch.float32,
-    )
+    olmoe_layer = None
+
+    # Step 1: Load OLMoE layer (only needed if no --real-data or for upcycling)
+    need_model = (args.real_data is None) or (not args.no_upcycle and not args.mlp_baseline)
+    if need_model:
+        print(f"\n[Step 1] Loading OLMoE layer {args.layer}...")
+        olmoe_layer = load_olmoe_layer(
+            args.model_dir, args.layer,
+            device=args.device,
+            dtype=torch.float16 if args.device == "cuda" else torch.float32,
+        )
+    else:
+        print(f"\n[Step 1] Skipping model load (--real-data provided + --no-upcycle)")
 
     # Step 2: Create router
     if args.mlp_baseline:
@@ -1027,12 +1103,12 @@ def main():
         )
 
         # Step 2b: Sparse Upcycling — initialize router from gate weights
-        if not args.no_upcycle:
+        if not args.no_upcycle and olmoe_layer is not None:
             print(f"\n[Step 2b] Sparse Upcycling — initializing from gate weights...")
             gate_weight = olmoe_layer.gate.weight.data  # [64, 2048]
             initialize_router_from_gate(router, gate_weight, verbose=True)
         else:
-            print(f"\n[Step 2b] Skipping Sparse Upcycling (--no-upcycle)")
+            print(f"\n[Step 2b] Skipping Sparse Upcycling")
 
     # Step 3: Train
     router, best_acc = train_bvh_distillation(
@@ -1046,10 +1122,11 @@ def main():
         distill_temp=args.distill_temp,
         device=args.device,
         save_dir=args.save_dir,
+        real_data_path=args.real_data,
     )
 
-    # Step 4: Benchmark
-    if args.benchmark or best_acc >= 0.25:
+    # Step 4: Benchmark (only if model is loaded)
+    if olmoe_layer is not None and (args.benchmark or best_acc >= 0.25):
         benchmark_routing(
             olmoe_layer=olmoe_layer,
             router=router,

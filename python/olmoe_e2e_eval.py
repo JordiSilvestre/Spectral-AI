@@ -168,11 +168,8 @@ def load_olmoe_model(model_dir: str, device: str = "cuda"):
         torch_dtype=torch.float16,
         device_map="auto",
         trust_remote_code=True,
-        local_files_only=True,
     )
-    tokenizer = AutoTokenizer.from_pretrained(
-        model_dir, trust_remote_code=True, local_files_only=True
-    )
+    tokenizer = AutoTokenizer.from_pretrained(model_dir, trust_remote_code=True)
 
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
@@ -238,7 +235,7 @@ def replace_gate_with_bvh(
     Returns (original_gate, orig_forward_or_None).
     """
     # Load trained router
-    ckpt = torch.load(router_checkpoint, map_location="cpu", weights_only=True)
+    ckpt = torch.load(router_checkpoint, map_location="cpu", weights_only=False)
     config = ckpt["config"]
     router_type = ckpt.get("router_type", "bvh")
 
