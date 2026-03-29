@@ -245,6 +245,8 @@ bool AlphaBSH::assignParentChildRelationships(
     h_spheres[0].parent_id = 0;
     h_spheres[0].depth = 0;
 
+    // TODO(3.9): This nested loop is O(N^2) which becomes a bottleneck for large sphere counts.
+    // Replace with a KD-tree or spatial hash for O(N log N) nearest-neighbor assignment.
     // Asignar el resto de esferas
     for (uint32_t i = 1; i < num_spheres; ++i) {
         // Encontrar la esfera más cercana (será el padre potencial)
@@ -303,9 +305,16 @@ bool AlphaBSH::validateTreeStructure() const {
     printf("[INFO] Validating BSH tree structure...\n");
 
     // Copiar esferas a host para validación
-    SemanticSphereAlpha* h_spheres = new SemanticSphereAlpha[num_spheres_];
-    cudaMemcpy(h_spheres, d_spheres_, num_spheres_ * sizeof(SemanticSphereAlpha),
+    std::vector<SemanticSphereAlpha> h_spheres_vec(num_spheres_);
+    cudaError_t copy_err = cudaMemcpy(h_spheres_vec.data(), d_spheres_,
+               num_spheres_ * sizeof(SemanticSphereAlpha),
                cudaMemcpyDeviceToHost);
+    if (copy_err != cudaSuccess) {
+        fprintf(stderr, "[ERROR] validateTreeStructure: cudaMemcpy failed: %s\n",
+                cudaGetErrorString(copy_err));
+        return false;
+    }
+    SemanticSphereAlpha* h_spheres = h_spheres_vec.data();
 
     bool valid = true;
     uint32_t max_depth_found = 0;
@@ -344,8 +353,6 @@ bool AlphaBSH::validateTreeStructure() const {
         }
     }
 
-    delete[] h_spheres;
-
     if (valid) {
         printf("[INFO] Tree validation passed. Max depth: %u\n", max_depth_found);
     } else {
@@ -365,6 +372,17 @@ AlphaRayPayload AlphaBSH::launchPhaseA(
     const AlphaConfig& config) {
 
     printf("[INFO] AlphaBSH::launchPhaseA - Starting Phase A (BSH traversal)\n");
+
+    if (query_embedding == nullptr || query_dim == 0) {
+        fprintf(stderr, "[ERROR] AlphaBSH::launchPhaseA - Invalid input: query_embedding=%p, query_dim=%u\n",
+                query_embedding, query_dim);
+        AlphaRayPayload empty_payload{};
+        empty_payload.hit_sphere_id = UINT32_MAX;
+        empty_payload.energy = 0.0f;
+        empty_payload.best_similarity = 0.0f;
+        empty_payload.depth_reached = 0;
+        return empty_payload;
+    }
 
     // Proyectar embedding a espacio 3D
     float3 query_point = projectEmbeddingTo3D(query_embedding, query_dim);
@@ -442,14 +460,23 @@ AlphaExecutionResult AlphaBSH::execute(
     // FASE A
     // ====================================================================
 
-    cudaEvent_t start_total, end_total;
+    // RAII guard for CUDA events to prevent resource leaks on any exit path
+    cudaEvent_t start_total = nullptr, end_total = nullptr;
+    cudaEvent_t start_phase_b = nullptr, end_phase_b = nullptr;
+
+    auto cleanup_events = [&]() {
+        if (start_total)   cudaEventDestroy(start_total);
+        if (end_total)     cudaEventDestroy(end_total);
+        if (start_phase_b) cudaEventDestroy(start_phase_b);
+        if (end_phase_b)   cudaEventDestroy(end_phase_b);
+    };
+
     cudaEventCreate(&start_total);
     cudaEventCreate(&end_total);
     cudaEventRecord(start_total);
 
     AlphaRayPayload phase_a_result = launchPhaseA(query_embedding, query_dim, config);
 
-    cudaEvent_t start_phase_b, end_phase_b;
     cudaEventCreate(&start_phase_b);
     cudaEventCreate(&end_phase_b);
 
@@ -511,10 +538,7 @@ AlphaExecutionResult AlphaBSH::execute(
     printf("[INFO] Output dimension: %u\n", final_result.output_dim);
     printf("[INFO] ========================================\n\n");
 
-    cudaEventDestroy(start_total);
-    cudaEventDestroy(end_total);
-    cudaEventDestroy(start_phase_b);
-    cudaEventDestroy(end_phase_b);
+    cleanup_events();
 
     return final_result;
 }

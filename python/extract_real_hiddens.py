@@ -193,6 +193,9 @@ def extract_hidden_states(
 
             # Get gate routing decisions for these exact hidden states
             h_gate = h_flat.to(device=device, dtype=torch.float16)
+            assert gate_weight.device == h_gate.device, (
+                f"Device mismatch: gate_weight on {gate_weight.device}, h_gate on {h_gate.device}"
+            )
             # Run through the gate's linear layer only (not full forward which does topk)
             # Result is full-distribution softmax probs (correct distillation target)
             raw_logits = F.linear(h_gate, gate_weight)

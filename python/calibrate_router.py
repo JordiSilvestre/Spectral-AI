@@ -105,7 +105,7 @@ def calibrate(
 
             with torch.no_grad():
                 router(h_batch.float())
-                bvh_logits = router._last_logits.detach()
+                bvh_logits = router._last_logits
 
             cal_logits = apply_cal(bvh_logits)
 
@@ -239,7 +239,7 @@ def main():
 
     # Load router
     print("\n[1/4] Loading router...")
-    ckpt = torch.load(args.router_checkpoint, map_location="cpu", weights_only=False)
+    ckpt = torch.load(args.router_checkpoint, map_location="cpu", weights_only=True)
     config = ckpt["config"]
     router = EnhancedBVHRouter(
         input_dim=config["input_dim"],
@@ -254,7 +254,7 @@ def main():
 
     # Load real data (subsample to save memory — 20K is plenty for 4K params)
     print("\n[2/4] Loading real hidden states...")
-    data = torch.load(args.real_data, map_location="cpu", weights_only=False)
+    data = torch.load(args.real_data, map_location="cpu", weights_only=True)
     hidden_states = data["hidden_states"]
     gate_probs = data["gate_logits"]
     del data  # free the dict shell

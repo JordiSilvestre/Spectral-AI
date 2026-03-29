@@ -145,7 +145,8 @@ __global__ void ray_traced_attention_kernel(
     result.total_attention = 0.0f;
 
     // Memoria compartida para reducción local de hit count
-    __shared__ uint32_t shared_hit_count[256];
+    // +32 padding to avoid shared memory bank conflicts (Bug 2.12)
+    __shared__ uint32_t shared_hit_count[256 + 32];
 
     // Inicializar shared memory
     if (threadIdx.x < num_queries) {
@@ -162,6 +163,9 @@ __global__ void ray_traced_attention_kernel(
     float total_attention_weight = 0.0f;
     uint32_t accumulated_top_tokens[LIQUIDBIT_MAX_TOP_TOKENS];
     float accumulated_top_weights[LIQUIDBIT_MAX_TOP_TOKENS];
+    // Bug 2.1 fix: separate counter for top-K accumulation to prevent buffer overflow.
+    // total_hit_count grows unbounded across rays, but the top-K array has fixed capacity.
+    uint32_t accumulated_top_count = 0;
 
     for (uint32_t ray_idx = 0; ray_idx < c_rays_per_query; ray_idx++) {
         // Obtener la dirección normalizada del rayo actual
@@ -236,10 +240,12 @@ __global__ void ray_traced_attention_kernel(
             float weight = ray_payload.top_weights[i];
 
             // Insertar en la lista acumulada (mantener ordenado)
+            // Bug 2.1 fix: use accumulated_top_count (bounded by capacity)
+            // instead of total_hit_count (unbounded across rays)
             insert_top_token(
                 accumulated_top_tokens,
                 accumulated_top_weights,
-                total_hit_count,
+                accumulated_top_count,
                 token_id,
                 weight
             );
@@ -252,14 +258,14 @@ __global__ void ray_traced_attention_kernel(
 
     // Normalizar pesos de atención (sum-to-1)
     if (total_attention_weight > 1e-6f) {
-        for (uint32_t i = 0; i < total_hit_count && i < LIQUIDBIT_MAX_TOP_TOKENS; i++) {
+        for (uint32_t i = 0; i < accumulated_top_count; i++) {
             accumulated_top_weights[i] /= total_attention_weight;
         }
     }
 
     // Escribir resultados al buffer global
     result.total_attention = total_attention_weight;
-    result.hit_count = min(total_hit_count, (uint32_t)LIQUIDBIT_MAX_TOP_TOKENS);
+    result.hit_count = accumulated_top_count;
 
     for (uint32_t i = 0; i < result.hit_count; i++) {
         result.top_token_ids[i] = accumulated_top_tokens[i];

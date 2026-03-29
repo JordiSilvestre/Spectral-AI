@@ -155,26 +155,32 @@ def benchmark_orchestrator_cuda(device: torch.device,
     if not hybrid.cuda_available:
         return {"ms": None, "toks": None, "note": "CUDA kernel no disponible"}
 
-    # Parchear el modelo para usar CUDA routing
-    original_router_fwd = model.router.forward
-    model.router.forward = hybrid.route  # sustituir forward
+    # Parchear el modelo para usar CUDA routing via context manager
+    from contextlib import contextmanager
+
+    @contextmanager
+    def patched_router(mdl, new_forward):
+        original_fwd = mdl.router.forward
+        mdl.router.forward = new_forward
+        try:
+            yield
+        finally:
+            mdl.router.forward = original_fwd
 
     batch_size = 32
     seq_len    = 128
     tokens     = torch.randint(0, 50_257, (batch_size, seq_len), device=device)
 
-    with torch.no_grad():
-        for _ in range(20):
-            model(tokens)
+    with patched_router(model, hybrid.route):
+        with torch.no_grad():
+            for _ in range(20):
+                model(tokens)
 
-    t0 = time.perf_counter()
-    with torch.no_grad():
-        for _ in range(n_iters):
-            logits, _ = model(tokens)
-    t1 = time.perf_counter()
-
-    # Restaurar router original
-    model.router.forward = original_router_fwd
+        t0 = time.perf_counter()
+        with torch.no_grad():
+            for _ in range(n_iters):
+                logits, _ = model(tokens)
+        t1 = time.perf_counter()
 
     ms   = (t1 - t0) / n_iters * 1000
     toks = batch_size * seq_len * n_iters / (t1 - t0)

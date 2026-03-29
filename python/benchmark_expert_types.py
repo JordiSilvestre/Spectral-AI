@@ -124,7 +124,7 @@ def create_fp16_backbone(cfg: OrchestratorConfig) -> nn.Module:
 def create_int8_backbone(cfg: OrchestratorConfig) -> nn.Module:
     """INT8 dynamic quantization (CPU only in PyTorch)."""
     model = create_fp32_backbone(cfg)
-    return torch.ao.quantization.quantize_dynamic(
+    return torch.quantization.quantize_dynamic(
         model, {nn.Linear}, dtype=torch.qint8
     )
 
@@ -248,9 +248,11 @@ def evaluate_orchestrator(
         total_samples += tokens.shape[0]
 
         # Per-domain tracking
+        domain_ids_cpu = domain_ids.cpu()
+        expert_ids_cpu = info['expert_id'].cpu()
         for i in range(tokens.shape[0]):
-            d = domain_ids[i].item()
-            eid = info['expert_id'][i].item()
+            d = domain_ids_cpu[i].item()
+            eid = expert_ids_cpu[i].item()
             experts_per_domain = model.cfg.n_experts // N_DOMAINS
             pred_domain = eid // experts_per_domain
             domain_total[d] += 1

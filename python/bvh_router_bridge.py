@@ -24,6 +24,7 @@ Copyright (c) 2026 LiquidBit Studio — Apache 2.0
 """
 
 import os
+import warnings
 import numpy as np
 import torch
 import torch.nn as nn
@@ -177,6 +178,11 @@ class HybridBVHRouter(nn.Module):
                 # Pad or truncate snell weights to SPEC_DIM
                 sw = l1_snell_w[k]
                 dim = min(len(sw), SPEC_DIM)
+                if len(sw) > SPEC_DIM:
+                    warnings.warn(
+                        f"Spectral dim truncated: model has {len(sw)} but CUDA kernel expects {SPEC_DIM}. "
+                        f"Recompile kernel with SPEC_DIM>={len(sw)} for full fidelity."
+                    )
                 snell_w[idx, :dim] = sw[:dim]
                 snell_b[idx] = l1_snell_b[k]
 

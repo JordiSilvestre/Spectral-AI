@@ -251,7 +251,7 @@ def replace_gate_with_bvh(
     Returns (original_gate, orig_forward_or_None).
     """
     # Load trained router
-    ckpt = torch.load(router_checkpoint, map_location="cpu", weights_only=False)
+    ckpt = torch.load(router_checkpoint, map_location="cpu", weights_only=True)
     config = ckpt["config"]
     router_type = ckpt.get("router_type", "bvh")
 

@@ -238,14 +238,15 @@ class LiquidBitOrchestrator(nn.Module):
         # domain_start[b] = domain_ids[b] * experts_per_domain
         domain_start = domain_ids * experts_per_domain  # (B,)
 
-        # Sumar probabilidad de los expertos del dominio correcto
-        domain_prob = torch.zeros(B, device=expert_probs.device)
-        for b in range(B):
-            start = domain_start[b].item()
-            domain_prob[b] = expert_probs[b, start:start + experts_per_domain].sum()
+        # Sumar probabilidad de los expertos del dominio correcto (vectorized)
+        # Build index ranges for each sample's domain experts using boolean mask
+        expert_indices = torch.arange(self.cfg.n_experts, device=expert_probs.device).unsqueeze(0)  # (1, E)
+        domain_start_expanded = domain_start.unsqueeze(1)  # (B, 1)
+        mask = (expert_indices >= domain_start_expanded) & (expert_indices < domain_start_expanded + experts_per_domain)  # (B, E)
+        domain_prob = (expert_probs * mask).sum(dim=1)  # (B,)
 
         # Loss: -log(prob del grupo correcto)
-        routing_loss = -torch.log(domain_prob + 1e-8).mean()
+        routing_loss = -torch.log(torch.clamp(domain_prob, min=1e-7)).mean()
         return routing_loss
 
     @torch.no_grad()

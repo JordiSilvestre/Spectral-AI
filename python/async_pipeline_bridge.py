@@ -141,7 +141,7 @@ class AsyncPipelineSimulator:
                 for local_idx, global_idx in enumerate(token_indices):
                     k_mask = (slot.expert_ids[global_idx] == expert_id)
                     weight = slot.expert_weights[global_idx][k_mask].sum()
-                    output[global_idx] += weight * expert_output[local_idx]
+                    output[global_idx] += weight * expert_output[local_idx].detach()
 
         slot.output = output
 
