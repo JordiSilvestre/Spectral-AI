@@ -1,5 +1,5 @@
 /**
- * async_pipeline.cu — Tri-Core Async Pipeline for LiquidBit
+ * async_pipeline.cu — Tri-Core Async Pipeline for SpectralAI
  *
  * Core insight: Modern GPUs have 3 independent execution engines that can
  * overlap when given separate CUDA streams:
@@ -18,7 +18,7 @@
  * After warmup (2 tokens), all 3 engines run simultaneously.
  * Steady-state latency ≈ max(route, prep, expert) instead of sum.
  *
- * Copyright (c) 2026 LiquidBit Studio — Apache 2.0
+ * Copyright (c) 2026 SpectralAI Studio — Apache 2.0
  */
 
 #include <cuda_runtime.h>
@@ -495,7 +495,7 @@ extern "C" void benchmark_async_pipeline(
     float ms = 0.0f;
     cudaEventElapsedTime(&ms, start, stop);
 
-    printf("\n  === LiquidBit Async Pipeline Benchmark ===\n");
+    printf("\n  === SpectralAI Async Pipeline Benchmark ===\n");
     printf("  Hidden dim:    %d\n", hidden_dim);
     printf("  Inter dim:     %d\n", inter_dim);
     printf("  Batch size:    %d\n", batch_size);

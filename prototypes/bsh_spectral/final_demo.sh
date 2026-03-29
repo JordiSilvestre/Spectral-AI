@@ -1,7 +1,7 @@
 #!/bin/bash
 
 echo "╔══════════════════════════════════════════════════════════════════════╗"
-echo "║    LiquidBit Zero-Matrix — W_dispersion Training DEMO               ║"
+echo "║    SpectralAI Zero-Matrix — W_dispersion Training DEMO               ║"
 echo "║    Reproduce completamente el entrenamiento en 2 pasos              ║"
 echo "╚══════════════════════════════════════════════════════════════════════╝"
 echo ""

@@ -3,9 +3,9 @@ export PATH=/usr/local/cuda-13.2/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/u
 export LD_LIBRARY_PATH=/usr/local/cuda-13.2/lib64
 export HOME=/home/jordi
 
-PROJ_LINK="/tmp/liquidbit"
+PROJ_LINK="/tmp/spectral"
 rm -f "$PROJ_LINK"
-ln -s "/mnt/j/Proyectos/LiquidBit Zero-Matrix" "$PROJ_LINK"
+ln -s "/mnt/j/Proyectos/SpectralAI Zero-Matrix" "$PROJ_LINK"
 
 source /home/jordi/liquidbit_venv/bin/activate
 cd "$PROJ_LINK"

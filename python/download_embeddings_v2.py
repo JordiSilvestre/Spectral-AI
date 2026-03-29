@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 ╔══════════════════════════════════════════════════════════════════════════╗
-║  LiquidBit Zero-Matrix — Embeddings Downloader v2.0                    ║
+║  SpectralAI Zero-Matrix — Embeddings Downloader v2.0                    ║
 ║  NUEVA IDEA (doc 1.pdf/2.pdf): gensim downloader en 1 línea            ║
 ║  ─────────────────────────────────────────────────────────────────────  ║
 ║  Métodos de carga disponibles:                                         ║
@@ -278,7 +278,7 @@ def validate_clusters(vocab, embeddings_3d):
 # ══════════════════════════════════════════════════════════════════════════
 
 def main():
-    parser = argparse.ArgumentParser(description="LiquidBit Embeddings Downloader v2.0")
+    parser = argparse.ArgumentParser(description="SpectralAI Embeddings Downloader v2.0")
     parser.add_argument("--source", choices=["gensim", "glove-file", "synthetic"],
                         default="gensim",
                         help="Fuente de embeddings (default: gensim)")
@@ -294,7 +294,7 @@ def main():
 
     print()
     print("╔══════════════════════════════════════════════════════════════════════════╗")
-    print("║    LiquidBit Zero-Matrix — Embeddings Downloader v2.0                  ║")
+    print("║    SpectralAI Zero-Matrix — Embeddings Downloader v2.0                  ║")
     print(f"║    Fuente: {args.source:<60}║")
     print("╚══════════════════════════════════════════════════════════════════════════╝")
     print()
@@ -354,7 +354,7 @@ def main():
     print(f"  ✅ {path_pca}    — {pca_components.shape} (para proyectar nuevos tokens)")
 
     print(f"""
-  INTEGRACIÓN CON LiquidBit:
+  INTEGRACIÓN CON SpectralAI:
   ─────────────────────────
   # Cargar en Python:
   import numpy as np
@@ -367,7 +367,7 @@ def main():
   new_vec_3d = (new_embedding - mean) @ pca.T  # → [3,]
 
   # Cargar en C++ (embedding_bridge.py → binario):
-  # liquidbit::BVHBuilder::loadEmbeddings("embeddings_3d.npy", vocab_size)
+  # spectral::BVHBuilder::loadEmbeddings("embeddings_3d.npy", vocab_size)
     """)
 
     # ── Instrucciones gensim ───────────────────────────────────────────────

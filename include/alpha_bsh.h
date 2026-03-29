@@ -4,7 +4,7 @@
  *
  * VISIÓN GENERAL:
  * ===============
- * Alpha BSH es una evolución del modelo LiquidBit Zero-Matrix que introduce un
+ * Alpha BSH es una evolución del modelo SpectralAI Zero-Matrix que introduce un
  * mecanismo de dos fases:
  *
  *   FASE A (Ray Tracing OptiX):     O(N log N) - Traversal del árbol BSH para
@@ -29,13 +29,13 @@
  *   2. Tensor Cores (cuBLAS) para cálculo denso y preciso en la esfera activada
  *   3. Memoria GPU: El BSH pesa ~10-50 MB, mucho más pequeño que el KV Cache
  *
- * @author LiquidBit Zero-Matrix Team
+ * @author SpectralAI Zero-Matrix Team
  * @date 2026
  */
 
 #pragma once
-#ifndef LIQUIDBIT_ALPHA_BSH_H_
-#define LIQUIDBIT_ALPHA_BSH_H_
+#ifndef SPECTRAL_ALPHA_BSH_H_
+#define SPECTRAL_ALPHA_BSH_H_
 
 #include <optix.h>
 #include <cuda_runtime.h>
@@ -671,4 +671,4 @@ __host__ __device__ inline float distanceToSimilarity(float distance, float lamb
     return expf(-lambda * distance * distance);
 }
 
-#endif // LIQUIDBIT_ALPHA_BSH_H_
+#endif // SPECTRAL_ALPHA_BSH_H_

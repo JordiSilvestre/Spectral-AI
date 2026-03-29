@@ -1,17 +1,17 @@
 /**
  * @file token_geometry.h
- * @brief Definiciones de estructuras geométricas para tokens en LiquidBit Zero-Matrix
+ * @brief Definiciones de estructuras geométricas para tokens en SpectralAI Zero-Matrix
  *
  * Este header contiene las definiciones fundamentales de cómo los tokens se mapean
  * a objetos geométricos en el espacio 3D para ser procesados por los RT Cores.
  *
- * @author LiquidBit Zero-Matrix Team
+ * @author SpectralAI Zero-Matrix Team
  * @date 2026
  */
 
 #pragma once
-#ifndef LIQUIDBIT_TOKEN_GEOMETRY_H_
-#define LIQUIDBIT_TOKEN_GEOMETRY_H_
+#ifndef SPECTRAL_TOKEN_GEOMETRY_H_
+#define SPECTRAL_TOKEN_GEOMETRY_H_
 
 #include <cuda_runtime.h>
 #include <cuda_fp16.h>
@@ -28,61 +28,61 @@
 // ============================================================================
 
 #ifdef __CUDACC__
-#  define LIQUIDBIT_HD __host__ __device__
+#  define SPECTRAL_HD __host__ __device__
 #else
-#  define LIQUIDBIT_HD
+#  define SPECTRAL_HD
 #endif
 
-LIQUIDBIT_HD inline float3 operator+(const float3& a, const float3& b) {
+SPECTRAL_HD inline float3 operator+(const float3& a, const float3& b) {
     return make_float3(a.x + b.x, a.y + b.y, a.z + b.z);
 }
 
-LIQUIDBIT_HD inline float3 operator-(const float3& a, const float3& b) {
+SPECTRAL_HD inline float3 operator-(const float3& a, const float3& b) {
     return make_float3(a.x - b.x, a.y - b.y, a.z - b.z);
 }
 
-LIQUIDBIT_HD inline float3 operator*(const float3& a, float s) {
+SPECTRAL_HD inline float3 operator*(const float3& a, float s) {
     return make_float3(a.x * s, a.y * s, a.z * s);
 }
 
-LIQUIDBIT_HD inline float3 operator*(float s, const float3& a) {
+SPECTRAL_HD inline float3 operator*(float s, const float3& a) {
     return make_float3(s * a.x, s * a.y, s * a.z);
 }
 
 // ============================================================================
-// Constantes globales de LiquidBit Zero-Matrix
+// Constantes globales de SpectralAI Zero-Matrix
 // ============================================================================
 
 /// Dimensión del embedding comprimido en el TokenNode (reducido de 768/4096 a FP16)
-constexpr uint32_t LIQUIDBIT_EMBEDDING_DIM = 256;
+constexpr uint32_t SPECTRAL_EMBEDDING_DIM = 256;
 
 /// Número máximo de rayos de atención óptica emitidos por token
-constexpr uint32_t LIQUIDBIT_NUM_RAYS = 4096;
+constexpr uint32_t SPECTRAL_NUM_RAYS = 4096;
 
 /// Coeficiente de absorción semántica (decay exponencial): attention = E₀ * exp(-λ * d)
-constexpr float LIQUIDBIT_LAMBDA = 0.1f;
+constexpr float SPECTRAL_LAMBDA = 0.1f;
 
 /// Dimensión de la compresión PCA proyectada al espacio 3D
-constexpr uint32_t LIQUIDBIT_SPATIAL_DIM = 3;
+constexpr uint32_t SPECTRAL_SPATIAL_DIM = 3;
 
 /// Número máximo de tokens en una secuencia de entrada
-constexpr uint32_t LIQUIDBIT_MAX_SEQUENCE_LENGTH = 131072;
+constexpr uint32_t SPECTRAL_MAX_SEQUENCE_LENGTH = 131072;
 
 /// Umbral de energía mínima del rayo para continuar la traversal
-constexpr float LIQUIDBIT_ENERGY_THRESHOLD = 0.01f;
+constexpr float SPECTRAL_ENERGY_THRESHOLD = 0.01f;
 
 /// Número máximo de tokens en el top-K por rayo (para resultados de atención)
-constexpr uint32_t LIQUIDBIT_MAX_TOP_TOKENS = 64;
+constexpr uint32_t SPECTRAL_MAX_TOP_TOKENS = 64;
 
 // ============================================================================
 // Macro de diagnóstico (host-side, no lanza excepción para no interrumpir GPU)
 // ============================================================================
-#ifndef LIQUIDBIT_CHECK
+#ifndef SPECTRAL_CHECK
 #  include <cstdio>
-#  define LIQUIDBIT_CHECK(expr) \
+#  define SPECTRAL_CHECK(expr) \
      do { \
          if (!(expr)) { \
-             fprintf(stderr, "LIQUIDBIT_CHECK failed at %s:%d\n", __FILE__, __LINE__); \
+             fprintf(stderr, "SPECTRAL_CHECK failed at %s:%d\n", __FILE__, __LINE__); \
          } \
      } while (0)
 #endif
@@ -184,7 +184,7 @@ struct TokenNode {
      * Beneficio: 6-32x menos memoria en GPU por token,
      * manteniendo la topología semántica necesaria para el BVH.
      */
-    half embedding[LIQUIDBIT_EMBEDDING_DIM];
+    half embedding[SPECTRAL_EMBEDDING_DIM];
 
     // ========================================================================
     // ATENCIÓN Y ENERGÍA
@@ -198,7 +198,7 @@ struct TokenNode {
      *
      * Donde:
      *   - E₀ = energía inicial del rayo (1.0)
-     *   - λ = LIQUIDBIT_LAMBDA (coeficiente de absorción)
+     *   - λ = SPECTRAL_LAMBDA (coeficiente de absorción)
      *   - d_semantic = distancia euclídea 3D (proxy de irrelevancia semántica)
      *
      * Rango: [0.0, 1.0], normalizado tras acumulación en todos los rayos.
@@ -224,13 +224,13 @@ struct TokenNode {
     // ========================================================================
 
     /// @brief Calcula el volumen del AABB del token.
-    LIQUIDBIT_HD float getAABBVolume() const {
+    SPECTRAL_HD float getAABBVolume() const {
         float3 size = aabb_max - aabb_min;
         return size.x * size.y * size.z;
     }
 
     /// @brief Comprueba si un punto está dentro del AABB.
-    LIQUIDBIT_HD bool containsPoint(const float3& p) const {
+    SPECTRAL_HD bool containsPoint(const float3& p) const {
         return (p.x >= aabb_min.x && p.x <= aabb_max.x) &&
                (p.y >= aabb_min.y && p.y <= aabb_max.y) &&
                (p.z >= aabb_min.z && p.z <= aabb_max.z);
@@ -304,7 +304,7 @@ struct SemanticRay {
      * (ClosestHit, AnyHit) calculen similitud semántica local
      * sin acceder a memoria global.
      */
-    half query_embedding[LIQUIDBIT_EMBEDDING_DIM];
+    half query_embedding[SPECTRAL_EMBEDDING_DIM];
 
     // ========================================================================
     // IDENTIFICACIÓN
@@ -333,7 +333,7 @@ struct SemanticRay {
  * @note Inline para uso en kernels CUDA sin overhead de llamada.
  * @note Esta distancia es un proxy de "irrelevancia semántica" en el espacio 3D.
  */
-LIQUIDBIT_HD inline float computeSemanticDistance(const float3& a, const float3& b) {
+SPECTRAL_HD inline float computeSemanticDistance(const float3& a, const float3& b) {
     float3 diff = a - b;
     return sqrtf(diff.x * diff.x + diff.y * diff.y + diff.z * diff.z);
 }
@@ -347,7 +347,7 @@ LIQUIDBIT_HD inline float computeSemanticDistance(const float3& a, const float3&
  *
  * @note Útil para comparaciones y búsquedas sin necesidad del valor exacto.
  */
-LIQUIDBIT_HD inline float computeSemanticDistanceSq(const float3& a, const float3& b) {
+SPECTRAL_HD inline float computeSemanticDistanceSq(const float3& a, const float3& b) {
     float3 diff = a - b;
     return diff.x * diff.x + diff.y * diff.y + diff.z * diff.z;
 }
@@ -357,17 +357,17 @@ LIQUIDBIT_HD inline float computeSemanticDistanceSq(const float3& a, const float
  *
  * @param distance Distancia semántica 3D
  * @param initial_energy Energía inicial del rayo (ej. 1.0)
- * @param lambda Coeficiente de absorción (por defecto LIQUIDBIT_LAMBDA)
+ * @param lambda Coeficiente de absorción (por defecto SPECTRAL_LAMBDA)
  * @return Peso de atención según: E₀ · exp(-λ · d)
  *
  * @note Fórmula clave del mecanismo de atención óptica.
  * @note El exponencial negativo asegura que distancias mayores → pesos menores.
  */
-LIQUIDBIT_HD inline float computeAttentionWeight(
+SPECTRAL_HD inline float computeAttentionWeight(
     float distance,
     float initial_energy = 1.0f,
-    float lambda = LIQUIDBIT_LAMBDA) {
+    float lambda = SPECTRAL_LAMBDA) {
     return initial_energy * expf(-lambda * distance);
 }
 
-#endif // LIQUIDBIT_TOKEN_GEOMETRY_H_
+#endif // SPECTRAL_TOKEN_GEOMETRY_H_

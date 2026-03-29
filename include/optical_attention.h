@@ -5,13 +5,13 @@
  * Define la configuración y los kernels OptiX para ejecutar el mecanismo
  * de atención óptica O(N log N) basado en ray tracing contra el BVH semántico.
  *
- * @author LiquidBit Zero-Matrix Team
+ * @author SpectralAI Zero-Matrix Team
  * @date 2026
  */
 
 #pragma once
-#ifndef LIQUIDBIT_OPTICAL_ATTENTION_H_
-#define LIQUIDBIT_OPTICAL_ATTENTION_H_
+#ifndef SPECTRAL_OPTICAL_ATTENTION_H_
+#define SPECTRAL_OPTICAL_ATTENTION_H_
 
 #include "token_geometry.h"
 #include "semantic_bvh.h"
@@ -24,19 +24,19 @@
 // Spectral ray tracing feature gate
 // ============================================================================
 
-/// Define LIQUIDBIT_SPECTRAL_ENABLED=1 to activate spectral/colored rays
+/// Define SPECTRAL_SPECTRAL_ENABLED=1 to activate spectral/colored rays
 /// (Snell refraction, per-sphere W_dispersion, context-dependent attention).
 /// When disabled (0), the kernels use the original monochrome ray model.
-#ifndef LIQUIDBIT_SPECTRAL_ENABLED
-#  define LIQUIDBIT_SPECTRAL_ENABLED 1
+#ifndef SPECTRAL_SPECTRAL_ENABLED
+#  define SPECTRAL_SPECTRAL_ENABLED 1
 #endif
 
 /// Spectral dimension used inside CUDA kernels. The full spectral_ray.h uses
 /// SPECTRAL_DIM=64, but 64 floats per ray causes severe register pressure on
 /// SM hardware. We default to 16 for the CUDA path; set to 32 or 64 if the
 /// target GPU has enough registers (e.g. RTX 5090).
-#ifndef LIQUIDBIT_CUDA_SPECTRAL_DIM
-#  define LIQUIDBIT_CUDA_SPECTRAL_DIM 16
+#ifndef SPECTRAL_CUDA_SPECTRAL_DIM
+#  define SPECTRAL_CUDA_SPECTRAL_DIM 16
 #endif
 
 // ============================================================================
@@ -138,7 +138,7 @@ struct AttentionConfig {
  * junto con sus pesos de atención normalizados.
  */
 struct AttentionResult {
-    /// Número máximo de resultados por consulta (alias de LIQUIDBIT_MAX_TOP_TOKENS)
+    /// Número máximo de resultados por consulta (alias de SPECTRAL_MAX_TOP_TOKENS)
     static constexpr uint32_t MAX_TOP_K = 64;
 
     /**
@@ -233,12 +233,12 @@ struct RayPayload {
     uint32_t ray_origin_z;
 
     /// Top tokens encontrados en este rayo (índices de token)
-    uint32_t top_tokens[LIQUIDBIT_MAX_TOP_TOKENS];
+    uint32_t top_tokens[SPECTRAL_MAX_TOP_TOKENS];
 
     /// Pesos correspondientes a top_tokens
-    float    top_weights[LIQUIDBIT_MAX_TOP_TOKENS];
+    float    top_weights[SPECTRAL_MAX_TOP_TOKENS];
 
-#if LIQUIDBIT_SPECTRAL_ENABLED
+#if SPECTRAL_SPECTRAL_ENABLED
     // ========================================================================
     // SPECTRAL PAYLOAD EXTENSION
     //
@@ -247,8 +247,8 @@ struct RayPayload {
     // ========================================================================
 
     /// Spectral color vector (reduced from SPECTRAL_DIM=64 to
-    /// LIQUIDBIT_CUDA_SPECTRAL_DIM to fit in registers).
-    float spectral_color[LIQUIDBIT_CUDA_SPECTRAL_DIM];
+    /// SPECTRAL_CUDA_SPECTRAL_DIM to fit in registers).
+    float spectral_color[SPECTRAL_CUDA_SPECTRAL_DIM];
 
     /// ID of the matrix block selected by prismatic refraction.
     /// Set by closest_hit when it computes the refraction angle.
@@ -258,10 +258,10 @@ struct RayPayload {
     /// Final refraction angle (degrees) from the last closest_hit.
     /// Used downstream to weight the spectral modulation.
     float refraction_angle_deg;
-#endif // LIQUIDBIT_SPECTRAL_ENABLED
+#endif // SPECTRAL_SPECTRAL_ENABLED
 };
 
-#if LIQUIDBIT_SPECTRAL_ENABLED
+#if SPECTRAL_SPECTRAL_ENABLED
 // ============================================================================
 // SBT Hit Record for spectral closest-hit program
 //
@@ -276,10 +276,10 @@ struct alignas(OPTIX_SBT_RECORD_ALIGNMENT) SpectralHitSbtRecord {
     /// OptiX SBT record header (opaque, written by optixSbtRecordPackHeader).
     char header[OPTIX_SBT_RECORD_HEADER_SIZE];
 
-    /// Per-sphere dispersion weights [LIQUIDBIT_CUDA_SPECTRAL_DIM].
+    /// Per-sphere dispersion weights [SPECTRAL_CUDA_SPECTRAL_DIM].
     /// Loaded from PrismaticSphere::W_dispersion (truncated/projected to
-    /// LIQUIDBIT_CUDA_SPECTRAL_DIM from the full SPECTRAL_DIM=64).
-    float W_dispersion[LIQUIDBIT_CUDA_SPECTRAL_DIM];
+    /// SPECTRAL_CUDA_SPECTRAL_DIM from the full SPECTRAL_DIM=64).
+    float W_dispersion[SPECTRAL_CUDA_SPECTRAL_DIM];
 
     /// Base refractive index of the sphere (typically 1.0).
     float base_refractive_index;
@@ -293,7 +293,7 @@ struct alignas(OPTIX_SBT_RECORD_ALIGNMENT) SpectralHitSbtRecord {
     /// Refraction angle thresholds (degrees) for block selection.
     float refraction_thresholds[8]; // MAX_DISPERSION_CONTEXTS
 };
-#endif // LIQUIDBIT_SPECTRAL_ENABLED
+#endif // SPECTRAL_SPECTRAL_ENABLED
 
 // ============================================================================
 // Clase OpticalAttention: Gestor de atención óptica
@@ -579,4 +579,4 @@ __host__ void printAttentionResult(
     const char** token_vocab = nullptr
 );
 
-#endif // LIQUIDBIT_OPTICAL_ATTENTION_H_
+#endif // SPECTRAL_OPTICAL_ATTENTION_H_

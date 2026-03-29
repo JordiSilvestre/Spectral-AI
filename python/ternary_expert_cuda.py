@@ -17,7 +17,7 @@ This binding supports both:
   1. Native kernel dims (64→1024→4096) for benchmarking
   2. Hybrid mode: CUDA kernel for routing, PyTorch for non-matching expert dims
 
-Copyright (c) 2026 LiquidBit Studio — Apache 2.0
+Copyright (c) 2026 SpectralAI Studio — Apache 2.0
 """
 
 import ctypes

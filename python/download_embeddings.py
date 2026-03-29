@@ -5,7 +5,7 @@
 
 DESCRIPCIÓN:
 ============
-Este script implementa un pipeline completo de embeddings para LiquidBit Zero-Matrix:
+Este script implementa un pipeline completo de embeddings para SpectralAI Zero-Matrix:
 
 1. DESCARGA GloVe (si está disponible):
    - GloVe 6B 50-dimensional desde Stanford NLP
@@ -33,7 +33,7 @@ Verifica que palabras semánticamente similares queden cerca en 3D:
 - Cluster PROGRAMACIÓN: for, while, loop, iterate, function, code
 - Cluster MÚSICA: music, rhythm, beat, tempo, song, melody
 
-@author LiquidBit Zero-Matrix Team
+@author SpectralAI Zero-Matrix Team
 @date 2026
 """
 
@@ -407,7 +407,7 @@ def main():
     Pipeline principal: Descargar/generar embeddings y proyectar a 3D.
     """
     print("=" * 70)
-    print("LiquidBit Zero-Matrix - Embeddings Pipeline")
+    print("SpectralAI Zero-Matrix - Embeddings Pipeline")
     print("=" * 70)
 
     embeddings = None

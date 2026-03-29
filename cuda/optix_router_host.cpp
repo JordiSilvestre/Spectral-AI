@@ -9,7 +9,7 @@
  * This is separate from optix_host.cpp (which handles full optical attention).
  * The router host is designed to be wrapped as a PyTorch extension.
  *
- * Copyright (c) 2026 LiquidBit Studio — Apache 2.0
+ * Copyright (c) 2026 SpectralAI Studio — Apache 2.0
  */
 
 #include <optix.h>

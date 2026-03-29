@@ -10,7 +10,7 @@
 #include <cstdio>
 #include <cstddef>
 
-#include "liquidbit_resonance.h"
+#include "spectral_resonance.h"
 #include "token_geometry.h"
 
 int main() {

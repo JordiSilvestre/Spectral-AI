@@ -2,7 +2,7 @@
 export PATH=/usr/local/cuda-13.2/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 export LD_LIBRARY_PATH=/usr/local/cuda-13.2/lib64
 
-cd "/mnt/j/Proyectos/LiquidBit Zero-Matrix"
+cd "/mnt/j/Proyectos/SpectralAI Zero-Matrix"
 
 echo "=== Symbols in libbvh_router.so ==="
 nm -D cuda/v5/libbvh_router.so | grep -E "bvh_router|ray_batch|router_output|bvh_tree" | head -20

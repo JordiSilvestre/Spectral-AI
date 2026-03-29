@@ -1,7 +1,7 @@
 /**
  * ray_attention.cu
  *
- * Kernel principal del mecanismo de atención óptica LiquidBit Zero-Matrix.
+ * Kernel principal del mecanismo de atención óptica SpectralAI Zero-Matrix.
  *
  * Este kernel implementa la traversal de rayos en un BVH acelerada por OptiX.
  * Cada rayo representa una "dimensión de pensamiento" que se lanza desde el token
@@ -41,10 +41,10 @@ extern "C" __constant__ uint32_t c_num_tokens;
 // Número de rayos generados por query token
 extern "C" __constant__ uint32_t c_rays_per_query;
 
-#if LIQUIDBIT_SPECTRAL_ENABLED
-// W_spectral projection matrix: [LIQUIDBIT_CUDA_SPECTRAL_DIM x LIQUIDBIT_EMBEDDING_DIM]
+#if SPECTRAL_SPECTRAL_ENABLED
+// W_spectral projection matrix: [SPECTRAL_CUDA_SPECTRAL_DIM x SPECTRAL_EMBEDDING_DIM]
 // Used by the kernel to compute spectral color from query embeddings.
-extern "C" __constant__ float c_W_spectral_kernel[LIQUIDBIT_CUDA_SPECTRAL_DIM * LIQUIDBIT_EMBEDDING_DIM];
+extern "C" __constant__ float c_W_spectral_kernel[SPECTRAL_CUDA_SPECTRAL_DIM * SPECTRAL_EMBEDDING_DIM];
 
 /**
  * Compute spectral color from a token embedding using the W_spectral matrix.
@@ -55,21 +55,21 @@ __device__ static void kernel_compute_spectral_color(
     float* out_color
 ) {
     float norm_sq = 0.0f;
-    for (uint32_t j = 0; j < LIQUIDBIT_CUDA_SPECTRAL_DIM; ++j) {
+    for (uint32_t j = 0; j < SPECTRAL_CUDA_SPECTRAL_DIM; ++j) {
         float acc = 0.0f;
-        const uint32_t row_offset = j * LIQUIDBIT_EMBEDDING_DIM;
-        for (uint32_t i = 0; i < LIQUIDBIT_EMBEDDING_DIM; ++i) {
+        const uint32_t row_offset = j * SPECTRAL_EMBEDDING_DIM;
+        for (uint32_t i = 0; i < SPECTRAL_EMBEDDING_DIM; ++i) {
             acc += c_W_spectral_kernel[row_offset + i] * __half2float(embedding[i]);
         }
         out_color[j] = acc;
         norm_sq += acc * acc;
     }
     float inv_norm = (norm_sq > 1e-6f) ? rsqrtf(norm_sq) : 1.0f;
-    for (uint32_t j = 0; j < LIQUIDBIT_CUDA_SPECTRAL_DIM; ++j) {
+    for (uint32_t j = 0; j < SPECTRAL_CUDA_SPECTRAL_DIM; ++j) {
         out_color[j] *= inv_norm;
     }
 }
-#endif // LIQUIDBIT_SPECTRAL_ENABLED
+#endif // SPECTRAL_SPECTRAL_ENABLED
 
 /* ============================================================================
  * FUNCIÓN HELPER: insert_top_token
@@ -86,7 +86,7 @@ __device__ static void insert_top_token(
     float     weight
 ) {
     // Buscar posición de inserción (lista ordenada descendentemente)
-    uint32_t capacity = LIQUIDBIT_MAX_TOP_TOKENS;
+    uint32_t capacity = SPECTRAL_MAX_TOP_TOKENS;
 
     if (count < capacity) {
         // Lista no llena: insertar en la posición correcta
@@ -137,7 +137,7 @@ __device__ static void insert_top_token(
  *
  * donde:
  *   - E₀: energía inicial del rayo (siempre 1.0)
- *   - λ: coeficiente de absorción semántica (LIQUIDBIT_LAMBDA ≈ 0.1)
+ *   - λ: coeficiente de absorción semántica (SPECTRAL_LAMBDA ≈ 0.1)
  *   - d_semantic: distancia euclídea 3D entre los centroides del rayo y el token golpeado
  *
  * Interpretación física:
@@ -191,16 +191,16 @@ __global__ void ray_traced_attention_kernel(
     // Variables para acumular resultados de todos los rayos de esta query
     uint32_t total_hit_count = 0;
     float total_attention_weight = 0.0f;
-    uint32_t accumulated_top_tokens[LIQUIDBIT_MAX_TOP_TOKENS];
-    float accumulated_top_weights[LIQUIDBIT_MAX_TOP_TOKENS];
+    uint32_t accumulated_top_tokens[SPECTRAL_MAX_TOP_TOKENS];
+    float accumulated_top_weights[SPECTRAL_MAX_TOP_TOKENS];
     // Bug 2.1 fix: separate counter for top-K accumulation to prevent buffer overflow.
     // total_hit_count grows unbounded across rays, but the top-K array has fixed capacity.
     uint32_t accumulated_top_count = 0;
 
-#if LIQUIDBIT_SPECTRAL_ENABLED
+#if SPECTRAL_SPECTRAL_ENABLED
     // Compute spectral color once per query (shared across all rays of this query).
     // The color encodes the conversational context and remains constant per query.
-    float query_spectral_color[LIQUIDBIT_CUDA_SPECTRAL_DIM];
+    float query_spectral_color[SPECTRAL_CUDA_SPECTRAL_DIM];
     {
         // Use the query token's embedding from the global TokenNode buffer
         const TokenNode& qt = c_token_nodes[thread_idx];
@@ -239,9 +239,9 @@ __global__ void ray_traced_attention_kernel(
         ray_payload.ray_origin_y = __float_as_uint(query_position.y);
         ray_payload.ray_origin_z = __float_as_uint(query_position.z);
 
-#if LIQUIDBIT_SPECTRAL_ENABLED
+#if SPECTRAL_SPECTRAL_ENABLED
         // Copy the pre-computed spectral color into the ray payload
-        for (uint32_t s = 0; s < LIQUIDBIT_CUDA_SPECTRAL_DIM; ++s) {
+        for (uint32_t s = 0; s < SPECTRAL_CUDA_SPECTRAL_DIM; ++s) {
             ray_payload.spectral_color[s] = query_spectral_color[s];
         }
         ray_payload.selected_matrix_block_id = UINT32_MAX;
@@ -259,10 +259,10 @@ __global__ void ray_traced_attention_kernel(
         uint32_t p1 = __float_as_uint(ray_payload.energy_remaining);
         uint32_t p2 = ray_payload.hit_count;
 
-#if LIQUIDBIT_SPECTRAL_ENABLED
+#if SPECTRAL_SPECTRAL_ENABLED
         // Pack spectral color into payload words p3..p18 (16 floats as uint32)
-        uint32_t ps[LIQUIDBIT_CUDA_SPECTRAL_DIM];
-        for (uint32_t s = 0; s < LIQUIDBIT_CUDA_SPECTRAL_DIM; ++s) {
+        uint32_t ps[SPECTRAL_CUDA_SPECTRAL_DIM];
+        for (uint32_t s = 0; s < SPECTRAL_CUDA_SPECTRAL_DIM; ++s) {
             ps[s] = __float_as_uint(ray_payload.spectral_color[s]);
         }
         uint32_t p_blk = ray_payload.selected_matrix_block_id;
@@ -304,7 +304,7 @@ __global__ void ray_traced_attention_kernel(
             0,                         // Miss SBT index
             p0, p1, p2                 // Payloads (uint32_t por referencia)
         );
-#endif // LIQUIDBIT_SPECTRAL_ENABLED
+#endif // SPECTRAL_SPECTRAL_ENABLED
 
         // Después de optixTrace, p0/p1/p2 han sido actualizados por ClosestHit o Miss
         ray_payload.accumulated_attention = __uint_as_float(p0);
@@ -316,7 +316,7 @@ __global__ void ray_traced_attention_kernel(
         total_hit_count += ray_payload.hit_count;
 
         // Fusionar los top-K tokens de este rayo con los acumulados
-        for (uint32_t i = 0; i < ray_payload.hit_count && i < LIQUIDBIT_MAX_TOP_TOKENS; i++) {
+        for (uint32_t i = 0; i < ray_payload.hit_count && i < SPECTRAL_MAX_TOP_TOKENS; i++) {
             uint32_t token_id = ray_payload.top_tokens[i];
             float weight = ray_payload.top_weights[i];
 

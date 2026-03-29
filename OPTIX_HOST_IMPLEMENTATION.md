@@ -1,8 +1,8 @@
-# OptiX Host Code Implementation for LiquidBit Zero-Matrix
+# OptiX Host Code Implementation for SpectralAI Zero-Matrix
 
 ## Overview
 
-This document describes the OptiX 8.x host code implementation for LiquidBit Zero-Matrix, including the complete architecture for ray tracing acceleration structure management and pipeline execution.
+This document describes the OptiX 8.x host code implementation for SpectralAI Zero-Matrix, including the complete architecture for ray tracing acceleration structure management and pipeline execution.
 
 ## Files Created
 
@@ -17,7 +17,7 @@ This document describes the OptiX 8.x host code implementation for LiquidBit Zer
 - Logs errors, warnings, and debug messages
 - Severity levels: FATAL, ERROR, WARN, INFO, DEBUG
 
-#### LiquidBitOptixContext Class
+#### SpectralAIOptixContext Class
 The main context manager providing:
 
 **Initialization Methods:**
@@ -69,8 +69,8 @@ The main context manager providing:
   - Safe to call multiple times
 
 #### Factory Functions
-- `createLiquidBitOptixContext()`: Creates and initializes context (exception-safe)
-- `destroyLiquidBitOptixContext()`: Safely destroys context
+- `createSpectralAIOptixContext()`: Creates and initializes context (exception-safe)
+- `destroySpectralAIOptixContext()`: Safely destroys context
 
 **Memory Management:**
 All allocations are properly tracked and freed:
@@ -193,8 +193,8 @@ std::string ptx_closest_hit = loadPTXFile("build/closest_hit.ptx");
 
 3. **Create context and pipeline**
 ```cpp
-LiquidBitOptixContext* optix_ctx =
-  createLiquidBitOptixContext(
+SpectralAIOptixContext* optix_ctx =
+  createSpectralAIOptixContext(
     ptx_raygen.c_str(),
     ptx_closest_hit.c_str(),
     ptx_miss.c_str(),
@@ -216,7 +216,7 @@ optix_ctx->launch(rays, num_rays, results, sizeof(AlphaRayPayload) * num_rays);
 
 6. **Cleanup**
 ```cpp
-destroyLiquidBitOptixContext(optix_ctx);
+destroySpectralAIOptixContext(optix_ctx);
 ```
 
 ## Embeddings Pipeline
@@ -272,7 +272,7 @@ After running `python3 download_embeddings.py`:
    - Human-readable statistics
    - Memory usage, dimension ranges, first 10 words
 
-### Usage in LiquidBit
+### Usage in SpectralAI
 
 ```python
 import numpy as np
@@ -373,4 +373,4 @@ g++ -std=c++17 -I.. test_optix_host_structure.cpp \
 
 ## Authors
 
-LiquidBit Zero-Matrix Team, 2026
+SpectralAI Zero-Matrix Team, 2026

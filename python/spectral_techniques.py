@@ -1,4 +1,4 @@
-"""Lyra-AGI techniques adapted for LiquidBit Zero-Matrix.
+"""Lyra-AGI techniques adapted for SpectralAI Zero-Matrix.
 
 Implements 6 techniques from Lyra-AGI for BVH training and optimization:
   1. SmoothTernarySTE — Differentiable BVH via beta annealing
@@ -9,7 +9,7 @@ Implements 6 techniques from Lyra-AGI for BVH training and optimization:
   6. SmoothBVHHit — Soft BVH hit function (differentiable closest_hit)
 
 Origin: jordisilvestre/Lyra-AGI (lyra/model/lyra_block.py, lyra/core/connectivity.py)
-Adapted: 2026-03-29 for LiquidBit BVH training pipeline
+Adapted: 2026-03-29 for SpectralAI BVH training pipeline
 """
 
 import math
@@ -45,7 +45,7 @@ class SmoothTernarySTE(torch.autograd.Function):
       - beta=1.0 (start): soft, gradients flow freely, network explores
       - beta=10.0 (end): hard ternary {-1, 0, +1}, equivalent to RT Core discrete
 
-    For LiquidBit BVH: replaces hard hit/miss with soft hit function.
+    For SpectralAI BVH: replaces hard hit/miss with soft hit function.
     """
 
     @staticmethod
@@ -148,7 +148,7 @@ class LiquidTimeGate(nn.Module):
       a < 0 → LOCAL (attenuates distant tokens)
       a > 0 → GLOBAL (favors broad context)
 
-    For LiquidBit spectral rays:
+    For SpectralAI spectral rays:
       LOCAL channels → short-range spectral rays (blue)
       GLOBAL channels → long-range spectral rays (red)
 

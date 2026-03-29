@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 ╔══════════════════════════════════════════════════════════════════════╗
-║    LiquidBit Zero-Matrix — INTEGRATION TEST v2.0                   ║
+║    SpectralAI Zero-Matrix — INTEGRATION TEST v2.0                   ║
 ║    Con W_dispersion ENTRENADOS (Gumbel-Softmax v2.0)               ║
 ║    ────────────────────────────────────────────────────────────     ║
 ║    Diferencias vs v1.0:                                            ║
@@ -68,7 +68,7 @@ COLOR_PHYS    = np.zeros(SPECTRAL_DIM, dtype=np.float32); COLOR_PHYS[2]  = 1.0
 
 print()
 print("╔══════════════════════════════════════════════════════════════════════╗")
-print("║       LiquidBit Zero-Matrix — INTEGRATION TEST v2.0               ║")
+print("║       SpectralAI Zero-Matrix — INTEGRATION TEST v2.0               ║")
 print("║       W_dispersion ENTRENADOS (Gumbel-Softmax + Load Balancing)   ║")
 print("╚══════════════════════════════════════════════════════════════════════╝")
 print(f"  Vocabulario: {N_TOKENS} tokens | Embedding D={D} | Spectral dim={SPECTRAL_DIM}")

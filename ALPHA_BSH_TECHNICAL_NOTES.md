@@ -277,7 +277,7 @@ Rayo elige A por greedy → no ve B
    - Medir tiempo Fase A (vs expectativa O(log N))
    - Medir tiempo Fase B (vs cuBLAS baseline)
    - Comparar vs Transformer attention estándar
-   - Comparar vs LiquidBit original
+   - Comparar vs SpectralAI original
 
 4. **Robustez:**
    - Entrada negativa (queries vacías, matrices sin inicializar)
@@ -306,7 +306,7 @@ Sugerir agregar a LEARNINGS.md:
 ### Próximos Pasos
 1. Compilar OptiX .ptx (actualmente pseudocódigo)
 2. Implementar KD-tree 3D para construcción
-3. Benchmarks vs Transformer + LiquidBit original
+3. Benchmarks vs Transformer + SpectralAI original
 4. Trabajo en diferenciabilidad para entrenamiento
 ```
 

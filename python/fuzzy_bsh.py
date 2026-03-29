@@ -641,7 +641,7 @@ def print_final_clustering(
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Fuzzy BSH para Backpropagation en LiquidBit"
+        description="Fuzzy BSH para Backpropagation en SpectralAI"
     )
 
     parser.add_argument('--num-epochs', type=int, default=200,

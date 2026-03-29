@@ -1,8 +1,8 @@
-# LiquidBit Zero-Matrix — Implementación de Componentes de Entrenamiento
+# SpectralAI Zero-Matrix — Implementación de Componentes de Entrenamiento
 
 ## Resumen Ejecutivo
 
-Se han implementado completamente **dos componentes críticos** del pipeline de entrenamiento OHBSC para LiquidBit Zero-Matrix:
+Se han implementado completamente **dos componentes críticos** del pipeline de entrenamiento OHBSC para SpectralAI Zero-Matrix:
 
 1. **DuplScore Optimizer** — Decisión automática de duplicación vs wormholes
 2. **Fuzzy BSH** — Árbol BSH diferenciable con membresía probabilística

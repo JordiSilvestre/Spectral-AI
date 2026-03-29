@@ -1,4 +1,4 @@
-# STATUS.md — LiquidBit Zero-Matrix
+# STATUS.md — SpectralAI Zero-Matrix
 > Estado real del proyecto, inventario de archivos, y roadmap por fases.
 > Ultima actualizacion: 2026-03-28
 
@@ -43,7 +43,7 @@
 | `python/train_moe.py` | FASE A: MoE from scratch (embeddings + router + experts) | Techo PPL=186 |
 | `python/train_multi_domain.py` | Entrenamiento supervisado 4 dominios (Wiki/Code/Science/Legal) | Validado 100% |
 | `python/train_inception.py` | v4.0 Inception con L_task + L_spatial | Prototipo (no usado en v5) |
-| `python/train_liquidbit_lm.py` | Baseline training LiquidBitForCausalLM | Prototipo |
+| `python/train_spectral_lm.py` | Baseline training SpectralAIForCausalLM | Prototipo |
 
 ### Python — DISTILLATION OLMoE (pipeline actual de desarrollo)
 
@@ -62,7 +62,7 @@
 |---|---|---|
 | `python/inception_attention.py` | v4.0: 4 niveles nested 3D + spectral + Fourier | Arquitectura v4 completa |
 | `python/optix_attention.py` | RT Core attention (modos: REAL/APPROX/MATMUL) | Requiere batch_runner.exe |
-| `python/liquidbit_lm.py` | LM standalone: Embedding -> OptiXBlocks -> LMHead | Prototipo v4 |
+| `python/spectral_lm.py` | LM standalone: Embedding -> OptiXBlocks -> LMHead | Prototipo v4 |
 | `python/gpt2_baseline.py` | Baseline GPT-2 para comparacion justa | Referencia |
 | `python/spatial_loss.py` | Loss diferenciable BSH: L_prox + L_cover + L_inter | Usado en train_inception |
 | `python/trainable_experts.py` | SwiGLU experts entrenables (no frozen) | FASE A |
@@ -75,7 +75,7 @@
 | `python/download_embeddings.py` | GloVe fallback (sintetico si falla descarga) | Obsoleto |
 | `python/download_embeddings_v2.py` | Gensim loader (moderno) | Activo |
 | `python/embedding_bridge.py` | Serializer: embeddings -> 3D -> binary TokenNode | Incompleto |
-| `python/liquidbit_bridge.py` | Bridge completo: tokenize -> 3D -> binary + validacion | Activo |
+| `python/spectral_bridge.py` | Bridge completo: tokenize -> 3D -> binary + validacion | Activo |
 | `python/tokenizer.py` | Tokenizador simple (BPE o word-level) | Utilidad |
 
 ### Python — BENCHMARKS
@@ -129,9 +129,9 @@
 
 | Archivo | Funcion | Estado |
 |---|---|---|
-| `cuda/v4/liquidbit_kernels.cu` | OptiX raygen/closesthit/miss 4-level IAS | Activo (v4 research) |
+| `cuda/v4/spectral_kernels.cu` | OptiX raygen/closesthit/miss 4-level IAS | Activo (v4 research) |
 | `cuda/v4/inception_kernels.cu` | Salto dimensional explicito | Activo (v4 research) |
-| `cuda/v4/liquidbit_resonance.cu` | Fourier resonance (device code) | Activo (v4 research) |
+| `cuda/v4/spectral_resonance.cu` | Fourier resonance (device code) | Activo (v4 research) |
 | `cuda/v4/inception_resonance.cu` | Gradientes + AdamW (training v4) | Activo (v4 research) |
 | `cuda/v4/optix_host.cpp` | Pipeline OptiX completo (host) | Activo (v4 research) |
 | `cuda/v4/alpha_phase_a.cu` | Phase A: ray traversal | Reemplazado por v5 |
@@ -151,7 +151,7 @@
 | `include/optical_attention.h` | AttentionConfig, OpticalAttention | Activo |
 | `include/inception_engine.h` | InceptionScene, InceptionEngine (v4 4-level IAS) | Activo (v4) |
 | `include/alpha_bsh.h` | SemanticSphereAlpha, AlphaBSH Phase A/B | Activo |
-| `include/liquidbit_resonance.h` | ResonanceParams, SemanticString, SemanticSphere | Activo (v4) |
+| `include/spectral_resonance.h` | ResonanceParams, SemanticString, SemanticSphere | Activo (v4) |
 | `include/spectral_ray.h` | Spectral encoding (Snell) | Incompleto |
 | `src/token_geometry.cpp` | PCA projection helpers | Activo |
 | `src/semantic_bvh.cpp` | BVH construction | Activo |
@@ -185,7 +185,7 @@
 |---|---|---|---|
 | Router CUDA binding | `bvh_router_cuda.py`, `bvh_router_hybrid.py`, `bvh_router_bridge.py` | `bvh_router_bridge.py` (auto-selecciona el mejor backend) | Los otros 2 son fallbacks lentos |
 | Expert ternario | `ternary_expert_cuda.py` (dims fijas ROTAS), `ternary_expert_ext_bridge.py` (flexible) | `ternary_expert_ext_bridge.py` | `ternary_expert_cuda.py` esta ROTO |
-| Embedding bridge | `embedding_bridge.py` (incompleto), `liquidbit_bridge.py` (completo) | `liquidbit_bridge.py` | `embedding_bridge.py` incompleto |
+| Embedding bridge | `embedding_bridge.py` (incompleto), `spectral_bridge.py` (completo) | `spectral_bridge.py` | `embedding_bridge.py` incompleto |
 | Embeddings download | `download_embeddings.py` (antiguo), `download_embeddings_v2.py` (gensim) | `download_embeddings_v2.py` | v1 obsoleto |
 | v5 CUDA obsoletos | `ternary_expert.cu` (dims fijas), `torch_bvh_extension.cpp` (legacy) | Los .cu activos (ver tabla CUDA v5) | Dims fijas + legacy binding |
 

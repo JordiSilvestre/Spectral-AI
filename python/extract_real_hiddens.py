@@ -15,7 +15,7 @@ Usage:
 Output:
     data/real_hiddens_layer{N}.pt  (dict with 'hidden_states', 'gate_logits' [softmax probs], 'topk_ids')
 
-Copyright (c) 2026 LiquidBit Studio -- Apache 2.0
+Copyright (c) 2026 SpectralAI Studio -- Apache 2.0
 """
 
 import argparse

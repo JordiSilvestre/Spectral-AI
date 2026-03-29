@@ -8,7 +8,7 @@
  *   3. Las estructuras clave estén bien definidas
  *   4. Los includes sean compatibles
  *
- * @author LiquidBit Zero-Matrix Team
+ * @author SpectralAI Zero-Matrix Team
  * @date 2026
  */
 
@@ -188,10 +188,10 @@ void test_geometry_helpers() {
 void test_global_constants() {
     std::cout << "[TEST 8] Global constants..." << std::endl;
 
-    assert(LIQUIDBIT_EMBEDDING_DIM == 256);
-    assert(LIQUIDBIT_NUM_RAYS == 4096);
-    assert(LIQUIDBIT_SPATIAL_DIM == 3);
-    assert(LIQUIDBIT_LAMBDA == 0.1f);
+    assert(SPECTRAL_EMBEDDING_DIM == 256);
+    assert(SPECTRAL_NUM_RAYS == 4096);
+    assert(SPECTRAL_SPATIAL_DIM == 3);
+    assert(SPECTRAL_LAMBDA == 0.1f);
 
     assert(ALPHA_BSH_MAX_DEPTH == 20);
     assert(ALPHA_BSH_MAX_CHILDREN == 8);
@@ -248,7 +248,7 @@ void test_alpha_execution_result() {
 
 int main() {
     std::cout << "\n" << "=" * 70 << std::endl;
-    std::cout << "LiquidBit Zero-Matrix - OptiX Host Structure Tests" << std::endl;
+    std::cout << "SpectralAI Zero-Matrix - OptiX Host Structure Tests" << std::endl;
     std::cout << "=" * 70 << "\n" << std::endl;
 
     try {

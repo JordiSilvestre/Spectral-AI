@@ -1,6 +1,6 @@
 /**
  * bvh_torch_ext.cu — Extensión PyTorch Zero-Copy para BVH Router
- * LiquidBit v5.0 "Orchestrator"
+ * SpectralAI v5.0 "Orchestrator"
  *
  * Envuelve bvh_router_fused_kernel_v2 para uso directo con tensores CUDA de PyTorch.
  * Los datos nunca salen de la GPU — zero CPU transfers en el hot path.
@@ -375,7 +375,7 @@ std::tuple<torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor> route_syn
 // ============================================================================
 
 PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
-    m.doc() = "LiquidBit BVH Router — Extensión PyTorch Zero-Copy";
+    m.doc() = "SpectralAI BVH Router — Extensión PyTorch Zero-Copy";
 
     m.def("upload_tree", &upload_tree_impl,
           "Subir árbol BVH a constant memory GPU (tensores CPU)",

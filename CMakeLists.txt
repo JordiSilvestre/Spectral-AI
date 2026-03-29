@@ -1,9 +1,9 @@
 # ============================================================================
-# CMakeLists.txt — Sistema de build para LiquidBit Zero-Matrix
+# CMakeLists.txt — Sistema de build para SpectralAI Zero-Matrix
 #
 # Este archivo configura la compilación de:
-#   - Librería core C++ (liquidbit_core)
-#   - Kernels CUDA y OptiX (liquidbit_cuda)
+#   - Librería core C++ (spectral_core)
+#   - Kernels CUDA y OptiX (spectral_cuda)
 #   - Benchmarks y tests
 #   - Python bindings (futuro)
 #
@@ -16,27 +16,27 @@
 # ============================================================================
 
 cmake_minimum_required(VERSION 3.28)
-project(LiquidBitZeroMatrix LANGUAGES CXX CUDA)
+project(SpectralAIZeroMatrix LANGUAGES CXX CUDA)
 
 # ============================================================================
 # Versión del proyecto
 # ============================================================================
 
-set(LIQUIDBIT_VERSION_MAJOR 0)
-set(LIQUIDBIT_VERSION_MINOR 1)
-set(LIQUIDBIT_VERSION_PATCH 0)
+set(SPECTRAL_VERSION_MAJOR 0)
+set(SPECTRAL_VERSION_MINOR 1)
+set(SPECTRAL_VERSION_PATCH 0)
 
-set(LIQUIDBIT_VERSION "${LIQUIDBIT_VERSION_MAJOR}.${LIQUIDBIT_VERSION_MINOR}.${LIQUIDBIT_VERSION_PATCH}")
-message(STATUS "LiquidBit Zero-Matrix v${LIQUIDBIT_VERSION}")
+set(SPECTRAL_VERSION "${SPECTRAL_VERSION_MAJOR}.${SPECTRAL_VERSION_MINOR}.${SPECTRAL_VERSION_PATCH}")
+message(STATUS "SpectralAI Zero-Matrix v${SPECTRAL_VERSION}")
 
 # ============================================================================
 # Opciones de configuración
 # ============================================================================
 
-option(LIQUIDBIT_BUILD_TESTS "Build tests and benchmarks" ON)
-option(LIQUIDBIT_BUILD_PYTHON "Build Python bindings" OFF)
-option(LIQUIDBIT_ENABLE_DEBUG "Enable debug symbols" ON)
-option(LIQUIDBIT_ENABLE_LINEINFO "Enable CUDA line info" ON)
+option(SPECTRAL_BUILD_TESTS "Build tests and benchmarks" ON)
+option(SPECTRAL_BUILD_PYTHON "Build Python bindings" OFF)
+option(SPECTRAL_ENABLE_DEBUG "Enable debug symbols" ON)
+option(SPECTRAL_ENABLE_LINEINFO "Enable CUDA line info" ON)
 
 # ============================================================================
 # Configuración de C++
@@ -49,12 +49,12 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 # Flags de compilación C++
 if(MSVC)
     add_compile_options(/W3)  # W4+WX too strict for prototype
-    if(LIQUIDBIT_ENABLE_DEBUG)
+    if(SPECTRAL_ENABLE_DEBUG)
         add_compile_options(/Zi /Od)
     endif()
 else()
     add_compile_options(-Wall -Wextra -Wno-unused-parameter)
-    if(LIQUIDBIT_ENABLE_DEBUG)
+    if(SPECTRAL_ENABLE_DEBUG)
         add_compile_options(-g -O0)
     else()
         add_compile_options(-O3)
@@ -74,9 +74,9 @@ message(STATUS "CUDA Include path: ${CUDAToolkit_INCLUDE_DIRS}")
 # sm_120 (Blackwell) requires CUDA 12.8+
 if(CUDAToolkit_VERSION VERSION_LESS "12.8")
     message(WARNING "CUDA ${CUDAToolkit_VERSION} detected. sm_120 (Blackwell) requires CUDA 12.8+. Falling back to sm_89 only.")
-    set(LIQUIDBIT_SM120_SUPPORTED FALSE)
+    set(SPECTRAL_SM120_SUPPORTED FALSE)
 else()
-    set(LIQUIDBIT_SM120_SUPPORTED TRUE)
+    set(SPECTRAL_SM120_SUPPORTED TRUE)
 endif()
 
 # ============================================================================
@@ -129,7 +129,7 @@ include_directories(${CUDAToolkit_INCLUDE_DIRS})
 # sm_89  = Ada Lovelace (RTX 4090, RTX 6000 Ada)
 # sm_120 = Blackwell (RTX 5070 Ti) — CUDA 12.8+ / PyTorch reports as compute 12.0
 
-if(LIQUIDBIT_SM120_SUPPORTED)
+if(SPECTRAL_SM120_SUPPORTED)
     set(CMAKE_CUDA_ARCHITECTURES 89 120)
 else()
     set(CMAKE_CUDA_ARCHITECTURES 89)
@@ -145,11 +145,11 @@ set(CMAKE_CUDA_STANDARD_REQUIRED ON)
 # based on the build configuration. We only add these manually on non-MSVC to
 # avoid double-injection that breaks nvcc's command-line parsing on Windows.
 if(NOT MSVC)
-    if(LIQUIDBIT_ENABLE_DEBUG)
+    if(SPECTRAL_ENABLE_DEBUG)
         string(APPEND CMAKE_CUDA_FLAGS " -g")
     endif()
 
-    if(LIQUIDBIT_ENABLE_LINEINFO)
+    if(SPECTRAL_ENABLE_LINEINFO)
         string(APPEND CMAKE_CUDA_FLAGS " --lineinfo")
     endif()
 
@@ -159,7 +159,7 @@ if(NOT MSVC)
     # Host compiler warnings (GCC/Clang only)
     string(APPEND CMAKE_CUDA_FLAGS " -Xcompiler=-Wall")
     # MSVC: lineinfo added as nvcc-native flag (single dash form for MSVC mode)
-    if(LIQUIDBIT_ENABLE_LINEINFO)
+    if(SPECTRAL_ENABLE_LINEINFO)
         string(APPEND CMAKE_CUDA_FLAGS " -lineinfo")
     endif()
 endif()
@@ -171,38 +171,38 @@ message(STATUS "CUDA flags: ${CMAKE_CUDA_FLAGS}")
 # Librería Core C++ (token_geometry, semantic_bvh, etc.)
 # ============================================================================
 
-add_library(liquidbit_core STATIC
+add_library(spectral_core STATIC
     src/token_geometry.cpp
     src/semantic_bvh.cpp
     src/alpha_bsh.cpp
 )
 
-target_include_directories(liquidbit_core PUBLIC
+target_include_directories(spectral_core PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 
 # Compilación con C++17
-target_compile_features(liquidbit_core PUBLIC cxx_std_17)
+target_compile_features(spectral_core PUBLIC cxx_std_17)
 
 # Enlazar CUDA runtime
-target_link_libraries(liquidbit_core PUBLIC
+target_link_libraries(spectral_core PUBLIC
     CUDA::cudart
     CUDA::cuda_driver
 )
 
-message(STATUS "Created target: liquidbit_core")
+message(STATUS "Created target: spectral_core")
 
 # ============================================================================
 # OptiX Pipeline — PTX compilation + host code + inception_runner
 # ============================================================================
 
 if(OptiX_INCLUDE_DIR)
-    option(LIQUIDBIT_BUILD_OPTIX "Build OptiX ray tracing pipeline" ON)
+    option(SPECTRAL_BUILD_OPTIX "Build OptiX ray tracing pipeline" ON)
 else()
-    option(LIQUIDBIT_BUILD_OPTIX "Build OptiX ray tracing pipeline" OFF)
+    option(SPECTRAL_BUILD_OPTIX "Build OptiX ray tracing pipeline" OFF)
 endif()
 
-if(LIQUIDBIT_BUILD_OPTIX AND OptiX_INCLUDE_DIR)
+if(SPECTRAL_BUILD_OPTIX AND OptiX_INCLUDE_DIR)
     message(STATUS "OptiX build ENABLED — compiling shaders and host code")
 
     # ── PTX compilation: .cu → .ptx ──────────────────────────────
@@ -224,7 +224,7 @@ if(LIQUIDBIT_BUILD_OPTIX AND OptiX_INCLUDE_DIR)
 
     # Build gencode flags based on supported architectures
     set(PTX_GENCODE_FLAGS -gencode=arch=compute_89,code=compute_89)
-    if(LIQUIDBIT_SM120_SUPPORTED)
+    if(SPECTRAL_SM120_SUPPORTED)
         list(APPEND PTX_GENCODE_FLAGS -gencode=arch=compute_120,code=compute_120)
     endif()
 
@@ -259,41 +259,41 @@ if(LIQUIDBIT_BUILD_OPTIX AND OptiX_INCLUDE_DIR)
 
     # ── Copy PTX to build root for easy access ─────────────────
     # The Python bridge (optix_router_bridge.py) loads PTX from build/
-    set(COMBINED_PTX "${CMAKE_BINARY_DIR}/liquidbit_kernels.ptx")
+    set(COMBINED_PTX "${CMAKE_BINARY_DIR}/spectral_kernels.ptx")
     add_custom_command(
         OUTPUT "${COMBINED_PTX}"
         COMMAND ${CMAKE_COMMAND} -E copy "${PTX_OUTPUT_DIR}/ray_generation.ptx" "${COMBINED_PTX}"
         DEPENDS ${PTX_FILES}
-        COMMENT "Copying ray_generation.ptx as liquidbit_kernels.ptx"
+        COMMENT "Copying ray_generation.ptx as spectral_kernels.ptx"
         VERBATIM
     )
     add_custom_target(combined_ptx ALL DEPENDS "${COMBINED_PTX}")
 
     # ── OptiX host code library ──────────────────────────────────
-    add_library(liquidbit_optix STATIC
+    add_library(spectral_optix STATIC
         cuda/optix_host.cpp
     )
 
-    target_include_directories(liquidbit_optix PUBLIC
+    target_include_directories(spectral_optix PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/include
         ${OptiX_INCLUDE_DIR}
         ${CUDAToolkit_INCLUDE_DIRS}
     )
 
-    target_link_libraries(liquidbit_optix PUBLIC
-        liquidbit_core
+    target_link_libraries(spectral_optix PUBLIC
+        spectral_core
         CUDA::cudart
         CUDA::cuda_driver
     )
 
     # optix_host.cpp uses relative include "include/token_geometry.h"
     # Fix: also search from project root
-    target_include_directories(liquidbit_optix PRIVATE
+    target_include_directories(spectral_optix PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}
     )
 
-    add_dependencies(liquidbit_optix optix_ptx)
-    message(STATUS "Created target: liquidbit_optix")
+    add_dependencies(spectral_optix optix_ptx)
+    message(STATUS "Created target: spectral_optix")
 
     # ── inception_runner executable ───────────────────────────────
     # Main executable that loads PTX, builds BVH, and runs RT routing
@@ -305,7 +305,7 @@ if(LIQUIDBIT_BUILD_OPTIX AND OptiX_INCLUDE_DIR)
             cuda/inception_runner_main.cpp
         )
     else()
-        # Generate a minimal main that uses LiquidBitOptixContext
+        # Generate a minimal main that uses SpectralAIOptixContext
         file(WRITE ${CMAKE_BINARY_DIR}/inception_runner_main.cpp
 "// Auto-generated main for inception_runner
 #include <iostream>
@@ -322,7 +322,7 @@ int main(int argc, char** argv) {
     std::cout << \"[inception_runner] PTX: \" << argv[1] << std::endl;
     std::cout << \"[inception_runner] Scene: \" << argv[2] << std::endl;
     std::cout << \"[inception_runner] Results: \" << argv[3] << std::endl;
-    std::cout << \"[inception_runner] TODO: integrate with LiquidBitOptixContext\" << std::endl;
+    std::cout << \"[inception_runner] TODO: integrate with SpectralAIOptixContext\" << std::endl;
     return 0;
 }
 ")
@@ -332,8 +332,8 @@ int main(int argc, char** argv) {
     endif()
 
     target_link_libraries(inception_runner
-        liquidbit_optix
-        liquidbit_core
+        spectral_optix
+        spectral_core
         CUDA::cudart
         CUDA::cuda_driver
     )
@@ -345,24 +345,24 @@ int main(int argc, char** argv) {
     # Minimal OptiX pipeline for expert selection via hardware RT Cores
     # Uses optix_router_raygen.ptx + optix_router_hitgroup.ptx
 
-    add_library(liquidbit_rt_router STATIC
+    add_library(spectral_rt_router STATIC
         cuda/optix_router_host.cpp
     )
 
-    target_include_directories(liquidbit_rt_router PUBLIC
+    target_include_directories(spectral_rt_router PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/include
         ${OptiX_INCLUDE_DIR}
         ${CUDAToolkit_INCLUDE_DIRS}
     )
 
-    target_link_libraries(liquidbit_rt_router PUBLIC
-        liquidbit_core
+    target_link_libraries(spectral_rt_router PUBLIC
+        spectral_core
         CUDA::cudart
         CUDA::cuda_driver
     )
 
-    add_dependencies(liquidbit_rt_router optix_ptx)
-    message(STATUS "Created target: liquidbit_rt_router (RT Core expert routing)")
+    add_dependencies(spectral_rt_router optix_ptx)
+    message(STATUS "Created target: spectral_rt_router (RT Core expert routing)")
 
     # ── RT Router benchmark executable ───────────────────────────
     file(WRITE ${CMAKE_BINARY_DIR}/rt_router_benchmark_main.cpp
@@ -412,7 +412,7 @@ int main(int argc, char** argv) {
     )
 
     target_link_libraries(rt_router_benchmark
-        liquidbit_rt_router
+        spectral_rt_router
         CUDA::cudart
         CUDA::cuda_driver
     )
@@ -424,45 +424,45 @@ else()
     message(STATUS "OptiX build DISABLED — set OptiX_INSTALL_DIR or install OptiX SDK 9.1")
 
     # Fallback: empty OBJECT library for compatibility
-    add_library(liquidbit_cuda OBJECT)
-    target_link_libraries(liquidbit_cuda PUBLIC CUDA::cudart CUDA::cuda_driver)
-    message(STATUS "Created target: liquidbit_cuda (stub, no OptiX)")
+    add_library(spectral_cuda OBJECT)
+    target_link_libraries(spectral_cuda PUBLIC CUDA::cudart CUDA::cuda_driver)
+    message(STATUS "Created target: spectral_cuda (stub, no OptiX)")
 endif()
 
 # ============================================================================
 # Tests y Benchmarks (compilación condicional)
 # ============================================================================
 
-if(LIQUIDBIT_BUILD_TESTS AND NOT MSVC)
+if(SPECTRAL_BUILD_TESTS AND NOT MSVC)
     # Benchmark CUDA: comparativa ray tracing vs matmul
     # NOTE: Excluded on MSVC due to a CUDA 13.2 MSBuild toolchain bug where
     # the HostCommandLineTemplate in CUDA 13.2.props generates a malformed
     # -Xcompiler="/EHsc -Ob2" flag (space inside quotes) that nvcc splits
     # into two arguments, causing "single input file required" fatal error.
     # The benchmark is a development tool; the core libraries build fine.
-    add_executable(liquidbit_benchmark tests/benchmark.cu)
+    add_executable(spectral_benchmark tests/benchmark.cu)
 
-    target_include_directories(liquidbit_benchmark PRIVATE
+    target_include_directories(spectral_benchmark PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/include
         ${CUDAToolkit_INCLUDE_DIRS}
     )
 
     # Compilar como CUDA
-    set_target_properties(liquidbit_benchmark PROPERTIES LANGUAGE CUDA)
+    set_target_properties(spectral_benchmark PROPERTIES LANGUAGE CUDA)
 
-    set_target_properties(liquidbit_benchmark PROPERTIES
+    set_target_properties(spectral_benchmark PROPERTIES
         CUDA_SEPARABLE_COMPILATION OFF
     )
 
-    target_link_libraries(liquidbit_benchmark
-        liquidbit_core
+    target_link_libraries(spectral_benchmark
+        spectral_core
         CUDA::cudart
         CUDA::cuda_driver
         CUDA::cufft
         CUDA::cublas
     )
 
-    message(STATUS "Created target: liquidbit_benchmark")
+    message(STATUS "Created target: spectral_benchmark")
 
     # Test: OptiX RT pipeline integration test
     add_executable(test_optix_pipeline tests/test_optix_pipeline.cpp)
@@ -474,8 +474,8 @@ if(LIQUIDBIT_BUILD_TESTS AND NOT MSVC)
     )
 
     target_link_libraries(test_optix_pipeline
-        liquidbit_core
-        liquidbit_optix
+        spectral_core
+        spectral_optix
         CUDA::cudart
         CUDA::cuda_driver
     )
@@ -483,7 +483,7 @@ if(LIQUIDBIT_BUILD_TESTS AND NOT MSVC)
     message(STATUS "Created target: test_optix_pipeline")
 
     enable_testing()
-    add_test(NAME BenchmarkRayTracing COMMAND liquidbit_benchmark)
+    add_test(NAME BenchmarkRayTracing COMMAND spectral_benchmark)
     add_test(NAME OptixPipeline COMMAND test_optix_pipeline)
 endif()
 
@@ -491,7 +491,7 @@ endif()
 # Python Bindings (futuro)
 # ============================================================================
 
-if(LIQUIDBIT_BUILD_PYTHON)
+if(SPECTRAL_BUILD_PYTHON)
     message(STATUS "Python bindings enabled (pybind11 required)")
     # TODO: find_package(pybind11) y crear módulo Python
 endif()
@@ -502,12 +502,12 @@ endif()
 
 # Headers públicos
 install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/
-    DESTINATION include/liquidbit
+    DESTINATION include/spectral
     FILES_MATCHING PATTERN "*.h"
 )
 
 # Librerías
-install(TARGETS liquidbit_core
+install(TARGETS spectral_core
     ARCHIVE DESTINATION lib
     LIBRARY DESTINATION lib
     RUNTIME DESTINATION bin
@@ -527,11 +527,11 @@ message(STATUS "Installation targets configured")
 # ============================================================================
 
 message(STATUS "")
-message(STATUS "LiquidBit Zero-Matrix Configuration:")
-message(STATUS "  Build tests:        ${LIQUIDBIT_BUILD_TESTS}")
-message(STATUS "  Build Python:       ${LIQUIDBIT_BUILD_PYTHON}")
-message(STATUS "  Debug symbols:      ${LIQUIDBIT_ENABLE_DEBUG}")
-message(STATUS "  CUDA line info:     ${LIQUIDBIT_ENABLE_LINEINFO}")
+message(STATUS "SpectralAI Zero-Matrix Configuration:")
+message(STATUS "  Build tests:        ${SPECTRAL_BUILD_TESTS}")
+message(STATUS "  Build Python:       ${SPECTRAL_BUILD_PYTHON}")
+message(STATUS "  Debug symbols:      ${SPECTRAL_ENABLE_DEBUG}")
+message(STATUS "  CUDA line info:     ${SPECTRAL_ENABLE_LINEINFO}")
 message(STATUS "  C++ Standard:       ${CMAKE_CXX_STANDARD}")
 message(STATUS "  CUDA Toolkit:       ${CUDAToolkit_VERSION}")
 message(STATUS "  OptiX:              ${OptiX_INCLUDE_DIR}")

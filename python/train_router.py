@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-train_router.py -- LiquidBit v5.0 FASE 6: Router Training Harness
+train_router.py -- SpectralAI v5.0 FASE 6: Router Training Harness
 
 Trains ONLY the routing layer + blend_gate on a frozen backbone.
 The backbone and ternary experts are frozen — only ~500K params train.
@@ -21,7 +21,7 @@ Usage:
     # Phase 1: Distill from Mixtral gate (future)
     python train_router.py --model mistralai/Mixtral-8x7B-v0.1 --distill
 
-Copyright (c) 2026 LiquidBit Studio — Apache 2.0
+Copyright (c) 2026 SpectralAI Studio — Apache 2.0
 """
 
 import argparse
@@ -39,7 +39,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.utils.data import DataLoader, Dataset
 
-# LiquidBit imports
+# SpectralAI imports
 sys.path.insert(0, str(Path(__file__).parent))
 from bvh_router import RouterConfig, RoutingResult
 from bvh_router_bridge import HybridBVHRouter, HAS_TORCH_EXT
@@ -143,7 +143,7 @@ class RouterTrainer:
 
     def __init__(
         self,
-        pipeline,  # LiquidBitRealModelPipeline
+        pipeline,  # SpectralAIRealModelPipeline
         device: torch.device,
         lr: float = 1e-3,
         weight_decay: float = 0.01,
@@ -437,7 +437,7 @@ class RouterTrainer:
 
 def main():
     parser = argparse.ArgumentParser(
-        description="LiquidBit v5.0 — Router Training (FASE 6)"
+        description="SpectralAI v5.0 — Router Training (FASE 6)"
     )
     parser.add_argument(
         "--model", type=str, default="microsoft/bitnet-b1.58-2B-4T-bf16",
@@ -468,7 +468,7 @@ def main():
     device = torch.device(args.device if torch.cuda.is_available() else "cpu")
 
     print("=" * 72)
-    print("  LiquidBit v5.0 — Router Training (FASE 6)")
+    print("  SpectralAI v5.0 — Router Training (FASE 6)")
     print("  Train BVH Router + Blend Gate on frozen backbone")
     print("=" * 72)
 
@@ -487,7 +487,7 @@ def main():
         extract_mlp_layers,
         sparse_upcycle_to_experts,
         extract_native_ternary_experts,
-        LiquidBitRealModelPipeline,
+        SpectralAIRealModelPipeline,
         TernaryExpertModule,
         NATIVE_TERNARY_MODELS,
         EXPERT_HIDDEN,
@@ -519,7 +519,7 @@ def main():
     gc.collect()
 
     n_l1, n_l2, n_l3 = _factorize_experts(args.n_experts)
-    pipeline = LiquidBitRealModelPipeline(
+    pipeline = SpectralAIRealModelPipeline(
         backbone_model=model,
         tokenizer=tokenizer,
         arch=arch,

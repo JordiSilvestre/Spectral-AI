@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-train_liquidbit.py — Pipeline de entrenamiento end-to-end de LiquidBit v4.0
+train_spectral.py — Pipeline de entrenamiento end-to-end de SpectralAI v4.0
 
 PIPELINE COMPLETO:
 ==================
@@ -22,8 +22,8 @@ L_spatial = β·L_prox + γ·L_cover + δ·L_inter + η·L_reg
 
 USO:
 ====
-  python train_liquidbit.py --epochs 200 --lr 1e-3 --batch-size 64
-  python train_liquidbit.py --eval-only  # solo evaluar con modelo guardado
+  python train_spectral.py --epochs 200 --lr 1e-3 --batch-size 64
+  python train_spectral.py --eval-only  # solo evaluar con modelo guardado
 
 SALIDAS:
 ========
@@ -33,7 +33,7 @@ SALIDAS:
   python/w_projection.npy      — matriz de proyección D→3D [3, D]
   python/training_curve.json   — métricas por epoch
 
-@author LiquidBit Zero-Matrix Team
+@author SpectralAI Zero-Matrix Team
 @date 2026
 """
 
@@ -75,12 +75,12 @@ except ImportError as e:
     sys.exit(1)
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Modelo: LiquidBitModel
+# Modelo: SpectralAIModel
 # ─────────────────────────────────────────────────────────────────────────────
 
-class LiquidBitModel(nn.Module):
+class SpectralAIModel(nn.Module):
     """
-    Modelo LiquidBit v4.0 completo para entrenamiento.
+    Modelo SpectralAI v4.0 completo para entrenamiento.
 
     Parámetros entrenables:
         W_projection:    [3, embed_dim]   — proyección learnable D→3D
@@ -300,7 +300,7 @@ def build_dataset(
 
 def train(args):
     print("=" * 65)
-    print(" LiquidBit v4.0 — Training Pipeline")
+    print(" SpectralAI v4.0 — Training Pipeline")
     print("=" * 65)
 
     # ── 1. Cargar embeddings ─────────────────────────────────────────────
@@ -339,7 +339,7 @@ def train(args):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"\n[model] Dispositivo: {device}")
 
-    model = LiquidBitModel(
+    model = SpectralAIModel(
         embed_dim   = embed_dim,
         num_modes   = args.num_modes,
         num_spheres = len(group_names),
@@ -535,7 +535,7 @@ def train(args):
 # ─────────────────────────────────────────────────────────────────────────────
 
 def parse_args():
-    p = argparse.ArgumentParser(description="LiquidBit v4.0 Training Pipeline")
+    p = argparse.ArgumentParser(description="SpectralAI v4.0 Training Pipeline")
     p.add_argument("--epochs",          type=int,   default=100,
                    help="Número de epochs de entrenamiento")
     p.add_argument("--lr",              type=float, default=1e-3,

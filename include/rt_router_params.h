@@ -9,13 +9,13 @@
  * IMPORTANT: Any changes here must be reflected in BOTH files.
  * The struct layout must match exactly (same types, same order, same padding).
  *
- * @author LiquidBit Zero-Matrix Team
+ * @author SpectralAI Zero-Matrix Team
  * @date 2026
  */
 
 #pragma once
-#ifndef LIQUIDBIT_RT_ROUTER_PARAMS_H_
-#define LIQUIDBIT_RT_ROUTER_PARAMS_H_
+#ifndef SPECTRAL_RT_ROUTER_PARAMS_H_
+#define SPECTRAL_RT_ROUTER_PARAMS_H_
 
 #include <optix.h>
 #include <vector_types.h>
@@ -66,4 +66,4 @@ struct RTRouterParams {
     float ray_tmax;
 };
 
-#endif // LIQUIDBIT_RT_ROUTER_PARAMS_H_
+#endif // SPECTRAL_RT_ROUTER_PARAMS_H_

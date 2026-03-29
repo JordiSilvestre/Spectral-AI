@@ -17,7 +17,7 @@ Usage:
     expert_out = layer.forward_expert(expert_id=5, hidden_states)
     gate_logits = layer.gate(hidden_states)
 
-Copyright (c) 2026 LiquidBit Studio -- Apache 2.0
+Copyright (c) 2026 SpectralAI Studio -- Apache 2.0
 """
 
 import json

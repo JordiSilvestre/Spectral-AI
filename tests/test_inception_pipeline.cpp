@@ -3,9 +3,9 @@
  * @brief Test de integración del pipeline OptiX String-Inception real.
  *
  * Este test:
- *   1. Carga liquidbit_kernels.ptx desde disco (generado por CMake)
+ *   1. Carga spectral_kernels.ptx desde disco (generado por CMake)
  *   2. Crea el pipeline OptiX con los 3 entry points del Inception Engine:
- *        __raygen__liquidbit, __closesthit__semantic_portal, __miss__inception,
+ *        __raygen__spectral, __closesthit__semantic_portal, __miss__inception,
  *        __intersection__sphere
  *   3. Construye un GAS con 5 SemanticSpheres en posiciones conocidas
  *   4. Lanza 16 rayos desde el origen con omega = π/4
@@ -16,7 +16,7 @@
  *   - Rayos dirigidos hacia las esferas → attentionWeight > 0
  *   - Rayos que no golpean nada → attentionWeight = 0, energyRemaining = 1.0
  *
- * @author LiquidBit Zero-Matrix Team
+ * @author SpectralAI Zero-Matrix Team
  * @date 2026
  */
 
@@ -25,7 +25,7 @@
 #include <cuda_runtime.h>
 #include <cuda.h>
 
-#include "liquidbit_resonance.h"
+#include "spectral_resonance.h"
 #include "token_geometry.h"
 
 #include <iostream>
@@ -102,9 +102,9 @@ int main(int argc, char* argv[]) {
     // ----------------------------------------------------------
     // Ruta al PTX: argumento o ruta por defecto junto al exe
     // ----------------------------------------------------------
-    const char* ptxPath = (argc > 1) ? argv[1] : "liquidbit_kernels.ptx";
+    const char* ptxPath = (argc > 1) ? argv[1] : "spectral_kernels.ptx";
 
-    std::cout << "=== LiquidBit String-Inception Pipeline Test ===\n";
+    std::cout << "=== SpectralAI String-Inception Pipeline Test ===\n";
     std::cout << "PTX: " << ptxPath << "\n\n";
 
     // ----------------------------------------------------------
@@ -146,7 +146,7 @@ int main(int argc, char* argv[]) {
     pipeOpts.numPayloadValues                 = 4;   // omega, accumulated, depth, hitCount
     pipeOpts.numAttributeValues               = 2;
     pipeOpts.exceptionFlags                   = OPTIX_EXCEPTION_FLAG_NONE;
-    pipeOpts.pipelineLaunchParamsVariableName = "c_params";  // coincide con liquidbit_kernels.cu
+    pipeOpts.pipelineLaunchParamsVariableName = "c_params";  // coincide con spectral_kernels.cu
     pipeOpts.usesPrimitiveTypeFlags           = OPTIX_PRIMITIVE_TYPE_FLAGS_CUSTOM;
 
     char log[4096];
@@ -173,7 +173,7 @@ int main(int argc, char* argv[]) {
         OptixProgramGroupDesc desc = {};
         desc.kind                  = OPTIX_PROGRAM_GROUP_KIND_RAYGEN;
         desc.raygen.module         = mod;
-        desc.raygen.entryFunctionName = "__raygen__liquidbit";
+        desc.raygen.entryFunctionName = "__raygen__spectral";
         logSz = sizeof(log);
         OPTIX_CHECK(optixProgramGroupCreate(optixCtx, &desc, 1,
             &pgOpts, log, &logSz, &pgRaygen));

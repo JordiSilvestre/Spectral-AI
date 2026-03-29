@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 ╔══════════════════════════════════════════════════════════════════════╗
-║    LiquidBit Zero-Matrix — Test de Pesos Entrenados               ║
+║    SpectralAI Zero-Matrix — Test de Pesos Entrenados               ║
 ║    Verifica que W_dispersion_trained resuelve polisemia            ║
 ╚══════════════════════════════════════════════════════════════════════╝
 
@@ -75,7 +75,7 @@ EXPECTED_ROUTING = {
 
 print()
 print("╔══════════════════════════════════════════════════════════════════════╗")
-print("║      LiquidBit Zero-Matrix — Test W_dispersion_trained v1.0       ║")
+print("║      SpectralAI Zero-Matrix — Test W_dispersion_trained v1.0       ║")
 print("╚══════════════════════════════════════════════════════════════════════╝")
 print()
 

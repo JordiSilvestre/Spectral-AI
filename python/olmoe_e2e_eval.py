@@ -23,7 +23,7 @@ Usage:
     # Identity test (diagnostic)
     python olmoe_e2e_eval.py --model-dir /path/to/olmoe-1b-7b --identity-test
 
-Copyright (c) 2026 LiquidBit Studio -- Apache 2.0
+Copyright (c) 2026 SpectralAI Studio -- Apache 2.0
 """
 
 import argparse
@@ -487,7 +487,7 @@ def main():
     args = parser.parse_args()
 
     print("=" * 70)
-    print("  LiquidBit Zero-Matrix — End-to-End PPL Evaluation")
+    print("  SpectralAI Zero-Matrix — End-to-End PPL Evaluation")
     print("  BVH Geometric Router vs OLMoE Linear Gate")
     print("=" * 70)
 

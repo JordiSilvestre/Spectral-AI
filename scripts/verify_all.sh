@@ -1,6 +1,6 @@
 #!/bin/bash
 # ============================================================================
-# verify_all.sh — Script de verificacion completa de LiquidBit
+# verify_all.sh — Script de verificacion completa de SpectralAI
 # Ejecutar despues de pull para verificar todos los cambios.
 # Uso: bash scripts/verify_all.sh
 # ============================================================================
@@ -41,7 +41,7 @@ skip() {
 }
 
 echo "============================================"
-echo " LiquidBit Zero-Matrix — Verificacion"
+echo " SpectralAI Zero-Matrix — Verificacion"
 echo " $(date)"
 echo "============================================"
 echo ""

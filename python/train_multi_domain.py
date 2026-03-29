@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-train_multi_domain.py — Training Multi-Dominio para LiquidBit v5.0 FASE 4
+train_multi_domain.py — Training Multi-Dominio para SpectralAI v5.0 FASE 4
 
 Entrena el Orchestrator con 4 dominios supervisados:
   0 = General (WikiText-2)
@@ -24,7 +24,7 @@ from torch.utils.data import DataLoader
 from pathlib import Path
 from tqdm import tqdm
 
-from orchestrator import LiquidBitOrchestrator, OrchestratorConfig
+from orchestrator import SpectralAIOrchestrator, OrchestratorConfig
 from multi_domain_dataset import (
     create_multi_domain_dataset, collate_with_domain,
     DOMAIN_NAMES, N_DOMAINS,
@@ -71,7 +71,7 @@ def train(args):
     device = torch.device(args.device if torch.cuda.is_available() else "cpu")
 
     print("=" * 70)
-    print("LiquidBit v5.0 — Training Multi-Dominio FASE 4")
+    print("SpectralAI v5.0 — Training Multi-Dominio FASE 4")
     print("=" * 70)
     if device.type == "cuda":
         print(f"GPU: {torch.cuda.get_device_name(0)}")
@@ -90,7 +90,7 @@ def train(args):
         alpha_router=args.alpha_router,
     )
 
-    model = LiquidBitOrchestrator(cfg, device).to(device)
+    model = SpectralAIOrchestrator(cfg, device).to(device)
     pc = model.param_count()
 
     print(f"Expertos:        {cfg.n_experts} (4x4x4)")

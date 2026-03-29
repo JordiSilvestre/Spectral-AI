@@ -1,4 +1,4 @@
-# LiquidBit Zero-Matrix — Índice de Archivos (2026-03-24)
+# SpectralAI Zero-Matrix — Índice de Archivos (2026-03-24)
 
 ## 📍 Navegación Rápida
 

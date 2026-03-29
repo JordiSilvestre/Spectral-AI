@@ -1,8 +1,8 @@
 /**
  * @file ternary_resonance.cu
- * @brief LiquidBit v4.0 — Phase 2: Ternary Accumulator Units (rayos verdes)
+ * @brief SpectralAI v4.0 — Phase 2: Ternary Accumulator Units (rayos verdes)
  *
- * CONCEPTO (Idea 5 de LiquidBit v4.0 "Inception Engine"):
+ * CONCEPTO (Idea 5 de SpectralAI v4.0 "Inception Engine"):
  * ========================================================
  *
  * Phase 1 (FP16 — rayos rojos):
@@ -40,7 +40,7 @@
  *   de las multiplicaciones FP (que van por unidades de punto flotante).
  *   Las Ternary Accumulator Units son contadores de enteros + 1 tanh final.
  *
- * @author LiquidBit Zero-Matrix Team
+ * @author SpectralAI Zero-Matrix Team
  * @date 2026
  */
 
@@ -50,7 +50,7 @@
 #include <stdint.h>
 #include <stdio.h>
 
-#include "../include/liquidbit_resonance.h"
+#include "../include/spectral_resonance.h"
 
 // ============================================================================
 // CONSTANTES TERNARIAS

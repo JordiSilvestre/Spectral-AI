@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 benchmark_expert_types.py — FASE 5: Benchmark de Cuantización
-LiquidBit v5.0 "Orchestrator"
+SpectralAI v5.0 "Orchestrator"
 
 Compara 4 variantes de backbone:
   1. FP32 (baseline)
@@ -19,7 +19,7 @@ Para cada variante mide:
 Requisitos:
   pip install torch tiktoken datasets tqdm
 
-Copyright (c) 2026 LiquidBit Studio — Apache 2.0
+Copyright (c) 2026 SpectralAI Studio — Apache 2.0
 """
 
 import os
@@ -41,7 +41,7 @@ import numpy as np
 # ── Project imports ──────────────────────────────────────────────
 sys.path.insert(0, str(Path(__file__).parent))
 
-from orchestrator import OrchestratorConfig, LiquidBitOrchestrator
+from orchestrator import OrchestratorConfig, SpectralAIOrchestrator
 from micro_expert import (
     MiniTransformerLM, TernaryLinear, quantize_ternary,
     quantize_model_ternary,
@@ -138,7 +138,7 @@ def create_ternary_backbone(cfg: OrchestratorConfig) -> nn.Module:
 # ── Training Loop (mini) ────────────────────────────────────────
 
 def train_orchestrator(
-    model: LiquidBitOrchestrator,
+    model: SpectralAIOrchestrator,
     train_loader: DataLoader,
     epochs: int,
     lr: float,
@@ -207,7 +207,7 @@ def train_orchestrator(
 
 @torch.no_grad()
 def evaluate_orchestrator(
-    model: LiquidBitOrchestrator,
+    model: SpectralAIOrchestrator,
     val_loader: DataLoader,
     device: str,
 ) -> Dict:
@@ -286,7 +286,7 @@ def evaluate_orchestrator(
 
 @torch.no_grad()
 def benchmark_throughput(
-    model: LiquidBitOrchestrator,
+    model: SpectralAIOrchestrator,
     device: str,
     batch_size: int = BATCH_SIZE,
     seq_len: int = SEQ_LEN,
@@ -342,12 +342,12 @@ def create_orchestrator_variant(
     variant: str,
     cfg: OrchestratorConfig,
     device: str,
-) -> LiquidBitOrchestrator:
+) -> SpectralAIOrchestrator:
     """
     Create orchestrator with specific backbone type.
     Returns a new model (immutable — never modifies originals).
     """
-    model = LiquidBitOrchestrator(cfg, device=torch.device(device))
+    model = SpectralAIOrchestrator(cfg, device=torch.device(device))
 
     if variant == "fp32":
         # Default — already FP32
@@ -374,7 +374,7 @@ def create_orchestrator_variant(
 def main():
     print("=" * 70)
     print("FASE 5 — Benchmark de Cuantización")
-    print("LiquidBit v5.0 Orchestrator")
+    print("SpectralAI v5.0 Orchestrator")
     print("=" * 70)
 
     device = DEVICE

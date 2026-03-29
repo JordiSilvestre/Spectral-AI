@@ -1,4 +1,4 @@
-# LiquidBit Zero-Matrix — Build Instructions
+# SpectralAI Zero-Matrix — Build Instructions
 
 ## Requisitos
 
@@ -30,7 +30,7 @@ $env:PATH="$env:CUDA_PATH\bin;$env:PATH"
 ### 2. Clonar y configurar
 
 ```bash
-cd LiquidBit\ Zero-Matrix
+cd SpectralAI\ Zero-Matrix
 mkdir build && cd build
 cmake .. -DCMAKE_BUILD_TYPE=Release
 ```
@@ -55,9 +55,9 @@ cmake --build . --config Release
 
 ```bash
 # Benchmark ray tracing vs MatMul
-./tests/liquidbit_benchmark
+./tests/spectral_benchmark
 # o en Windows:
-.\tests\Release\liquidbit_benchmark.exe
+.\tests\Release\spectral_benchmark.exe
 ```
 
 ## Python Scripts
@@ -86,9 +86,9 @@ build/
 ├── CMakeFiles/
 ├── CMakeLists.txt
 ├── Makefile (Linux/macOS) o Visual Studio files (Windows)
-├── libliquidbit_core.a      # Librería estática C++
+├── libspectral_core.a      # Librería estática C++
 ├── tests/
-│   └── liquidbit_benchmark  # Ejecutable de benchmark
+│   └── spectral_benchmark  # Ejecutable de benchmark
 └── bin/
     └── embedding_bridge.py  # Script Python (instalado)
 ```
@@ -98,19 +98,19 @@ build/
 ```bash
 cmake .. \
     -DCMAKE_BUILD_TYPE=Release \
-    -DLIQUIDBIT_BUILD_TESTS=ON \
-    -DLIQUIDBIT_BUILD_PYTHON=OFF \
-    -DLIQUIDBIT_ENABLE_DEBUG=OFF \
-    -DLIQUIDBIT_ENABLE_LINEINFO=ON \
+    -DSPECTRAL_BUILD_TESTS=ON \
+    -DSPECTRAL_BUILD_PYTHON=OFF \
+    -DSPECTRAL_ENABLE_DEBUG=OFF \
+    -DSPECTRAL_ENABLE_LINEINFO=ON \
     -DOptiX_INSTALL_DIR=/path/to/optix
 ```
 
 | Opción | Default | Descripción |
 |--------|---------|-------------|
-| `LIQUIDBIT_BUILD_TESTS` | ON | Compilar benchmarks y tests |
-| `LIQUIDBIT_BUILD_PYTHON` | OFF | Compilar bindings Python (requiere pybind11) |
-| `LIQUIDBIT_ENABLE_DEBUG` | ON | Incluir símbolos de debug (-g) |
-| `LIQUIDBIT_ENABLE_LINEINFO` | ON | Incluir info de líneas en kernels CUDA |
+| `SPECTRAL_BUILD_TESTS` | ON | Compilar benchmarks y tests |
+| `SPECTRAL_BUILD_PYTHON` | OFF | Compilar bindings Python (requiere pybind11) |
+| `SPECTRAL_ENABLE_DEBUG` | ON | Incluir símbolos de debug (-g) |
+| `SPECTRAL_ENABLE_LINEINFO` | ON | Incluir info de líneas en kernels CUDA |
 
 ## Troubleshooting
 
@@ -157,11 +157,11 @@ cmake --version
 
 ```bash
 # 1. Ejecutar benchmark
-./tests/liquidbit_benchmark
+./tests/spectral_benchmark
 
 # Salida esperada:
 # ╔══════════════════════════════════════════════════╗
-# ║ LiquidBit Zero-Matrix: Ray Tracing vs MatMul    ║
+# ║ SpectralAI Zero-Matrix: Ray Tracing vs MatMul    ║
 # ║ Benchmark Suite                                 ║
 # ╚══════════════════════════════════════════════════╝
 #
@@ -192,14 +192,14 @@ CMakeLists.txt configura automáticamente los paths de include.
 
 ### Linking manual
 
-Si necesitas compilar código que depende de liquidbit_core:
+Si necesitas compilar código que depende de spectral_core:
 
 ```bash
 g++ -std=c++17 \
     -I../include \
     -L./build \
     my_code.cpp \
-    -lliquidbit_core \
+    -lspectral_core \
     -lcudart \
     -o my_app
 ```

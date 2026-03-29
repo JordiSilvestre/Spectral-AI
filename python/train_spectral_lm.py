@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """
-train_liquidbit_lm.py — Entrenar LiquidBit Language Model
+train_spectral_lm.py — Entrenar SpectralAI Language Model
 
 Dataset: WikiText-2 (pequeño, 2M tokens)
 Objetivo: Comparable a GPT-2 small en perplexity
 
 Uso:
-    python train_liquidbit_lm.py --epochs 3 --batch-size 32 --lr 5e-4
+    python train_spectral_lm.py --epochs 3 --batch-size 32 --lr 5e-4
 
 Timeline:
   - Epoch 1: 2-3h (RTX 5070 Ti)
@@ -27,7 +27,7 @@ import time
 import math
 import numpy as np
 
-from liquidbit_lm import LiquidBitForCausalLM
+from spectral_lm import SpectralAIForCausalLM
 
 # ─────────────────────────────────────────────────────────────────
 # 1. Dataset simple (síntesis en memoria para demo rápida)
@@ -193,13 +193,13 @@ def evaluate(model, dataloader, device):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Train LiquidBit Language Model")
+    parser = argparse.ArgumentParser(description="Train SpectralAI Language Model")
     parser.add_argument("--epochs", type=int, default=3)
     parser.add_argument("--batch-size", type=int, default=32)
     parser.add_argument("--lr", type=float, default=5e-4)
     parser.add_argument("--device", type=str, default="cuda" if torch.cuda.is_available() else "cpu")
-    parser.add_argument("--checkpoint", type=str, default="liquidbit_lm_checkpoint.pt")
-    parser.add_argument("--log", type=str, default="liquidbit_training_log.json")
+    parser.add_argument("--checkpoint", type=str, default="spectral_lm_checkpoint.pt")
+    parser.add_argument("--log", type=str, default="spectral_training_log.json")
     parser.add_argument("--use-synthetic", action="store_true", default=False,
                         help="Usar dataset sintético en lugar de WikiText-2")
     parser.add_argument("--data-file", type=str, default=None,
@@ -207,7 +207,7 @@ def main():
     args = parser.parse_args()
 
     print("=" * 70)
-    print("LiquidBit Language Model — Training")
+    print("SpectralAI Language Model — Training")
     print("=" * 70)
     print(f"Device: {args.device}")
     print(f"Epochs: {args.epochs}")
@@ -219,8 +219,8 @@ def main():
     # ── Crear modelo ────────────────────────────────────────────────
     # GPT-2 usa 50K vocab (tiktoken gpt2 encoding)
     VOCAB_SIZE = 50_257 if not args.use_synthetic else 10_000
-    print("\n[Model] Creando LiquidBitForCausalLM...")
-    model = LiquidBitForCausalLM(
+    print("\n[Model] Creando SpectralAIForCausalLM...")
+    model = SpectralAIForCausalLM(
         vocab_size=VOCAB_SIZE,
         embed_dim=256,
         num_layers=4,

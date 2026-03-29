@@ -3,7 +3,7 @@
 
 cd "$(dirname "$0")/.."
 
-echo "=== LiquidBit Benchmark ==="
+echo "=== SpectralAI Benchmark ==="
 echo "Generando resultados..."
 
 # Pequeño test (5 frases, rápido - ~30s)

@@ -20,7 +20,7 @@ Usage:
     # Benchmark: PyTorch vs OptiX routing
     bridge.benchmark(prompt_embeddings, n_iters=100)
 
-Copyright (c) 2026 LiquidBit Studio — Apache 2.0
+Copyright (c) 2026 SpectralAI Studio — Apache 2.0
 """
 
 import os
@@ -42,7 +42,7 @@ SCRIPT_DIR  = Path(__file__).parent
 PROJECT_DIR = SCRIPT_DIR.parent
 BUILD_DIR   = PROJECT_DIR / "build" / "Release"
 BUILD_ROOT  = PROJECT_DIR / "build"
-PTX_PATH    = BUILD_ROOT / "liquidbit_kernels.ptx"
+PTX_PATH    = BUILD_ROOT / "spectral_kernels.ptx"
 RUNNER_EXE  = BUILD_DIR / "inception_runner.exe"
 
 # ─────────────────────────────────────────────────────────────────
@@ -144,7 +144,7 @@ class OptiXRouterBridge:
         if not self.ptx_path.exists():
             raise FileNotFoundError(
                 f"PTX not found at {self.ptx_path}\n"
-                f"Build with: cmake .. -DLIQUIDBIT_BUILD_INCEPTION=ON")
+                f"Build with: cmake .. -DSPECTRAL_BUILD_INCEPTION=ON")
 
     def extract_spheres_from_router(
         self,
@@ -401,8 +401,8 @@ if __name__ == "__main__":
         print("  Build with: cmake --build build --config Release")
         sys.exit(1)
     if not PTX_PATH.exists():
-        print(f"\n  ERROR: liquidbit_kernels.ptx not found at {PTX_PATH}")
-        print("  Build with: cmake .. -DLIQUIDBIT_BUILD_INCEPTION=ON")
+        print(f"\n  ERROR: spectral_kernels.ptx not found at {PTX_PATH}")
+        print("  Build with: cmake .. -DSPECTRAL_BUILD_INCEPTION=ON")
         sys.exit(1)
 
     print(f"  Runner: {RUNNER_EXE}")

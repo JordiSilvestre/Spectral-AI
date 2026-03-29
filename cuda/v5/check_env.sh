@@ -24,9 +24,9 @@ pip3 list 2>/dev/null | grep -E "torch|numpy|tqdm|tiktoken" 2>&1
 
 echo ""
 echo "=== Venv check ==="
-ls -la "/mnt/j/Proyectos/LiquidBit Zero-Matrix/.venv/" 2>&1
+ls -la "/mnt/j/Proyectos/SpectralAI Zero-Matrix/.venv/" 2>&1
 
 echo ""
 echo "=== libbvh_router.so ==="
-ls -la "/mnt/j/Proyectos/LiquidBit Zero-Matrix/cuda/v5/libbvh_router.so" 2>&1
-nm -D "/mnt/j/Proyectos/LiquidBit Zero-Matrix/cuda/v5/libbvh_router.so" 2>&1 | grep bvh_router | head -5
+ls -la "/mnt/j/Proyectos/SpectralAI Zero-Matrix/cuda/v5/libbvh_router.so" 2>&1
+nm -D "/mnt/j/Proyectos/SpectralAI Zero-Matrix/cuda/v5/libbvh_router.so" 2>&1 | grep bvh_router | head -5

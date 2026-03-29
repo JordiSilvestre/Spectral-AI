@@ -1,4 +1,4 @@
-# Spectral IA
+# SpectralAI Zero-Matrix
 
 **Atencion sin multiplicacion de matrices.** Los RT Cores reemplazan MatMul con ray tracing O(log N).
 
@@ -6,13 +6,13 @@
 
 ## Que es esto?
 
-LiquidBit Zero-Matrix es un prototipo de investigacion que reemplaza el mecanismo de atencion O(N^2) de los Transformers con operaciones de ray tracing O(N log N), usando los RT Cores ya presentes en GPUs NVIDIA de consumidor (RTX 4090, RTX 5070 Ti).
+SpectralAI Zero-Matrix es un prototipo de investigacion que reemplaza el mecanismo de atencion O(N^2) de los Transformers con operaciones de ray tracing O(N log N), usando los RT Cores ya presentes en GPUs NVIDIA de consumidor (RTX 4090, RTX 5070 Ti).
 
 En lugar de computar una matriz densa de atencion (Query x Key), los tokens se proyectan en un espacio geometrico 3D organizado como un BVH (Bounding Volume Hierarchy). Un "rayo" desde el token de consulta recorre el arbol, encontrando tokens semanticamente relevantes en O(log N) pasos — de la misma forma que un videojuego encuentra que objetos impacta una bala.
 
 ### Por que importa
 
-| Metrica | GPT-4 (MatMul) | LiquidBit (Ray Tracing) |
+| Metrica | GPT-4 (MatMul) | SpectralAI (Ray Tracing) |
 |---|---|---|
 | Complejidad atencion | O(N^2) | O(N log N) |
 | Operaciones (N=100K) | ~80T FLOPs | ~6.9B intersecciones |
@@ -111,7 +111,7 @@ Tres innovaciones clave:
 ## Estructura del proyecto
 
 ```
-liquidbit-zero-matrix/
+spectral-ai/
 ├── CLAUDE.md              # Referencia de arquitectura (para agentes IA)
 ├── LEARNINGS.md           # Registro de decisiones, fallos, descubrimientos
 ├── ROADMAP.md             # Hoja de ruta de 11 fases
@@ -165,8 +165,8 @@ liquidbit-zero-matrix/
 
 ```bash
 # WSL2 (recomendado)
-ln -sf "/mnt/j/Proyectos/LiquidBit Zero-Matrix" /tmp/liquidbit
-cd /tmp/liquidbit
+ln -sf "/mnt/j/Proyectos/SpectralAI Zero-Matrix" /tmp/spectral
+cd /tmp/spectral
 python3 -m venv .venv_wsl && source .venv_wsl/bin/activate
 pip install torch transformers accelerate safetensors datasets scikit-learn
 
@@ -220,4 +220,4 @@ Propietario. Patente pendiente.
 
 ## Autor
 
-Jordi Silva — LiquidBit Studio, 2026.
+Jordi Silva — SpectralAI Studio, 2026.

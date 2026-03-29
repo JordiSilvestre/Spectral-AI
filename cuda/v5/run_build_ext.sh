@@ -5,9 +5,9 @@ export HOME=/home/jordi
 
 # El linker de ld no soporta paths con espacios.
 # Solución: symlink sin espacios al proyecto y a la venv.
-PROJ_LINK="/tmp/liquidbit"
+PROJ_LINK="/tmp/spectral"
 rm -f "$PROJ_LINK"
-ln -s "/mnt/j/Proyectos/LiquidBit Zero-Matrix" "$PROJ_LINK"
+ln -s "/mnt/j/Proyectos/SpectralAI Zero-Matrix" "$PROJ_LINK"
 
 # Crear venv en path sin espacios si no existe
 VENV="/home/jordi/liquidbit_venv"

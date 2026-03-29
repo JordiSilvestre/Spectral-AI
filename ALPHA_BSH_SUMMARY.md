@@ -1,21 +1,21 @@
 # Alpha BSH: Arquitectura de Dos Fases
 
 **Fecha de Creación:** 2026-03-24
-**Equipo:** LiquidBit Zero-Matrix
+**Equipo:** SpectralAI Zero-Matrix
 **Estado:** Prototipo funcional (sin OptiX compilado)
 
 ---
 
 ## Visión General
 
-Alpha BSH es una evolución de LiquidBit Zero-Matrix que combina:
+Alpha BSH es una evolución de SpectralAI Zero-Matrix que combina:
 
 - **FASE A (O(N log N))**: Bounding Sphere Hierarchy (BSH) con ray tracing para encontrar la esfera semántica más relevante
 - **FASE B (O(M²))**: cuBLAS MatMul de alta precisión FP16 únicamente en la esfera activada
 
 ### Diferencia Clave vs Proyecto Original
 
-**LiquidBit Zero-Matrix (Original):**
+**SpectralAI Zero-Matrix (Original):**
 - Emite **miles de rayos** desde cada token query
 - Cada rayo acumula pesos de atención multi-head
 - Complejidad: O(K × N log N), donde K es # de rayos (típ. K >> N)
@@ -306,10 +306,10 @@ Demuestra la arquitectura de los 4 programas OptiX reales:
 2. **Optimización de construcción**: Usar KD-tree 3D para O(N log N) en lugar de O(N² log N)
 3. **Overlapping de carga**: Usar cudaMemcpyAsync() para carga lazy concurrente con ejecución
 4. **Diferenciabilidad**: Implementar Soft BVH para gradientes de entrenamiento
-5. **Benchmarking**: Comparativa contra Transformer estándar (attention) y LiquidBit original
+5. **Benchmarking**: Comparativa contra Transformer estándar (attention) y SpectralAI original
 6. **Almacenamiento de matrices**: Implementar serialización/deserialización de MatrixBlocks
 
 ---
 
-**Autor:** LiquidBit Zero-Matrix Team
+**Autor:** SpectralAI Zero-Matrix Team
 **Fecha:** 2026-03-24

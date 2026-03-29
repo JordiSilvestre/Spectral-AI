@@ -1,4 +1,4 @@
-# Benchmark Teorico: LiquidBit vs Estado del Arte
+# Benchmark Teorico: SpectralAI vs Estado del Arte
 
 > Ultima actualizacion: 2026-03-28. Para arquitectura general ver [ARCHITECTURE.md](ARCHITECTURE.md).
 
@@ -6,7 +6,7 @@
 
 ## Resumen
 
-Este documento compara LiquidBit Zero-Matrix con los principales LLMs del estado del arte
+Este documento compara SpectralAI Zero-Matrix con los principales LLMs del estado del arte
 en terminos de complejidad computacional, FLOPs, consumo de memoria, coste por inferencia,
 hardware requerido y consumo energetico. Los calculos asumen N=100,000 tokens de contexto.
 
@@ -14,7 +14,7 @@ hardware requerido y consumo energetico. Los calculos asumen N=100,000 tokens de
 
 ## Tabla Comparativa Principal
 
-| Metrica | GPT-4 (est.) | LLaMA-3 70B | Mixtral 8x22B | DeepSeek-V3 | **LiquidBit** |
+| Metrica | GPT-4 (est.) | LLaMA-3 70B | Mixtral 8x22B | DeepSeek-V3 | **SpectralAI** |
 |---|---|---|---|---|---|
 | Parametros | ~1.8T | 70B | 141B (47B activos) | 671B (37B activos) | Dependiente de expertos |
 | Atencion | Dense O(N^2) | GQA O(N^2) | Dense O(N^2) | MLA O(N^2) | **BVH O(N log N)** |
@@ -40,7 +40,7 @@ Attention(Q, K, V) = softmax(Q @ K^T / sqrt(d_k)) @ V
 La multiplicacion `Q @ K^T` tiene complejidad O(N^2 * d_k) donde N es la longitud
 de secuencia y d_k la dimension de las keys.
 
-LiquidBit reemplaza esto con traversal de un arbol BVH:
+SpectralAI reemplaza esto con traversal de un arbol BVH:
 
 ```
 expert_id = BVH_traverse(PCA_project(hidden_state))   --> O(log N) por token
@@ -54,7 +54,7 @@ Para N = 100,000 tokens:
 | Modelo | Operaciones por token | Total (N tokens) |
 |---|---|---|
 | Dense attention | N comparaciones | N^2 = 10^10 |
-| LiquidBit BVH | log2(N) = 17 pasos | N * log2(N) = 1.7 * 10^6 |
+| SpectralAI BVH | log2(N) = 17 pasos | N * log2(N) = 1.7 * 10^6 |
 | **Factor** | | **~5,882x** |
 
 ---
@@ -73,7 +73,7 @@ Total/capa    ≈ 102T FLOPs
 Total modelo (96 capas) ≈ 9,800T FLOPs
 ```
 
-### LiquidBit (una capa)
+### SpectralAI (una capa)
 
 ```
 FLOPs_project = N * d_model * 3          = 100K * 4096 * 3      = ~1.23G
@@ -105,7 +105,7 @@ forward pass de los expertos (~838G), no el traversal (~170M).
 | LLaMA-3 70B (80 capas, GQA) | ~60T | ~4,800T | ~2x |
 | Mixtral 8x22B (56 capas, MoE) | ~25T activos | ~1,400T activos | ~7x |
 | DeepSeek-V3 (61 capas, MLA+MoE) | ~15T activos | ~915T activos | ~11x |
-| **LiquidBit (16 capas, BVH+MoE)** | **~843G** | **~13.5T** | **~726x** |
+| **SpectralAI (16 capas, BVH+MoE)** | **~843G** | **~13.5T** | **~726x** |
 
 ---
 
@@ -130,7 +130,7 @@ Asumiendo eficiencia tipica de cada GPU:
 | LLaMA-3 70B | ~4,800T | 2x A100 (800 W) | ~7.69s | ~6,152 J |
 | Mixtral 8x22B | ~1,400T | 2x A100 (800 W) | ~2.24s | ~1,795 J |
 | DeepSeek-V3 | ~915T | 4x H100 (2.8 KW) | ~0.23s | ~644 J |
-| **LiquidBit** | **~13.5T** | **RTX 5070 Ti (300 W)** | **~0.06s** | **~18 J** |
+| **SpectralAI** | **~13.5T** | **RTX 5070 Ti (300 W)** | **~0.06s** | **~18 J** |
 
 ### Coste Monetario por Millon de Tokens (estimado)
 
@@ -142,7 +142,7 @@ Asumiendo coste de electricidad ~0.12 EUR/kWh y amortizacion de hardware:
 | LLaMA-3 70B (self-hosted) | ~4.50 EUR | ~0.062 J | ~2.50 EUR |
 | Mixtral (self-hosted) | ~4.50 EUR | ~0.018 J | ~1.20 EUR |
 | DeepSeek-V3 (API) | N/A | N/A | ~0.27 USD (input) |
-| **LiquidBit (local)** | **~0.12 EUR** | **~0.00018 J** | **~0.01 EUR** |
+| **SpectralAI (local)** | **~0.12 EUR** | **~0.00018 J** | **~0.01 EUR** |
 
 ---
 
@@ -156,13 +156,13 @@ Asumiendo coste de electricidad ~0.12 EUR/kWh y amortizacion de hardware:
 | LLaMA-3 70B | 2x A100 80GB | 160 GB | NVLink 3.0 | Si | ~30K EUR |
 | Mixtral 8x22B | 2x A100 80GB | 160 GB | NVLink 3.0 | Si | ~30K EUR |
 | DeepSeek-V3 | 4-8x H100 | 320-640 GB | NVLink 4.0 | Si | >120K EUR |
-| **LiquidBit** | **1x RTX 5070 Ti** | **16 GB** | **PCIe 5.0** | **No** | **~800 EUR** |
+| **SpectralAI** | **1x RTX 5070 Ti** | **16 GB** | **PCIe 5.0** | **No** | **~800 EUR** |
 
 ### Factor de Democratizacion
 
 ```
-Coste GPT-4 setup     / Coste LiquidBit = 240,000 / 800 = 300x
-VRAM GPT-4            / VRAM LiquidBit  = 640 GB / 0.1 GB = 6,400x
+Coste GPT-4 setup     / Coste SpectralAI = 240,000 / 800 = 300x
+VRAM GPT-4            / VRAM SpectralAI  = 640 GB / 0.1 GB = 6,400x
 Energia GPT-4/token   / Energia LB/token = 6,944 / 18 = 386x
 ```
 
@@ -178,7 +178,7 @@ Energia GPT-4/token   / Energia LB/token = 6,944 / 18 = 386x
 | LLaMA-3 70B (2x A100) | 800 W | ~30 | ~26.7 J | 7.41 |
 | Mixtral 8x22B (2x A100) | 800 W | ~50 | ~16.0 J | 4.44 |
 | DeepSeek-V3 (4x H100) | 2,800 W | ~200 | ~14.0 J | 3.89 |
-| **LiquidBit (RTX 5070 Ti)** | **300 W** | **~52** | **~5.8 J** | **1.60** |
+| **SpectralAI (RTX 5070 Ti)** | **300 W** | **~52** | **~5.8 J** | **1.60** |
 
 ### Huella de CO2 (por millon de tokens)
 
@@ -190,7 +190,7 @@ Asumiendo mix energetico europeo (~0.25 kg CO2/kWh):
 | LLaMA-3 70B | 7.41 | 1.85 |
 | Mixtral 8x22B | 4.44 | 1.11 |
 | DeepSeek-V3 | 3.89 | 0.97 |
-| **LiquidBit** | **1.60** | **0.40** |
+| **SpectralAI** | **1.60** | **0.40** |
 
 Reduccion de emisiones CO2 vs GPT-4: **~6.5x**.
 
@@ -222,11 +222,11 @@ Las siguientes metricas no son teoricas — han sido medidas en el prototipo:
    pipelines independientes. La utilizacion real depende del scheduling y del
    balance entre compute y memoria.
 
-2. **Calidad no esta equiparada**: LiquidBit aun no iguala la calidad de GPT-4.
+2. **Calidad no esta equiparada**: SpectralAI aun no iguala la calidad de GPT-4.
    Los benchmarks comparan coste computacional, no capacidad del modelo.
    La degradacion medida es +0.8% PPL por capa reemplazada (5 capas = +4.8%).
 
-3. **Escalado pendiente**: Los numeros de LiquidBit son extrapolaciones del prototipo
+3. **Escalado pendiente**: Los numeros de SpectralAI son extrapolaciones del prototipo
    de 64 expertos. El escalado a 65K expertos introducira overhead de NVMe I/O
    y potenciales problemas de latencia de expert loading.
 

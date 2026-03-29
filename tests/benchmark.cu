@@ -13,7 +13,7 @@
  *
  * Tamaños de test: N = {1000, 5000, 10000, 50000} tokens
  *
- * @author LiquidBit Zero-Matrix Team
+ * @author SpectralAI Zero-Matrix Team
  * @date 2026
  */
 
@@ -278,7 +278,7 @@ void printMemoryStats() {
 int main() {
     printf("\n");
     printf("╔═══════════════════════════════════════════════════════════════╗\n");
-    printf("║   LiquidBit Zero-Matrix: Ray Tracing vs MatMul Attention    ║\n");
+    printf("║   SpectralAI Zero-Matrix: Ray Tracing vs MatMul Attention    ║\n");
     printf("║                        Benchmark Suite                      ║\n");
     printf("╚═══════════════════════════════════════════════════════════════╝\n\n");
 

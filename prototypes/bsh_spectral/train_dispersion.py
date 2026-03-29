@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 ╔══════════════════════════════════════════════════════════════════════╗
-║    LiquidBit Zero-Matrix — W_dispersion Training Script            ║
+║    SpectralAI Zero-Matrix — W_dispersion Training Script            ║
 ║    Aprende los pesos W_dispersion para refracción prismática       ║
 ║    Resuelve polisemia: mismo token, diferente contexto → esfera OK ║
 ╚══════════════════════════════════════════════════════════════════════╝
@@ -99,7 +99,7 @@ EXPECTED_ROUTING = {
 
 print()
 print("╔══════════════════════════════════════════════════════════════════════╗")
-print("║    LiquidBit Zero-Matrix — W_dispersion Training v1.0             ║")
+print("║    SpectralAI Zero-Matrix — W_dispersion Training v1.0             ║")
 print("╚══════════════════════════════════════════════════════════════════════╝")
 print(f"  Tokens: {N_TOKENS} | Embedding D={D} | Spectral dim={SPECTRAL_DIM}")
 print(f"  Epochs: {N_EPOCHS} | LR: {LEARNING_RATE} | α_spatial: {ALPHA_SPATIAL}")

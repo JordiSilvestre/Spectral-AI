@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-trainable_experts.py -- LiquidBit FASE A: Trainable MLP Experts
+trainable_experts.py -- SpectralAI FASE A: Trainable MLP Experts
 
 Lightweight MLP experts that CAN specialize during training.
 Unlike the frozen ternary clones from BitNet, these start random
@@ -12,7 +12,7 @@ Architecture per expert:
 
 Total for 16 experts: ~64M params (fits easily in 16 GB VRAM).
 
-Copyright (c) 2026 LiquidBit Studio — Apache 2.0
+Copyright (c) 2026 SpectralAI Studio — Apache 2.0
 """
 
 import math
@@ -241,10 +241,10 @@ class TrainableExpertPool(nn.Module):
 
 
 # ─────────────────────────────────────────────────────────────────
-# Lightweight LiquidBit MoE — No backbone, pure MoE
+# Lightweight SpectralAI MoE — No backbone, pure MoE
 # ─────────────────────────────────────────────────────────────────
 
-class LiquidBitMoE(nn.Module):
+class SpectralAIMoE(nn.Module):
     """
     Complete lightweight MoE model for FASE A training.
 
@@ -388,7 +388,7 @@ if __name__ == "__main__":
     from bvh_router_bridge import HybridBVHRouter
 
     print("=" * 60)
-    print("  LiquidBit FASE A — Trainable Expert Pool Test")
+    print("  SpectralAI FASE A — Trainable Expert Pool Test")
     print("=" * 60)
 
     config = TrainableExpertConfig(
@@ -397,7 +397,7 @@ if __name__ == "__main__":
         intermediate_dim=2048,
     )
 
-    model = LiquidBitMoE(
+    model = SpectralAIMoE(
         vocab_size=128256,  # BitNet vocab
         expert_config=config,
         router_embed_dim=256,

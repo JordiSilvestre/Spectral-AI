@@ -49,7 +49,7 @@ BUILD_ROOT  = PROJECT_DIR / "build"
 # Ejecutables compilados
 BATCH_EXE          = BUILD_DIR / "batch_runner.exe"
 INCEPTION_EXE      = BUILD_DIR / "inception_engine.exe"
-PTX_PATH           = BUILD_ROOT / "liquidbit_kernels.ptx"
+PTX_PATH           = BUILD_ROOT / "spectral_kernels.ptx"
 INCEPTION_PTX_PATH = BUILD_ROOT / "inception_kernels.ptx"
 
 # ─────────────────────────────────────────────────────────────────
@@ -555,7 +555,7 @@ def main() -> None:
     n_values = sorted(set(int(x) for x in args.n_values.split(",")))
 
     print("=" * 70)
-    print("FASE 5.1 — LiquidBit Zero-Matrix: Benchmark de Escalado")
+    print("FASE 5.1 — SpectralAI Zero-Matrix: Benchmark de Escalado")
     print("=" * 70)
     print(f"Modo:     {args.mode}")
     print(f"N range:  {n_values[0]:,} → {n_values[-1]:,} tokens")
@@ -568,7 +568,7 @@ def main() -> None:
     print("\n[build] Estado de ejecutables:")
     print(f"  batch_runner.exe:     {'OK' if BATCH_EXE.exists() else 'NO COMPILADO'}")
     print(f"  inception_engine.exe: {'OK' if INCEPTION_EXE.exists() else 'NO COMPILADO'}")
-    print(f"  liquidbit_kernels.ptx:  {'OK' if PTX_PATH.exists() else 'NO COMPILADO'}")
+    print(f"  spectral_kernels.ptx:  {'OK' if PTX_PATH.exists() else 'NO COMPILADO'}")
     print(f"  inception_kernels.ptx:  {'OK' if INCEPTION_PTX_PATH.exists() else 'NO COMPILADO'}")
 
     if args.mode == "measured" and not BATCH_EXE.exists():
@@ -606,7 +606,7 @@ def main() -> None:
 
     # Resumen ejecutivo
     print("\n" + "=" * 70)
-    print("RESUMEN EJECUTIVO — LiquidBit v4.0 Inception Engine")
+    print("RESUMEN EJECUTIVO — SpectralAI v4.0 Inception Engine")
     print("=" * 70)
 
     speedups_cublas = [r["speedup_vs_cublas"] for r in results if r["n"] >= 1024]

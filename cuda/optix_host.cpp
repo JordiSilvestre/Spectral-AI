@@ -2,8 +2,8 @@
  * @file optix_host.cpp
  * @brief Host code completo para inicialización, gestión y ejecución del pipeline OptiX 8.x
  *
- * Este archivo contiene la implementación de la clase LiquidBitOptixContext que encapsula
- * toda la lógica de host code para el pipeline de ray tracing de LiquidBit Zero-Matrix.
+ * Este archivo contiene la implementación de la clase SpectralAIOptixContext que encapsula
+ * toda la lógica de host code para el pipeline de ray tracing de SpectralAI Zero-Matrix.
  *
  * FUNCIONALIDADES:
  * ================
@@ -22,7 +22,7 @@
  *   - Las funciones CUDA devem ser compiladas a PTX antes (nvcc -ptx)
  *   - Incluye <optix_stubs.h> para las funciones del runtime
  *
- * @author LiquidBit Zero-Matrix Team
+ * @author SpectralAI Zero-Matrix Team
  * @date 2026
  */
 
@@ -104,12 +104,12 @@ public:
 };
 
 // ============================================================================
-// CLASE PRINCIPAL: LiquidBitOptixContext
+// CLASE PRINCIPAL: SpectralAIOptixContext
 // ============================================================================
 
 /**
- * @class LiquidBitOptixContext
- * @brief Gestor completo del contexto OptiX para LiquidBit Zero-Matrix.
+ * @class SpectralAIOptixContext
+ * @brief Gestor completo del contexto OptiX para SpectralAI Zero-Matrix.
  *
  * Responsabilidades:
  *   1. Inicialización y gestión del contexto OptiX
@@ -119,7 +119,7 @@ public:
  *   5. Lanzamiento del pipeline de ray tracing
  *   6. Gestión de memoria GPU y liberación de recursos
  */
-class LiquidBitOptixContext {
+class SpectralAIOptixContext {
 public:
     // ========================================================================
     // CONSTRUCTOR / DESTRUCTOR
@@ -134,7 +134,7 @@ public:
      *   3. Crea el contexto de dispositivo OptiX
      *   4. Configura el logger de OptiX
      */
-    LiquidBitOptixContext()
+    SpectralAIOptixContext()
         : cuda_context_(nullptr),
           optix_context_(nullptr),
           pipeline_(nullptr),
@@ -168,7 +168,7 @@ public:
      *   4. Contexto de dispositivo OptiX
      *   5. CUDA context
      */
-    ~LiquidBitOptixContext() {
+    ~SpectralAIOptixContext() {
         cleanup();
     }
 
@@ -982,13 +982,13 @@ bool loadPTXFile(const std::string& filepath, std::string& out_content) {
 // FUNCIÓN GLOBAL: Factory desde strings PTX
 // ============================================================================
 
-LiquidBitOptixContext* createLiquidBitOptixContext(
+SpectralAIOptixContext* createSpectralAIOptixContext(
     const char* ptx_raygen,
     const char* ptx_closest_hit,
     const char* ptx_miss) {
 
     try {
-        LiquidBitOptixContext* context = new LiquidBitOptixContext();
+        SpectralAIOptixContext* context = new SpectralAIOptixContext();
 
         if (!context->createPipeline(ptx_raygen, ptx_closest_hit, ptx_miss)) {
             delete context;
@@ -1010,13 +1010,13 @@ LiquidBitOptixContext* createLiquidBitOptixContext(
  * @brief Crea un contexto OptiX cargando .ptx directamente desde archivos.
  *
  * Uso típico:
- *   auto* ctx = createLiquidBitOptixContextFromFiles(
+ *   auto* ctx = createSpectralAIOptixContextFromFiles(
  *       "build/ptx/ray_generation.ptx",
  *       "build/ptx/closest_hit.ptx",
  *       "build/ptx/miss.ptx"
  *   );
  */
-LiquidBitOptixContext* createLiquidBitOptixContextFromFiles(
+SpectralAIOptixContext* createSpectralAIOptixContextFromFiles(
     const std::string& ptx_raygen_path,
     const std::string& ptx_closest_hit_path,
     const std::string& ptx_miss_path) {
@@ -1029,7 +1029,7 @@ LiquidBitOptixContext* createLiquidBitOptixContextFromFiles(
         return nullptr;
     }
 
-    return createLiquidBitOptixContext(
+    return createSpectralAIOptixContext(
         ptx_raygen.c_str(),
         ptx_closest_hit.c_str(),
         ptx_miss.c_str());
@@ -1042,9 +1042,9 @@ LiquidBitOptixContext* createLiquidBitOptixContextFromFiles(
 /**
  * @brief Destruye de forma segura un contexto OptiX.
  *
- * @param context Puntero a LiquidBitOptixContext (puede ser nullptr)
+ * @param context Puntero a SpectralAIOptixContext (puede ser nullptr)
  */
-void destroyLiquidBitOptixContext(LiquidBitOptixContext* context) {
+void destroySpectralAIOptixContext(SpectralAIOptixContext* context) {
     if (context != nullptr) {
         context->cleanup();
         delete context;

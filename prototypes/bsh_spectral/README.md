@@ -2,7 +2,7 @@
 
 ## Descripción
 
-Simulador Python puro del mecanismo de atención óptica de **LiquidBit Zero-Matrix**, implementando:
+Simulador Python puro del mecanismo de atención óptica de **SpectralAI Zero-Matrix**, implementando:
 
 - **Bounding Sphere Hierarchy (BSH)**: Árbol jerárquico de esferas semánticas
 - **Rayos Espectrales**: Rayos coloreados con contexto semántico (ℝ^64)

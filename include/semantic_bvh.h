@@ -1,18 +1,18 @@
 /**
  * @file semantic_bvh.h
- * @brief Gestión del árbol BVH (Bounding Volume Hierarchy) semántico para LiquidBit Zero-Matrix
+ * @brief Gestión del árbol BVH (Bounding Volume Hierarchy) semántico para SpectralAI Zero-Matrix
  *
  * Define la estructura del BVH y la interfaz de construcción/consulta.
  * El BVH encapsula todos los TokenNodes en una jerarquía que permite
  * ray tracing eficiente (O(log N)) para encontrar tokens relevantes.
  *
- * @author LiquidBit Zero-Matrix Team
+ * @author SpectralAI Zero-Matrix Team
  * @date 2026
  */
 
 #pragma once
-#ifndef LIQUIDBIT_SEMANTIC_BVH_H_
-#define LIQUIDBIT_SEMANTIC_BVH_H_
+#ifndef SPECTRAL_SEMANTIC_BVH_H_
+#define SPECTRAL_SEMANTIC_BVH_H_
 
 #include "token_geometry.h"
 #include <cuda_runtime.h>
@@ -20,12 +20,12 @@
 #include <cstdint>
 #include <string>
 
-// Re-use the LIQUIDBIT_HD macro from token_geometry.h (already defined above)
-#ifndef LIQUIDBIT_HD
+// Re-use the SPECTRAL_HD macro from token_geometry.h (already defined above)
+#ifndef SPECTRAL_HD
 #  ifdef __CUDACC__
-#    define LIQUIDBIT_HD __host__ __device__
+#    define SPECTRAL_HD __host__ __device__
 #  else
-#    define LIQUIDBIT_HD
+#    define SPECTRAL_HD
 #  endif
 #endif
 
@@ -146,19 +146,19 @@ struct BVHNode {
     // ========================================================================
 
     /// @brief Calcula el área superficial del AABB (para SAH heuristic).
-    LIQUIDBIT_HD float getSurfaceArea() const {
+    SPECTRAL_HD float getSurfaceArea() const {
         float3 extents = aabb_max - aabb_min;
         return 2.0f * (extents.x * extents.y + extents.y * extents.z + extents.z * extents.x);
     }
 
     /// @brief Calcula el volumen del AABB.
-    LIQUIDBIT_HD float getVolume() const {
+    SPECTRAL_HD float getVolume() const {
         float3 extents = aabb_max - aabb_min;
         return extents.x * extents.y * extents.z;
     }
 
     /// @brief Comprueba si un punto está dentro del AABB.
-    LIQUIDBIT_HD bool containsPoint(const float3& p) const {
+    SPECTRAL_HD bool containsPoint(const float3& p) const {
         return (p.x >= aabb_min.x && p.x <= aabb_max.x) &&
                (p.y >= aabb_min.y && p.y <= aabb_max.y) &&
                (p.z >= aabb_min.z && p.z <= aabb_max.z);
@@ -171,7 +171,7 @@ struct BVHNode {
 
 /**
  * @class SemanticBVH
- * @brief Gestor del árbol BVH semántico para el prototipo LiquidBit.
+ * @brief Gestor del árbol BVH semántico para el prototipo SpectralAI.
  *
  * Responsabilidades:
  * 1. Construcción del BVH a partir de un conjunto de TokenNodes
@@ -447,4 +447,4 @@ private:
     void freeGPUMemory_();
 };
 
-#endif // LIQUIDBIT_SEMANTIC_BVH_H_
+#endif // SPECTRAL_SEMANTIC_BVH_H_

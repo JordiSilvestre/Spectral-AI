@@ -1,9 +1,9 @@
-# LiquidBit Zero-Matrix — CLAUDE.md
+# SpectralAI Zero-Matrix — CLAUDE.md
 > Guía de arquitectura y contexto para agentes de IA trabajando en este proyecto.
 
 ## 🎯 Visión del Proyecto
 
-**LiquidBit Zero-Matrix** es un prototipo de modelo de lenguaje de nueva generación que **elimina completamente la multiplicación de matrices (MatMul)** del mecanismo de atención, sustituyéndolo por **geometría espacial acelerada por hardware** usando los RT Cores de NVIDIA (OptiX / Vulkan RT).
+**SpectralAI Zero-Matrix** es un prototipo de modelo de lenguaje de nueva generación que **elimina completamente la multiplicación de matrices (MatMul)** del mecanismo de atención, sustituyéndolo por **geometría espacial acelerada por hardware** usando los RT Cores de NVIDIA (OptiX / Vulkan RT).
 
 ### El Problema que Resuelve
 
@@ -26,7 +26,7 @@ En lugar de matrices, mapeamos tokens como **polígonos en un espacio 3D** estru
 ## 🏗️ Arquitectura del Sistema
 
 ```
-liquidbit-zero-matrix/
+spectral-ai/
 ├── CLAUDE.md               ← Este archivo (contexto para agentes)
 ├── LEARNINGS.md            ← Registro de decisiones, fallos y aprendizajes
 ├── README.md               ← Descripción del proyecto
@@ -35,12 +35,12 @@ liquidbit-zero-matrix/
 │   ├── token_geometry.h    ← Struct TokenNode: token → objeto geométrico BVH
 │   ├── semantic_bvh.h      ← Gestión del árbol BVH semántico
 │   ├── optical_attention.h ← Interfaz del mecanismo de atención óptica
-│   └── liquidbit_model.h   ← Modelo completo (pipeline de inferencia)
+│   └── spectral_model.h   ← Modelo completo (pipeline de inferencia)
 │
 ├── src/                    ← Implementaciones C++
 │   ├── token_geometry.cpp  ← Proyección embedding → espacio 3D
 │   ├── semantic_bvh.cpp    ← Construcción y actualización del BVH
-│   └── liquidbit_model.cpp ← Pipeline principal
+│   └── spectral_model.cpp ← Pipeline principal
 │
 ├── cuda/                   ← Kernels CUDA/OptiX
 │   ├── ray_attention.cu    ← Kernel principal: ray_traced_attention_kernel
@@ -127,7 +127,7 @@ Donde:
 
 ### 4. Ventaja Computacional
 
-| Métrica | GPT-4 (MatMul) | LiquidBit (Ray Tracing) | Diferencia |
+| Métrica | GPT-4 (MatMul) | SpectralAI (Ray Tracing) | Diferencia |
 |---|---|---|---|
 | Complejidad | O(N²) | O(N log₂ N) | ~5.882x para N=100K |
 | Operaciones (N=100K) | ~80T FLOPs | ~6.9B intersecciones | ~11.500x menos |
@@ -154,7 +154,7 @@ Donde:
 
 ---
 
-## 🌈 Arquitectura Ultra: LiquidBit Espectral (3 Ideas Combinadas)
+## 🌈 Arquitectura Ultra: SpectralAI Espectral (3 Ideas Combinadas)
 
 ### Idea 3: Codificación Espectral + Refracción Prismática
 

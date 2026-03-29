@@ -1,10 +1,10 @@
 /**
  * @file inception_kernels.cu
- * @brief LiquidBit v4.0 — Inception Engine: Salto Dimensional Explícito entre IAS
+ * @brief SpectralAI v4.0 — Inception Engine: Salto Dimensional Explícito entre IAS
  *
- * DIFERENCIA CLAVE vs liquidbit_kernels.cu:
+ * DIFERENCIA CLAVE vs spectral_kernels.cu:
  * ==========================================
- * En `liquidbit_kernels.cu`, la traversal IAS anidada es IMPLÍCITA — OptiX maneja
+ * En `spectral_kernels.cu`, la traversal IAS anidada es IMPLÍCITA — OptiX maneja
  * el stack automáticamente. Aquí, el salto dimensional es EXPLÍCITO:
  *
  *   En __closesthit__inception_portal (niveles 0-2):
@@ -44,7 +44,7 @@
  *   La MISMA esfera devuelve distintas resonancias con distintos ω.
  *   Sin duplicar matrices. Sin wormholes extra.
  *
- * @author LiquidBit Zero-Matrix Team
+ * @author SpectralAI Zero-Matrix Team
  * @date 2026
  */
 
@@ -55,7 +55,7 @@
 #include <vector_functions.h>
 #include <stdio.h>
 
-#include "../include/liquidbit_resonance.h"
+#include "../include/spectral_resonance.h"
 #include "../include/inception_engine.h"
 
 // ============================================================================
@@ -393,7 +393,7 @@ void __miss__inception_portal() {
 /**
  * @brief Intersección rayo-esfera para GAS de primitivas custom.
  *
- * Idéntico a __intersection__sphere de liquidbit_kernels.cu.
+ * Idéntico a __intersection__sphere de spectral_kernels.cu.
  * Reutilizado aquí para que inception_kernels.cu sea auto-contenido.
  * El SBT del inception pipeline apunta a este programa.
  */

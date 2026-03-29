@@ -19,7 +19,7 @@
  *
  * Donde:
  *   - E₀: energía del rayo (decrece con cada hit)
- *   - λ: coeficiente de absorción semántica (LIQUIDBIT_LAMBDA ≈ 0.1)
+ *   - λ: coeficiente de absorción semántica (SPECTRAL_LAMBDA ≈ 0.1)
  *   - d_semantic: distancia euclídea 3D entre centroide del rayo y del token
  *
  * La "pérdida de energía" actúa como un mecanismo de attention decay,
@@ -44,10 +44,10 @@
 // Buffer device con los TokenNodes
 extern "C" __constant__ TokenNode* c_token_nodes;
 
-// Lambda (coeficiente de absorción) - debe coincidir con LIQUIDBIT_LAMBDA
+// Lambda (coeficiente de absorción) - debe coincidir con SPECTRAL_LAMBDA
 extern "C" __constant__ float c_lambda;
 
-#if LIQUIDBIT_SPECTRAL_ENABLED
+#if SPECTRAL_SPECTRAL_ENABLED
 /* ============================================================================
  * SPECTRAL HELPER FUNCTIONS
  *
@@ -79,12 +79,12 @@ __device__ static float liqbit_sigmoid(float x) {
  * avoid global memory lookups into the PrismaticSphere array.
  */
 __device__ static float compute_refractive_index(
-    const float* W_dispersion,          // [LIQUIDBIT_CUDA_SPECTRAL_DIM] from SBT
-    const float* spectral_color,        // [LIQUIDBIT_CUDA_SPECTRAL_DIM] from ray payload
+    const float* W_dispersion,          // [SPECTRAL_CUDA_SPECTRAL_DIM] from SBT
+    const float* spectral_color,        // [SPECTRAL_CUDA_SPECTRAL_DIM] from ray payload
     float base_refractive_index
 ) {
     float dot = 0.0f;
-    for (uint32_t i = 0; i < LIQUIDBIT_CUDA_SPECTRAL_DIM; ++i) {
+    for (uint32_t i = 0; i < SPECTRAL_CUDA_SPECTRAL_DIM; ++i) {
         dot += W_dispersion[i] * spectral_color[i];
     }
     return base_refractive_index + liqbit_sigmoid(dot);
@@ -178,7 +178,7 @@ __device__ static uint32_t select_matrix_block(
     }
     return matrix_block_ids[num_blocks - 1];
 }
-#endif // LIQUIDBIT_SPECTRAL_ENABLED
+#endif // SPECTRAL_SPECTRAL_ENABLED
 
 /* ============================================================================
  * PROGRAMA OPTIX: __closesthit__
@@ -222,7 +222,7 @@ extern "C" __global__ void __closesthit__ch_optical_attention() {
     uint32_t primitive_idx = optixGetPrimitiveIndex();
 
     // Verificar que el índice es válido
-    if (primitive_idx >= LIQUIDBIT_MAX_SEQUENCE_LENGTH) {
+    if (primitive_idx >= SPECTRAL_MAX_SEQUENCE_LENGTH) {
         // In closest-hit, intersection is already committed — just return early
         return;
     }
@@ -272,13 +272,13 @@ extern "C" __global__ void __closesthit__ch_optical_attention() {
     float attention_weight = energy_remaining * expf(-c_lambda * semantic_distance);
 
     // Aplicar threshold de energía mínima
-    if (attention_weight < LIQUIDBIT_ENERGY_THRESHOLD) {
+    if (attention_weight < SPECTRAL_ENERGY_THRESHOLD) {
         // Energía muy baja: ignorar este hit y continuar con la traversal
         // In closest-hit, intersection is already committed — just return early
         return;
     }
 
-#if LIQUIDBIT_SPECTRAL_ENABLED
+#if SPECTRAL_SPECTRAL_ENABLED
     // ========================================================================
     // SPECTRAL REFRACTION (Prismatic Attention Modulation)
     //
@@ -291,13 +291,13 @@ extern "C" __global__ void __closesthit__ch_optical_attention() {
     //   6. The refraction angle selects which matrix expert block to route to
     //   7. Modulate the attention weight by spectral coherence
     //
-    // This implements "Idea 3" from the LiquidBit architecture: colored rays
+    // This implements "Idea 3" from the SpectralAI architecture: colored rays
     // resolve polysemy by routing through different matrix experts depending
     // on the conversational context encoded in the ray's spectral color.
     // ========================================================================
 
     // --- Step 1: Read spectral color from payload ---
-    float spectral_color[LIQUIDBIT_CUDA_SPECTRAL_DIM];
+    float spectral_color[SPECTRAL_CUDA_SPECTRAL_DIM];
     spectral_color[0]  = __uint_as_float(optixGetPayload_3());
     spectral_color[1]  = __uint_as_float(optixGetPayload_4());
     spectral_color[2]  = __uint_as_float(optixGetPayload_5());
@@ -377,7 +377,7 @@ extern "C" __global__ void __closesthit__ch_optical_attention() {
     // Write spectral results back to payload (selected block + refraction angle)
     optixSetPayload_19(selected_block);
     optixSetPayload_20(__float_as_uint(refraction_angle_deg));
-#endif // LIQUIDBIT_SPECTRAL_ENABLED
+#endif // SPECTRAL_SPECTRAL_ENABLED
 
     // ========================================================================
     // ACTUALIZAR PAYLOAD DEL RAYO
@@ -396,7 +396,7 @@ extern "C" __global__ void __closesthit__ch_optical_attention() {
 
     // Insertar el token golpeado en la lista de top-K (en el payload)
     // (Para esta versión simplificada, almacenaremos solo el token_id y weight)
-    if (hit_count <= LIQUIDBIT_MAX_TOP_TOKENS) {
+    if (hit_count <= SPECTRAL_MAX_TOP_TOKENS) {
         // Acceder a payload_3 y payload_4 para top_tokens y top_weights
         // (Requiere extensión del payload de 3 a más words)
         // Por ahora, asumimos que el payload ha sido actualizado en el ClosestHit previo
@@ -415,7 +415,7 @@ extern "C" __global__ void __closesthit__ch_optical_attention() {
     // ========================================================================
 
     // Si la energía cae por debajo del threshold, terminar la traversal
-    if (energy_remaining < LIQUIDBIT_ENERGY_THRESHOLD) {
+    if (energy_remaining < SPECTRAL_ENERGY_THRESHOLD) {
         // Terminar el rayo (no hay más intersecciones)
         optixTerminateRay();
     }
@@ -446,7 +446,7 @@ extern "C" __global__ void __closesthit__ch_optical_attention_topk() {
     float3 ray_origin = optixGetWorldRayOrigin();
     uint32_t primitive_idx = optixGetPrimitiveIndex();
 
-    if (primitive_idx >= LIQUIDBIT_MAX_SEQUENCE_LENGTH) {
+    if (primitive_idx >= SPECTRAL_MAX_SEQUENCE_LENGTH) {
         // In closest-hit, intersection is already committed — just return early
         return;
     }
@@ -468,7 +468,7 @@ extern "C" __global__ void __closesthit__ch_optical_attention_topk() {
 
     float attention_weight = energy_remaining * expf(-c_lambda * semantic_distance);
 
-    if (attention_weight < LIQUIDBIT_ENERGY_THRESHOLD) {
+    if (attention_weight < SPECTRAL_ENERGY_THRESHOLD) {
         // In closest-hit, intersection is already committed — just return early
         return;
     }
@@ -482,7 +482,7 @@ extern "C" __global__ void __closesthit__ch_optical_attention_topk() {
     optixSetPayload_1(__float_as_uint(energy_remaining));
     optixSetPayload_2(hit_count);
 
-    if (energy_remaining < LIQUIDBIT_ENERGY_THRESHOLD) {
+    if (energy_remaining < SPECTRAL_ENERGY_THRESHOLD) {
         optixTerminateRay();
     }
 }

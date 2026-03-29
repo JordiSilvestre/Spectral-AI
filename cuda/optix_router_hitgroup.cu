@@ -10,7 +10,7 @@
  *   __closesthit__rt_router
  *   __miss__rt_router
  *
- * Copyright (c) 2026 LiquidBit Studio — Apache 2.0
+ * Copyright (c) 2026 SpectralAI Studio — Apache 2.0
  */
 
 #include <optix.h>

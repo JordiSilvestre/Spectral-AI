@@ -6,7 +6,7 @@
 
 ## Resumen
 
-LiquidBit reduce el consumo de VRAM activa en **375x** respecto al modelo completo
+SpectralAI reduce el consumo de VRAM activa en **375x** respecto al modelo completo
 (7.86 MB vs 2,944 MB), demostrado con Qwen2.5-Coder-1.5B en RTX 5070 Ti.
 Esto se logra reemplazando el KV Cache denso por un arbol BVH compacto
 y cargando solo los expertos necesarios via LRU cache.
@@ -39,7 +39,7 @@ solo para almacenar el KV Cache, sin contar los pesos del modelo.
 
 ## La Solucion: BVH como Estructura Cache-Bound
 
-LiquidBit reemplaza el KV Cache por un arbol BVH (Bounding Volume Hierarchy):
+SpectralAI reemplaza el KV Cache por un arbol BVH (Bounding Volume Hierarchy):
 
 ### Tamano del BVH
 
@@ -60,7 +60,7 @@ VRAM_bvh = n_tokens * sizeof(BVHNode) + overhead_arbol
 | Estructura | VRAM (N=100K, 96 capas) | Ratio |
 |---|---|---|
 | KV Cache tradicional | ~307 GB | 1x |
-| BVH LiquidBit | ~10-50 MB | **~6,000-30,000x menos** |
+| BVH SpectralAI | ~10-50 MB | **~6,000-30,000x menos** |
 
 ### Por que funciona: Cache-Bound vs VRAM-Bound
 
@@ -84,7 +84,7 @@ Para N=100,000 tokens:
 
 ## Expert LRU Cache: Solo Top-K en GPU
 
-El segundo factor de ahorro es que LiquidBit no necesita todos los expertos en VRAM
+El segundo factor de ahorro es que SpectralAI no necesita todos los expertos en VRAM
 simultaneamente. El `ExpertLRUCache` (`python/expert_lru_cache.py`) gestiona la carga
 dinamica:
 
@@ -137,7 +137,7 @@ El LRU cache evita recargas frecuentes manteniendo los expertos mas usados:
 
 ### Resultados
 
-| Metrica | Modelo Completo | LiquidBit | Ratio |
+| Metrica | Modelo Completo | SpectralAI | Ratio |
 |---|---|---|---|
 | VRAM activa | 2,944 MB | 7.86 MB | **375x menos** |
 | Throughput | ~52 tok/s | 51.9 tok/s | ~1x (sin degradacion) |
@@ -145,7 +145,7 @@ El LRU cache evita recargas frecuentes manteniendo los expertos mas usados:
 
 ### Con BitNet 2B (ternario nativo)
 
-| Metrica | Modelo Completo | LiquidBit | Ratio |
+| Metrica | Modelo Completo | SpectralAI | Ratio |
 |---|---|---|---|
 | VRAM activa | ~1,200 MB | ~2.31 MB | **519x menos** |
 | Pesos expert | FP16 | {-1, 0, +1} | 16x compresion |
@@ -166,7 +166,7 @@ del modelo no caben en VRAM de consumidor:
 | Mixtral 8x22B | ~88 GB (FP16) | 2x A100 80GB | ~30,000 EUR |
 | DeepSeek-V3 (671B) | ~1.3 TB (FP16) | Rack de H100 | >240,000 EUR |
 
-### LiquidBit en Hardware de Consumidor
+### SpectralAI en Hardware de Consumidor
 
 Con BVH routing + LRU expert cache + cuantizacion ternaria:
 
@@ -208,7 +208,7 @@ o almacenamiento NVMe.
 
 ### VRAM vs Longitud de Secuencia
 
-| Secuencia | KV Cache (GPT-4) | BVH (LiquidBit) | Ratio |
+| Secuencia | KV Cache (GPT-4) | BVH (SpectralAI) | Ratio |
 |---|---|---|---|
 | 1K tokens | ~3.1 GB | ~0.07 MB | 44,000x |
 | 10K tokens | ~31 GB | ~0.66 MB | 47,000x |
@@ -217,7 +217,7 @@ o almacenamiento NVMe.
 
 El BVH escala **linealmente** con N (O(N) en memoria) mientras que el KV Cache
 tambien escala linealmente pero con un factor constante ~46,000x mayor. La ventaja
-de LiquidBit en memoria se mantiene constante independientemente de la longitud
+de SpectralAI en memoria se mantiene constante independientemente de la longitud
 de secuencia.
 
 ---

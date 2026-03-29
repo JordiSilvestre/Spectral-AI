@@ -7,7 +7,7 @@ OBJETIVO:
 Convertir los coeficientes Fourier a[], b[] de las SemanticStrings de FP32
 a representación ternaria {-1, 0, +1}, siguiendo el paradigma BitNet b1.58.
 
-MOTIVACIÓN (Idea 5 de LiquidBit v4.0 "Inception Engine"):
+MOTIVACIÓN (Idea 5 de SpectralAI v4.0 "Inception Engine"):
 ===========================================================
   Phase 1 (FP16/FP32):   out = Σ W[i] · x[i]      ← multiplicaciones FP
   Phase 2 (Ternario):     out = Σ { +x[i] si W[i]=+1
@@ -40,7 +40,7 @@ USO:
   python ternary_quantize.py --threshold 0.05        # umbral manual
   python ternary_quantize.py --benchmark              # medir degradación
 
-@author LiquidBit Zero-Matrix Team
+@author SpectralAI Zero-Matrix Team
 @date 2026
 """
 
@@ -312,14 +312,14 @@ def export_for_cpp(
 
 def main(args):
     print("=" * 60)
-    print(" LiquidBit v4.0 — Ternary Quantization (Phase 2 upgrade)")
+    print(" SpectralAI v4.0 — Ternary Quantization (Phase 2 upgrade)")
     print("=" * 60)
 
     # ── 1. Cargar coeficientes FP32 ──────────────────────────────────────
     input_path = args.input or os.path.join(SCRIPT_DIR, "fourier_coeffs.npy")
     if not os.path.exists(input_path):
         print(f"[ERROR] {input_path} no encontrado.")
-        print("        Ejecutar primero: python train_liquidbit.py")
+        print("        Ejecutar primero: python train_spectral.py")
         sys.exit(1)
 
     fp32_coeffs = np.load(input_path).astype(np.float32)
@@ -404,7 +404,7 @@ def main(args):
 # ─────────────────────────────────────────────────────────────────────────────
 
 def parse_args():
-    p = argparse.ArgumentParser(description="LiquidBit v4.0 — Ternary Quantization")
+    p = argparse.ArgumentParser(description="SpectralAI v4.0 — Ternary Quantization")
     p.add_argument("--input",            type=str,   default=None,
                    help="Ruta al .npy de coeficientes FP32 (default: fourier_coeffs.npy)")
     p.add_argument("--threshold",        type=float, default=None,

@@ -8,7 +8,7 @@
  * La proyección utiliza PCA esférica simplificada que preserva la topología relativa
  * de los tokens en el espacio semántico.
  *
- * @author LiquidBit Zero-Matrix Team
+ * @author SpectralAI Zero-Matrix Team
  * @date 2026
  */
 
@@ -23,10 +23,10 @@
 // Macro de manejo de errores CUDA (compatibilidad con código host)
 // ============================================================================
 
-#define LIQUIDBIT_CHECK(expr) \
+#define SPECTRAL_CHECK(expr) \
     do { \
         if (!(expr)) { \
-            fprintf(stderr, "LIQUIDBIT_CHECK failed at %s:%d\n", __FILE__, __LINE__); \
+            fprintf(stderr, "SPECTRAL_CHECK failed at %s:%d\n", __FILE__, __LINE__); \
         } \
     } while (0)
 
@@ -195,8 +195,8 @@ void projectEmbeddingTo3D(
     uint32_t embed_dim,
     float3& centroid_out) {
 
-    LIQUIDBIT_CHECK(embedding != nullptr);
-    LIQUIDBIT_CHECK(embed_dim > 0);
+    SPECTRAL_CHECK(embedding != nullptr);
+    SPECTRAL_CHECK(embed_dim > 0);
 
     // ====================================================================================
     // PASO 1: Normalización L2 (convención estándar en embeddings)
@@ -326,7 +326,7 @@ void computeAABB(
  *
  * @return TokenNode completamente inicializado
  *
- * @note El embedding se comprime de embed_dim componentes a LIQUIDBIT_EMBEDDING_DIM (256).
+ * @note El embedding se comprime de embed_dim componentes a SPECTRAL_EMBEDDING_DIM (256).
  *       Si embed_dim > 256, se usan solo las primeras 256 componentes.
  *       Si embed_dim < 256, se rellenan con ceros.
  */
@@ -336,8 +336,8 @@ TokenNode createTokenNode(
     const float* embedding,
     uint32_t embed_dim) {
 
-    LIQUIDBIT_CHECK(embedding != nullptr);
-    LIQUIDBIT_CHECK(embed_dim > 0);
+    SPECTRAL_CHECK(embedding != nullptr);
+    SPECTRAL_CHECK(embed_dim > 0);
 
     TokenNode node;
 
@@ -374,7 +374,7 @@ TokenNode createTokenNode(
     // PASO 3: Comprimir embedding a FP16
     // ==================================================================================
     // Copiar componentes del embedding, rellenando con ceros si es necesario
-    uint32_t copy_dim = std::min(embed_dim, LIQUIDBIT_EMBEDDING_DIM);
+    uint32_t copy_dim = std::min(embed_dim, SPECTRAL_EMBEDDING_DIM);
 
     for (uint32_t i = 0; i < copy_dim; ++i) {
         // Convertir float a half (conversión implícita en tipos half)
@@ -382,7 +382,7 @@ TokenNode createTokenNode(
     }
 
     // Rellenar el resto con ceros
-    for (uint32_t i = copy_dim; i < LIQUIDBIT_EMBEDDING_DIM; ++i) {
+    for (uint32_t i = copy_dim; i < SPECTRAL_EMBEDDING_DIM; ++i) {
         node.embedding[i] = static_cast<half>(0.0f);
     }
 

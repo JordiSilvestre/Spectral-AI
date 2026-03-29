@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-inception_attention.py — Sistema de atención COMPLETO LiquidBit v4.0
+inception_attention.py — Sistema de atención COMPLETO SpectralAI v4.0
 
 Implementa el paper tal cual:
   1. Tokens → 3D via PCA esférica (W_projection learnable)
@@ -436,7 +436,7 @@ class InceptionTraversal(nn.Module):
 
 class InceptionAttention(nn.Module):
     """
-    Atención LiquidBit v4.0 completa.
+    Atención SpectralAI v4.0 completa.
 
     Flujo:
     1. Q, K, V projections
@@ -588,7 +588,7 @@ class InceptionAttention(nn.Module):
 
 
 # ─────────────────────────────────────────────────────────────────
-# 8. LiquidBitInceptionLM — modelo de lenguaje causal completo
+# 8. SpectralAIInceptionLM — modelo de lenguaje causal completo
 # ─────────────────────────────────────────────────────────────────
 
 class MLP(nn.Module):
@@ -616,9 +616,9 @@ class InceptionBlock(nn.Module):
         return x
 
 
-class LiquidBitInceptionLM(nn.Module):
+class SpectralAIInceptionLM(nn.Module):
     """
-    Modelo de lenguaje causal LiquidBit v4.0 — sistema completo.
+    Modelo de lenguaje causal SpectralAI v4.0 — sistema completo.
 
     Igual que GPT-2 en estructura, pero con InceptionAttention:
     - 4 niveles de esferas anidadas (BVH jerárquico)
@@ -719,10 +719,10 @@ if __name__ == "__main__":
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
     print("=" * 65)
-    print("LiquidBit v4.0 Inception Engine — Test completo")
+    print("SpectralAI v4.0 Inception Engine — Test completo")
     print("=" * 65)
 
-    model = LiquidBitInceptionLM(
+    model = SpectralAIInceptionLM(
         vocab_size=50_257, embed_dim=256, num_layers=4,
         num_heads=4, context_len=256,
         n_domains=4, n_subdomains=4, n_concepts=4,

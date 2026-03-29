@@ -29,7 +29,7 @@
  *   Data:
  *     SpectralAttentionResult[numResults] (32 bytes cada uno)
  *
- * @author LiquidBit Zero-Matrix Team
+ * @author SpectralAI Zero-Matrix Team
  * @date 2026
  */
 
@@ -39,7 +39,7 @@
 #include <cuda_runtime.h>
 #include <cuda.h>
 
-#include "liquidbit_resonance.h"
+#include "spectral_resonance.h"
 #include "token_geometry.h"
 
 #include <iostream>
@@ -258,7 +258,7 @@ int main(int argc, char* argv[]) {
             OptixProgramGroupDesc d = {};
             d.kind = OPTIX_PROGRAM_GROUP_KIND_RAYGEN;
             d.raygen.module = mod;
-            d.raygen.entryFunctionName = "__raygen__liquidbit";
+            d.raygen.entryFunctionName = "__raygen__spectral";
             logSz = sizeof(log);
             OPTIX_CHECK(optixProgramGroupCreate(optixCtx, &d, 1, &pgOpts, log, &logSz, &pgRaygen));
         }

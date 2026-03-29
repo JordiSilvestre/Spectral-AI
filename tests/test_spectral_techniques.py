@@ -1,7 +1,7 @@
-"""Tests for Lyra-AGI techniques adapted for LiquidBit.
+"""Tests for Lyra-AGI techniques adapted for SpectralAI.
 
 All tests run on CPU — no GPU required.
-Run: python -m pytest tests/test_lyra_techniques.py -v
+Run: python -m pytest tests/test_spectral_techniques.py -v
 """
 
 import sys
@@ -14,7 +14,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
 
-from lyra_techniques import (
+from spectral_techniques import (
     SmoothTernarySTE, ternary_ste,
     get_ste_beta, set_ste_beta, BetaScheduler,
     SmoothBVHHit,

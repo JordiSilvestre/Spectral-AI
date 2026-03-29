@@ -1,9 +1,9 @@
 """
 build_ext.py -- Compilar la extension PyTorch del BVH Router
-LiquidBit v5.0
+SpectralAI v5.0
 
 Uso desde WSL2:
-    cd /tmp/liquidbit
+    cd /tmp/spectral
     source .venv_wsl/bin/activate
     python cuda/v5/build_ext.py
 

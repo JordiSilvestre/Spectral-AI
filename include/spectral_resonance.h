@@ -1,5 +1,5 @@
 /**
- * @file liquidbit_resonance.h
+ * @file spectral_resonance.h
  * @brief String-Inception Engine — Arquitectura de IAS anidados con resonancia de Fourier
  *
  * CONCEPTO (del documento de invención):
@@ -29,7 +29,7 @@
  *   donde T es una transformación de activación suave (tanh)
  *   y M = numModes (por defecto 8)
  *
- * @author LiquidBit Zero-Matrix Team
+ * @author SpectralAI Zero-Matrix Team
  * @date 2026
  */
 
@@ -185,7 +185,7 @@ struct InceptionLaunchParams {
 // FUNCIÓN INLINE: Resonancia Fourier (compartida entre todos los kernels)
 //
 // Definida aquí como __device__ __forceinline__ para que cualquier .cu que
-// incluya este header la use sin depender de liquidbit_resonance.cu como
+// incluya este header la use sin depender de spectral_resonance.cu como
 // unidad de compilación separada. Esto evita el error de linker:
 //   "undefined reference to semanticStringResonance"
 // ============================================================================

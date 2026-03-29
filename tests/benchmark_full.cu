@@ -10,11 +10,11 @@
  *   [3] CAPA 3    — String-Inception O(N log N): IAS anidados + resonancia Fourier
  *
  * Para N grande, MatMul se omite (OOM) y se extrapola teóricamente.
- * Los 3 métodos LiquidBit se miden directamente en GPU.
+ * Los 3 métodos SpectralAI se miden directamente en GPU.
  *
  * HARDWARE TARGET: NVIDIA RTX 5070 Ti (sm_120, Blackwell)
  *
- * @author LiquidBit Zero-Matrix Team
+ * @author SpectralAI Zero-Matrix Team
  * @date 2026
  */
 
@@ -304,7 +304,7 @@ void print_separator() {
 void print_header() {
     printf("\n");
     printf("╔══════════════════════════════════════════════════════════════════════════════════════╗\n");
-    printf("║      LiquidBit Zero-Matrix — Benchmark Completo 3 Capas vs MatMul                 ║\n");
+    printf("║      SpectralAI Zero-Matrix — Benchmark Completo 3 Capas vs MatMul                 ║\n");
     printf("╠══════════╦═══════════════╦═══════════════╦═══════════════╦═══════════════╦═══════════╣\n");
     printf("║    N     ║  MatMul O(N²) ║  Capa1 BSH    ║  Capa2 Spec.  ║  Capa3 Fourier║ Best Spdup║\n");
     printf("║  tokens  ║    ms / VRAM  ║   ms / x      ║   ms / x      ║   ms / x      ║           ║\n");
@@ -338,7 +338,7 @@ int main() {
 
     printf("\n");
     printf("╔══════════════════════════════════════════════════════════════════════════════════════╗\n");
-    printf("║                     LiquidBit Zero-Matrix — Hardware Info                          ║\n");
+    printf("║                     SpectralAI Zero-Matrix — Hardware Info                          ║\n");
     printf("╠══════════════════════════════════════════════════════════════════════════════════════╣\n");
     printf("║  GPU: %-50s               ║\n", props.name);
     printf("║  Compute Capability: %d.%d  |  VRAM: %.0f MB  |  SM count: %d                   ║\n",
@@ -559,8 +559,8 @@ int main() {
     printf("║                              VEREDICTO                                             ║\n");
     printf("╠══════════════════════════════════════════════════════════════════════════════════════╣\n");
     printf("║  Capa 3 (String-Inception) = ZERO tensor cores. Solo RT Cores + CUDA cores.       ║\n");
-    printf("║  Los 3 metodos LiquidBit escalan O(N log N) vs O(N²) del MatMul clasico.          ║\n");
-    printf("║  A N=100K: MatMul ocuparia ~40 GB VRAM. LiquidBit: < 50 MB.                      ║\n");
+    printf("║  Los 3 metodos SpectralAI escalan O(N log N) vs O(N²) del MatMul clasico.          ║\n");
+    printf("║  A N=100K: MatMul ocuparia ~40 GB VRAM. SpectralAI: < 50 MB.                      ║\n");
     printf("╚══════════════════════════════════════════════════════════════════════════════════════╝\n\n");
 
     // Limpieza

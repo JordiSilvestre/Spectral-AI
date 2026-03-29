@@ -1,8 +1,8 @@
 /**
  * @file inception_engine.h
- * @brief LiquidBit v4.0 "Inception Engine" — Host-side 4-level IAS management
+ * @brief SpectralAI v4.0 "Inception Engine" — Host-side 4-level IAS management
  *
- * ARQUITECTURA (Los 3 Ceros de LiquidBit v4.0):
+ * ARQUITECTURA (Los 3 Ceros de SpectralAI v4.0):
  * ==============================================
  *   Cero MatMul    — Ray Tracing O(log N) via RT Cores
  *   Cero Memoria   — Aritmética Ternaria {-1, 0, +1} (Fase 2)
@@ -46,7 +46,7 @@
  *   - CUDA 12.8+ (compute 8.9 / 12.0)
  *   - C++17
  *
- * @author LiquidBit Zero-Matrix Team
+ * @author SpectralAI Zero-Matrix Team
  * @date 2026
  */
 
@@ -58,7 +58,7 @@
 #include <stddef.h>
 #include <string.h>
 
-#include "liquidbit_resonance.h"
+#include "spectral_resonance.h"
 
 #ifdef __cplusplus
 #include <vector>
@@ -230,7 +230,7 @@ public:
      * @brief Inicializa el pipeline OptiX con los entry points del PTX.
      *
      * @param context    Contexto OptiX creado por el caller
-     * @param ptxData    Contenido del archivo liquidbit_kernels.ptx
+     * @param ptxData    Contenido del archivo spectral_kernels.ptx
      * @param ptxSize    Tamaño del PTX en bytes
      * @return           0 en éxito, código de error OptiX en fallo
      */

@@ -18,7 +18,7 @@ Usage:
     python benchmark_routing_backends.py \
         --checkpoint checkpoints/olmoe_distill_layer8/bvh_router_best.pt
 
-Copyright (c) 2026 LiquidBit Studio — Apache 2.0
+Copyright (c) 2026 SpectralAI Studio — Apache 2.0
 """
 
 import argparse
@@ -324,7 +324,7 @@ def run_full_benchmark(
     # ── Summary table ───────────────────────────────────────
     print("\n")
     print("=" * 80)
-    print("  ROUTING LATENCY BENCHMARK — LiquidBit Zero-Matrix")
+    print("  ROUTING LATENCY BENCHMARK — SpectralAI Zero-Matrix")
     print("  GPU: " + (torch.cuda.get_device_name(0) if torch.cuda.is_available() else "N/A"))
     print("=" * 80)
 
@@ -375,7 +375,7 @@ def run_full_benchmark(
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        description="Benchmark routing backends for LiquidBit"
+        description="Benchmark routing backends for SpectralAI"
     )
     parser.add_argument(
         "--checkpoint", type=str, default=None,

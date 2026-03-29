@@ -125,7 +125,7 @@ def table_4_memory() -> str:
     lines = []
     lines.append("## Table 4: Memory Comparison (N=100K tokens)")
     lines.append("")
-    lines.append("| Component | Traditional (KV Cache) | LiquidBit (BVH) | Reduction |")
+    lines.append("| Component | Traditional (KV Cache) | SpectralAI (BVH) | Reduction |")
     lines.append("|-----------|----------------------|-----------------|-----------|")
     lines.append("| Attention state | ~307 GB (96 layers) | ~50 MB (BVH) | **6,140x** |")
     lines.append("| Router params | 131K per gate | 1.35M per router | 0.1x (larger) |")
@@ -142,7 +142,7 @@ def table_5_complexity() -> str:
     lines = []
     lines.append("## Table 5: Computational Complexity")
     lines.append("")
-    lines.append("| Operation | Traditional | LiquidBit | Asymptotic |")
+    lines.append("| Operation | Traditional | SpectralAI | Asymptotic |")
     lines.append("|-----------|-------------|-----------|------------|")
     lines.append("| Attention routing | O(N * E) matmul | O(log E) BVH traversal | **log vs linear** |")
     lines.append("| Expert selection (top-K) | O(E log E) sort | O(K * log E) ray traces | **K << E** |")
@@ -163,7 +163,7 @@ def main() -> int:
     stats = collect_layer_stats()
 
     sections = [
-        "# LiquidBit Zero-Matrix -- Paper Benchmark Tables",
+        "# SpectralAI Zero-Matrix -- Paper Benchmark Tables",
         f"*Generated from {sum(1 for s in stats if s['exists'])}/16 layer checkpoints*\n",
         table_1_layer_accuracy(stats),
         table_2_ppl_comparison(),

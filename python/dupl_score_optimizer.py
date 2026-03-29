@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-dupl_score_optimizer.py — DuplScore Optimizer para LiquidBit Zero-Matrix
+dupl_score_optimizer.py — DuplScore Optimizer para SpectralAI Zero-Matrix
 
 Implementa la fórmula de decisión de duplicación vs wormhole para conceptos polisémicos:
 
@@ -474,7 +474,7 @@ def build_wormhole_graph(
 
 def main():
     parser = argparse.ArgumentParser(
-        description="DuplScore Optimizer para LiquidBit Zero-Matrix"
+        description="DuplScore Optimizer para SpectralAI Zero-Matrix"
     )
 
     parser.add_argument('--seed', type=int, default=42,

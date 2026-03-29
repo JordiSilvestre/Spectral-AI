@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-inference.py — Pipeline de inferencia LiquidBit String-Inception con embeddings reales
+inference.py — Pipeline de inferencia SpectralAI String-Inception con embeddings reales
 ========================================================================================
 
 Conecta los embeddings GloVe-50d (ya descargados) con el pipeline OptiX real.
@@ -19,7 +19,7 @@ SALIDA:
 
 REQUISITOS:
     pip install numpy scikit-learn
-    liquidbit_kernels.ptx  (compilado por CMake con LIQUIDBIT_BUILD_INCEPTION=ON)
+    spectral_kernels.ptx  (compilado por CMake con SPECTRAL_BUILD_INCEPTION=ON)
     inception_runner.exe   (compilado con CMake target inception_runner)
 """
 
@@ -47,7 +47,7 @@ SCRIPT_DIR   = Path(__file__).parent
 PROJECT_DIR  = SCRIPT_DIR.parent
 BUILD_DIR    = PROJECT_DIR / "build" / "Release"
 BUILD_ROOT   = PROJECT_DIR / "build"
-PTX_PATH     = BUILD_ROOT / "liquidbit_kernels.ptx"   # generado por custom_command (no va a Release/)
+PTX_PATH     = BUILD_ROOT / "spectral_kernels.ptx"   # generado por custom_command (no va a Release/)
 RUNNER_EXE   = BUILD_DIR / "inception_runner.exe"
 SCENE_FILE   = SCRIPT_DIR / "scene.bin"
 RESULTS_FILE = SCRIPT_DIR / "results.bin"
@@ -356,7 +356,7 @@ def run_inference(sentence: str,
         print(f"        Compile con: cmake --build build --target inception_runner")
         return None
     if not PTX_PATH.exists():
-        print(f"[infer] liquidbit_kernels.ptx no encontrado en {PTX_PATH}")
+        print(f"[infer] spectral_kernels.ptx no encontrado en {PTX_PATH}")
         return None
 
     # Llamar C++
@@ -422,7 +422,7 @@ def run_demo(db: EmbeddingDB):
 
 def main():
     parser = argparse.ArgumentParser(
-        description="LiquidBit String-Inception — inferencia con embeddings reales")
+        description="SpectralAI String-Inception — inferencia con embeddings reales")
     parser.add_argument("sentence", nargs="?", default=None,
                         help="Frase a procesar")
     parser.add_argument("--num-rays", type=int, default=16,

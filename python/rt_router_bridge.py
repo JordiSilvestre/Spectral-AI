@@ -14,7 +14,7 @@ Usage:
     bridge = RTRouterBridge("checkpoints/olmoe_distill/bvh_router_best.pt")
     expert_ids, distances = bridge.route(hidden_states)  # [batch] each
 
-Copyright (c) 2026 LiquidBit Studio -- Apache 2.0
+Copyright (c) 2026 SpectralAI Studio -- Apache 2.0
 """
 
 import ctypes
@@ -33,9 +33,9 @@ BUILD_DIR = PROJECT_DIR / "build" / "Release"
 
 # Try to load compiled RT router library
 _rt_lib = None
-_rt_lib_path = BUILD_DIR / "liquidbit_rt_router.dll"
+_rt_lib_path = BUILD_DIR / "spectral_rt_router.dll"
 if not _rt_lib_path.exists():
-    _rt_lib_path = BUILD_DIR / "libliquidbit_rt_router.so"
+    _rt_lib_path = BUILD_DIR / "libspectral_rt_router.so"
 
 
 def _load_rt_library() -> Optional[ctypes.CDLL]:

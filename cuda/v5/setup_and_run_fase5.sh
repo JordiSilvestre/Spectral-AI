@@ -4,8 +4,8 @@ set -e
 
 export HOME=/home/jordi
 VENV="$HOME/liquidbit_venv"
-PROJECT_WIN="/mnt/j/Proyectos/LiquidBit Zero-Matrix"
-PROJECT="/tmp/liquidbit"
+PROJECT_WIN="/mnt/j/Proyectos/SpectralAI Zero-Matrix"
+PROJECT="/tmp/spectral"
 
 # Recrear symlink si no existe
 if [ ! -L "$PROJECT" ]; then

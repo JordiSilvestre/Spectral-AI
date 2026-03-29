@@ -1,6 +1,6 @@
 #!/bin/bash
 # ============================================================
-# LiquidBit Zero-Matrix — Train remaining 11 layers for 16/16
+# SpectralAI Zero-Matrix — Train remaining 11 layers for 16/16
 # ============================================================
 # Run AFTER regenerate_all.sh completes (5 layers: 0,4,8,12,15).
 # This trains the remaining 11 layers to achieve full 16/16 replacement.
@@ -11,7 +11,7 @@
 #   - Python venv activated
 #
 # Usage:
-#   cd /tmp/liquidbit
+#   cd /tmp/spectral
 #   source .venv_wsl/bin/activate
 #   bash scripts/train_remaining_layers.sh
 # ============================================================
@@ -19,7 +19,7 @@
 set -e
 
 echo "============================================================"
-echo "  LiquidBit — FASE 3: Remaining 11 Layers (16/16 target)"
+echo "  SpectralAI — FASE 3: Remaining 11 Layers (16/16 target)"
 echo "============================================================"
 
 MODEL_DIR="/mnt/j/Proyectos/models/olmoe-1b-7b"

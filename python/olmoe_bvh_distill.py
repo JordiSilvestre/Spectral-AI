@@ -21,7 +21,7 @@ Where:
 Usage:
     python olmoe_bvh_distill.py [--epochs 30] [--layer 8] [--device cuda]
 
-Copyright (c) 2026 LiquidBit Studio -- Apache 2.0
+Copyright (c) 2026 SpectralAI Studio -- Apache 2.0
 """
 
 import argparse
@@ -41,7 +41,7 @@ from torch.utils.data import DataLoader, Dataset
 sys.path.insert(0, str(Path(__file__).parent))
 
 from olmoe_extract import load_olmoe_layer, OLMoELayer, OLMoELayerConfig
-from lyra_techniques import (
+from spectral_techniques import (
     SmoothBVHHit, RMSNorm, LiquidTimeGate,
     get_dual_lr_param_groups, BetaScheduler,
     get_ste_beta, set_ste_beta,
@@ -390,7 +390,7 @@ class EnhancedBVHRouter(nn.Module):
         # PrismaticRefraction: color → per-expert refractive index (polysemy routing)
         self.spectral_enabled = lyra_mode  # spectral requires Lyra for differentiability
         if self.spectral_enabled:
-            self.spectral_dim = 16  # matches LIQUIDBIT_CUDA_SPECTRAL_DIM
+            self.spectral_dim = 16  # matches SPECTRAL_CUDA_SPECTRAL_DIM
             # Lightweight spectral encoder: 256→16 (post input_proj, not raw 2048)
             # This keeps params minimal while capturing semantic color
             self.spectral_encoder = nn.Sequential(
@@ -1223,7 +1223,7 @@ def main():
 
     print("=" * 60)
     lyra_tag = " + Lyra" if args.lyra else ""
-    print(f"  LiquidBit FASE A v2.1 -- Enhanced BVH Distillation{lyra_tag}")
+    print(f"  SpectralAI FASE A v2.1 -- Enhanced BVH Distillation{lyra_tag}")
     print("=" * 60)
 
     olmoe_layer = None

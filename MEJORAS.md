@@ -1,4 +1,4 @@
-# MEJORAS.md — LiquidBit Zero-Matrix
+# MEJORAS.md — SpectralAI Zero-Matrix
 > Revisado: 2026-03-29 | Para revisión del equipo
 
 Documento de auditoría completa del código. Incluye bugs, optimizaciones, mejoras de calidad y la propuesta de integración de rayos espectrales en los kernels CUDA/OptiX.
@@ -9,7 +9,7 @@ Documento de auditoría completa del código. Incluye bugs, optimizaciones, mejo
 
 1. [Propuesta: Integración de Rayos Espectrales](#1-propuesta-integración-de-rayos-espectrales)
 2. [Idea Externa: PolarQuant para Vectores Espectrales](#2-idea-externa-polarquant-para-vectores-espectrales)
-3. [Sinergias Lyra-AGI → LiquidBit](#3-sinergias-lyra-agi--liquidbit)
+3. [Sinergias Lyra-AGI → SpectralAI
 4. [CUDA/OptiX — Bugs y Optimizaciones](#4-cudaoptix--bugs-y-optimizaciones)
 5. [C++/Headers — Bugs y Mejoras](#5-cheaders--bugs-y-mejoras)
 6. [Python — Bugs y Optimizaciones](#6-python--bugs-y-optimizaciones)
@@ -70,12 +70,12 @@ Con espectral (88.9% polisemia):
 ## 2. Idea Externa: PolarQuant para Vectores Espectrales
 
 > Origen: Revision de TurboQuant (ICLR 2026, arXiv:2504.19874) y TurboQuant+.
-> Repos evaluados y descartados como dependencia (no aportan al core de LiquidBit).
+> Repos evaluados y descartados como dependencia (no aportan al core de SpectralAI).
 > Solo esta tecnica especifica es relevante.
 
 ### Contexto
 
-Los rayos espectrales de LiquidBit llevan un vector de color `f in R^64` (SpectralContext).
+Los rayos espectrales de SpectralAI llevan un vector de color `f in R^64` (SpectralContext).
 Actualmente se almacena en FP16 (128 bytes por rayo). Con 4096 rayos/query, son **528 KB por token**.
 
 ### La Tecnica: Rotacion + Cuantizacion Escalar Optima
@@ -95,7 +95,7 @@ Compresion: 128 -> 28 bytes = 4.6x
 Con 4096 rayos/query: 528 KB -> 115 KB por token
 ```
 
-### Aplicacion en LiquidBit
+### Aplicacion en SpectralAI
 
 | Donde | Que comprimir | Antes | Despues | Ahorro |
 |---|---|---|---|---|
@@ -151,7 +151,7 @@ Sin rayos espectrales funcionando, no hay nada que comprimir. Secuencia:
 
 ---
 
-## 3. Sinergias Lyra-AGI → LiquidBit
+## 3. Sinergias Lyra-AGI → SpectralAI
 
 > Origen: Revision completa del repo Lyra-AGI (jordisilvestre/Lyra-AGI).
 > 6 tecnicas transferibles. La mas critica (SmoothSTE) podria desbloquear
@@ -159,7 +159,7 @@ Sin rayos espectrales funcionando, no hay nada que comprimir. Secuencia:
 
 ### 3.1 SmoothSTE — Diferenciabilidad del BVH (CRITICO)
 
-**Problema en LiquidBit**: Los RT Cores no son diferenciables. El BVH traversal
+**Problema en SpectralAI**: Los RT Cores no son diferenciables. El BVH traversal
 es discreto (hit/miss), gradiente = 0. Marcado como "mayor desafio" en CLAUDE.md.
 
 **Solucion de Lyra**: `SmoothTernarySTE` usa tanh suave con beta annealing:
@@ -176,7 +176,7 @@ grad_out = grad_out * scale
 # Beta annealing: 1.0 → 10.0 linealmente tras 1000 steps warmup
 ```
 
-**Aplicacion al BVH de LiquidBit**:
+**Aplicacion al BVH de SpectralAI**:
 
 ```python
 # Actual closest_hit (NO diferenciable):
@@ -292,7 +292,7 @@ grad = grad.masked_fill(dead, 0.0)  # zero gradients para dead connections
 
 ### 3.6 Extras encontrados en Lyra
 
-| Tecnica | Archivo | Potencial para LiquidBit |
+| Tecnica | Archivo | Potencial para SpectralAI |
 |---|---|---|
 | **SoftHebb** (aprendizaje local sin backprop) | `lyra/core/connectivity.py:135` | Actualizar W_dispersion online sin loss global |
 | **Triton ternary_matmul** (skip zero tiles) | `lyra/kernels/ternary_matmul.py` | 1.42x speedup en forward de expertos ternarios |
@@ -349,7 +349,7 @@ if neuromodulator.fatigue > threshold:
 - Sparsity auto-crece: 0.90 → 0.95 (auto-poda sin supervision)
 - Reservas metabolicas varian 0.22-0.78 entre capas (diferenciacion funcional)
 
-**Impacto en LiquidBit**:
+**Impacto en SpectralAI**:
 - BVH mas pequeno → traversal mas rapido (menos nodos = menos niveles)
 - VRAM adaptativa → comprimir esferas frias libera memoria para expertos
 - Auto-organizacion → el arbol se optimiza solo durante inferencia
@@ -359,14 +359,14 @@ if neuromodulator.fatigue > threshold:
 
 ---
 
-### 3.9 Proyeccion de impacto: LiquidBit antes vs despues
+### 3.9 Proyeccion de impacto: SpectralAI antes vs despues
 
 Comparacion del proyecto **antes y despues** de aplicar las tecnicas adaptadas.
 Todos los numeros "antes" son mediciones reales del proyecto; los "despues" son
-proyecciones basadas en las implementaciones ya probadas en CPU (`python/lyra_techniques.py`,
+proyecciones basadas en las implementaciones ya probadas en CPU (`python/spectral_techniques.py`,
 37/37 tests pasando).
 
-#### Estado actual de LiquidBit (medido)
+#### Estado actual de SpectralAI (medido)
 
 | Metrica | Valor medido | Fuente |
 |---|---|---|
@@ -381,9 +381,9 @@ proyecciones basadas en las implementaciones ya probadas en CPU (`python/lyra_te
 | Auto-poda BVH | NO (64 nodos fijos) | — |
 | Avg top-8 accuracy | 85.6% | ROADMAP (tabla por capa) |
 
-#### Proyeccion: LiquidBit antes → despues
+#### Proyeccion: SpectralAI antes → despues
 
-| Mejora | Metrica | LiquidBit ANTES | LiquidBit DESPUES (est.) | Confianza |
+| Mejora | Metrica | SpectralAI ANTES | SpectralAI DESPUES (est.) | Confianza |
 |---|---|---|---|---|
 | **Rayos espectrales** (Sec 1) | PPL | 8.29 | ~7.3 | Alta (88.9% polisemia medido en PyTorch) |
 | **SmoothSTE** (Sec 3.1) | Training E2E | Imposible (no diferenciable) | Posible (37 tests CPU OK) | Alta |
@@ -395,7 +395,7 @@ proyecciones basadas en las implementaciones ya probadas en CPU (`python/lyra_te
 | **Auto-poda** → traversal | OptiX latency | 64.6 us | ~45-55 us | Baja |
 | **PolarQuant** (Sec 2) | VRAM espectral | 528 KB/tok | 115 KB/tok (4.6x) | Alta |
 
-#### Resumen: LiquidBit antes vs despues (mejor caso realista)
+#### Resumen: SpectralAI antes vs despues (mejor caso realista)
 
 | Metrica | ANTES | DESPUES | Mejora |
 |---|---|---|---|
@@ -436,7 +436,7 @@ Fase 4 (Optimizacion):
 #### Caveat importante
 
 Estas proyecciones asumen que las tecnicas de Lyra (validadas en un modelo
-de 16.5M params con TinyStories) escalan a LiquidBit (OLMoE 1B-7B).
+de 16.5M params con TinyStories) escalan a SpectralAI (OLMoE 1B-7B).
 Los numeros de PPL son extrapolaciones — el delta real dependera de:
 - Calidad de los embeddings proyectados al espacio 3D
 - Estabilidad del beta annealing a escala mayor
@@ -451,7 +451,7 @@ Se recomienda validar con 1 capa antes de desplegar las 16.
 
 #### 2.1 Buffer Overflow en top-K accumulation
 - **Archivo:** `cuda/ray_attention.cu:234-245`
-- **Problema:** `total_hit_count` se usa como contador Y como tamano de array para `insert_top_token()`. Crece sin limite y desborda `accumulated_top_tokens[LIQUIDBIT_MAX_TOP_TOKENS]`.
+- **Problema:** `total_hit_count` se usa como contador Y como tamano de array para `insert_top_token()`. Crece sin limite y desborda `accumulated_top_tokens[SPECTRAL_MAX_TOP_TOKENS]`.
 - **Fix:** Usar contador separado:
   ```cuda
   uint32_t accumulated_top_count = 0;
@@ -475,7 +475,7 @@ Se recomienda validar con 1 capa antes de desplegar las 16.
 - **Fix:** `atomicAdd(&result.total_attention, ray_payload.accumulated_attention);`
 
 #### 2.4 Coordinate space mismatch en intersection
-- **Archivo:** `cuda/liquidbit_kernels.cu:296-307`
+- **Archivo:** `cuda/spectral_kernels.cu:296-307`
 - **Problema:** `__intersection__sphere` usa `optixGetWorldRayOrigin()` pero `sphere.center` puede estar en object space si hay transformaciones de instancia.
 - **Fix:** Usar `optixGetObjectRayOrigin()` o pre-transformar centros a world space en construccion del BVH.
 
@@ -506,7 +506,7 @@ Se recomienda validar con 1 capa antes de desplegar las 16.
 
 #### 2.10 Pi truncado inconsistente
 - **Archivo:** `cuda/inception_resonance.cu:192-196`
-- **Problema:** Usa `2.0f * 3.14159265f` (truncado) en vez de `CUDART_PI_F` (como en `liquidbit_kernels.cu:99`). Ademas `fabsf()` pierde signo.
+- **Problema:** Usa `2.0f * 3.14159265f` (truncado) en vez de `CUDART_PI_F` (como en `spectral_kernels.cu:99`). Ademas `fabsf()` pierde signo.
 - **Fix:** `omega = fmodf(new_omega, 2.0f * CUDART_PI_F);`
 
 ### MEDIUM
@@ -694,10 +694,10 @@ Se recomienda validar con 1 capa antes de desplegar las 16.
 - **Problema:** sm_120 requiere CUDA 12.8+ pero no se verifica. Errores crípticos si CUDA es antiguo.
 - **Fix:** Anadir check con `CUDAToolkit_VERSION VERSION_LESS "12.8"`.
 
-#### 5.4 test_optix_pipeline no linka liquidbit_optix
+#### 5.4 test_optix_pipeline no linka spectral_optix
 - **Archivo:** `CMakeLists.txt:458-462`
-- **Problema:** Falta `liquidbit_optix` en `target_link_libraries`. Errores de linker.
-- **Fix:** Anadir `liquidbit_optix` al target.
+- **Problema:** Falta `spectral_optix` en `target_link_libraries`. Errores de linker.
+- **Fix:** Anadir `spectral_optix` al target.
 
 ### LOW
 
@@ -732,7 +732,7 @@ Se recomienda validar con 1 capa antes de desplegar las 16.
 
 | # | Archivo | Problema |
 |---|---------|----------|
-| 4.4 | liquidbit_kernels.cu:296 | Coordinate space mismatch |
+| 4.4 | spectral_kernels.cu:296 | Coordinate space mismatch |
 | 4.5 | optix_router_raygen.cu:108 | Variable indefinida en cross product |
 | 5.5 | alpha_bsh.cpp:370 | Null pointer sin validar |
 | 5.6 | semantic_bvh.cpp:311 | malloc() donde deberia ser cudaMalloc() |

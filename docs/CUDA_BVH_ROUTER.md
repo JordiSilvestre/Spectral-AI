@@ -147,7 +147,7 @@ El kernel CUDA puro sigue ejecutandose en ~9 us dentro de esos 170 us.
 
 ```bash
 # Desde WSL2 o Linux
-cd /path/to/liquidbit-zero-matrix
+cd /path/to/spectral-ai
 python cuda/v5/build_ext.py
 ```
 

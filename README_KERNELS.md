@@ -1,4 +1,4 @@
-# LiquidBit Zero-Matrix — Kernels CUDA/OptiX
+# SpectralAI Zero-Matrix — Kernels CUDA/OptiX
 
 ## Descripción General
 
@@ -10,7 +10,7 @@ Este directorio contiene los kernels CUDA/OptiX que implementan el mecanismo de 
 
 - **`include/optical_attention.h`**
   - Definiciones de tipos: `RayPayload`, `TokenNode`, `AttentionResult`
-  - Constantes de configuración: `LIQUIDBIT_LAMBDA`, `LIQUIDBIT_ENERGY_THRESHOLD`
+  - Constantes de configuración: `SPECTRAL_LAMBDA`, `SPECTRAL_ENERGY_THRESHOLD`
   - Funciones auxiliares device: `compute_attention_weight()`, `insert_top_token()`
   - **Uso:** Incluir en todos los kernels CUDA/OptiX
 
@@ -47,8 +47,8 @@ Este directorio contiene los kernels CUDA/OptiX que implementan el mecanismo de 
     4. Opcionalmente terminar el rayo si energía es muy baja
   - **Fórmula Matemática:** Beer-Lambert Law análogo
     ```
-    attention_weight = energy_remaining * exp(-LIQUIDBIT_LAMBDA * semantic_distance)
-    energy_remaining *= exp(-LIQUIDBIT_LAMBDA * semantic_distance)  // Absorción
+    attention_weight = energy_remaining * exp(-SPECTRAL_LAMBDA * semantic_distance)
+    energy_remaining *= exp(-SPECTRAL_LAMBDA * semantic_distance)  // Absorción
     ```
 
 - **`cuda/miss.cu`** — Shader OptiX Miss
@@ -96,11 +96,11 @@ Definidas en `include/optical_attention.h`:
 
 | Constante | Valor | Descripción |
 |---|---|---|
-| `LIQUIDBIT_LAMBDA` | 0.1f | Coeficiente de absorción |
-| `LIQUIDBIT_ENERGY_THRESHOLD` | 0.001f | Energía mínima para continuar |
-| `LIQUIDBIT_MAX_TOP_TOKENS` | 64 | Tokens top-K almacenados |
-| `LIQUIDBIT_RAYS_PER_QUERY` | 8 | Rayos por query (multi-head) |
-| `LIQUIDBIT_MAX_SEQUENCE_LENGTH` | 100000 | Máximo tokens en secuencia |
+| `SPECTRAL_LAMBDA` | 0.1f | Coeficiente de absorción |
+| `SPECTRAL_ENERGY_THRESHOLD` | 0.001f | Energía mínima para continuar |
+| `SPECTRAL_MAX_TOP_TOKENS` | 64 | Tokens top-K almacenados |
+| `SPECTRAL_RAYS_PER_QUERY` | 8 | Rayos por query (multi-head) |
+| `SPECTRAL_MAX_SEQUENCE_LENGTH` | 100000 | Máximo tokens en secuencia |
 
 ## Estructura de Datos: RayPayload
 
@@ -176,19 +176,19 @@ Ejemplo de CMake:
 find_package(OptiX 8.0 REQUIRED)
 find_package(CUDA 12.0 REQUIRED)
 
-add_library(liquidbit_kernels OBJECT
+add_library(spectral_kernels OBJECT
     cuda/ray_attention.cu
     cuda/closest_hit.cu
     cuda/miss.cu
     cuda/ray_generation.cu
 )
 
-target_compile_options(liquidbit_kernels PRIVATE
+target_compile_options(spectral_kernels PRIVATE
     --use_fast_math
     --forward-unknown-to-host-compiler
 )
 
-target_include_directories(liquidbit_kernels PRIVATE
+target_include_directories(spectral_kernels PRIVATE
     ${OPTIX_INCLUDE_DIRS}
     include/
 )
@@ -261,4 +261,4 @@ Ver `tests/test_attention.cu` para:
 ---
 
 **Última actualización:** 2026-03-24
-**Autor:** LiquidBit Zero-Matrix Team
+**Autor:** SpectralAI Zero-Matrix Team

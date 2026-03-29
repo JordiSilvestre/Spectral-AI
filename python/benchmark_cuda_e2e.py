@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-benchmark_cuda_e2e.py — LiquidBit v5.0: CUDA Kernel conectado al Orchestrator
+benchmark_cuda_e2e.py — SpectralAI v5.0: CUDA Kernel conectado al Orchestrator
 
 Mide el pipeline completo con el kernel CUDA integrado:
 
@@ -35,7 +35,7 @@ import numpy as np
 sys.path.insert(0, str(Path(__file__).parent))
 from bvh_router import BVHRouter, RouterConfig
 from bvh_router_hybrid import HybridBVHRouter, BVH_LEAVES
-from orchestrator import LiquidBitOrchestrator, OrchestratorConfig
+from orchestrator import SpectralAIOrchestrator, OrchestratorConfig
 from gpt2_baseline import GPT2Baseline
 
 
@@ -115,7 +115,7 @@ def benchmark_orchestrator_pytorch(device: torch.device,
                                    n_iters: int = 200) -> dict:
     """Orchestrator con router PyTorch puro."""
     cfg   = make_orch_config_64()
-    model = LiquidBitOrchestrator(cfg, device).to(device).eval()
+    model = SpectralAIOrchestrator(cfg, device).to(device).eval()
     pc    = model.param_count()
 
     batch_size = 32
@@ -148,7 +148,7 @@ def benchmark_orchestrator_cuda(device: torch.device,
     Sustituye router.forward() por hybrid_router.route() en cada forward pass.
     """
     cfg   = make_orch_config_64()
-    model = LiquidBitOrchestrator(cfg, device).to(device).eval()
+    model = SpectralAIOrchestrator(cfg, device).to(device).eval()
 
     # Crear hybrid router usando el router interno del modelo
     hybrid = HybridBVHRouter(model.router, device=str(device))
@@ -237,7 +237,7 @@ def main():
     device = torch.device(args.device if torch.cuda.is_available() else "cpu")
 
     print("=" * 70)
-    print("LiquidBit v5.0 — CUDA Kernel Conectado al Orchestrator")
+    print("SpectralAI v5.0 — CUDA Kernel Conectado al Orchestrator")
     print("=" * 70)
     print(f"Sistema:    {platform.system()} {platform.release()}")
     if device.type == "cuda":

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 ╔══════════════════════════════════════════════════════════════════════════╗
-║  LiquidBit Zero-Matrix — W_dispersion Training v2.0                    ║
+║  SpectralAI Zero-Matrix — W_dispersion Training v2.0                    ║
 ║  NUEVAS IDEAS: Gumbel-Softmax + Load Balancing Loss                    ║
 ║  ─────────────────────────────────────────────────────────────────────  ║
 ║  v1.0: SGD puro con cross-entropy → 100% accuracy (datos sintéticos)  ║
@@ -40,7 +40,7 @@ PASS = "✅"; FAIL = "❌"
 
 print()
 print("╔══════════════════════════════════════════════════════════════════════════╗")
-print("║    LiquidBit Zero-Matrix — W_dispersion Training v2.0                  ║")
+print("║    SpectralAI Zero-Matrix — W_dispersion Training v2.0                  ║")
 print("║    Gumbel-Softmax + Load Balancing Loss                                ║")
 print("╚══════════════════════════════════════════════════════════════════════════╝")
 

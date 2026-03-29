@@ -1,10 +1,10 @@
 /**
  * @file spectral_ray.h
- * @brief Arquitectura Ultra LiquidBit: Codificación Espectral + Refracción Prismática
+ * @brief Arquitectura Ultra SpectralAI: Codificación Espectral + Refracción Prismática
  *
  * VISIÓN GENERAL:
  * ===============
- * Spectral Ray implementa la "Idea 3" de LiquidBit: La fusión de tres mecanismos:
+ * Spectral Ray implementa la "Idea 3" de SpectralAI: La fusión de tres mecanismos:
  *
  *   1. CODIFICACIÓN ESPECTRAL:       Los rayos llevan un "color" f ∈ ℝ^k (vector de
  *                                    contexto conversacional) que modula el mecanismo
@@ -42,13 +42,13 @@
  *     emite rayos con diferentes "colores" espectrales, seleccionando automáticamente
  *     el bloque de matrices correcto. Sin duplicar matrices completas (solo ~8 sub-bloques).
  *
- * @author LiquidBit Zero-Matrix Team
+ * @author SpectralAI Zero-Matrix Team
  * @date 2026
  */
 
 #pragma once
-#ifndef LIQUIDBIT_SPECTRAL_RAY_H_
-#define LIQUIDBIT_SPECTRAL_RAY_H_
+#ifndef SPECTRAL_SPECTRAL_RAY_H_
+#define SPECTRAL_SPECTRAL_RAY_H_
 
 #include <cuda_runtime.h>
 #include <cuda_fp16.h>
@@ -931,4 +931,4 @@ __host__ __device__ inline float refraction_angle_to_clarity(float refraction_an
     return 1.0f - ambiguity;
 }
 
-#endif // LIQUIDBIT_SPECTRAL_RAY_H_
+#endif // SPECTRAL_SPECTRAL_RAY_H_

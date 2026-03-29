@@ -301,7 +301,7 @@ def main():
     args = parser.parse_args()
 
     print("=" * 70)
-    print("  LiquidBit — Wrapper Gap Diagnostic")
+    print("  SpectralAI — Wrapper Gap Diagnostic")
     print("  Investigating 7.67 vs 6.11 PPL gap")
     print("=" * 70)
 

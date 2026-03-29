@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """
-micro_expert.py -- Micro-Modelos Especializados para LiquidBit v5.0
+micro_expert.py -- Micro-Modelos Especializados para SpectralAI v5.0
 
 Wrapper agnostico que soporta 4 tipos de micro-expertos:
   1. Transformer FP16 (GPT-2 small fine-tuneado)
   2. Transformer INT8 (cuantizado post-training)
   3. Ternario BitNet {-1, 0, +1} (desde cero o cuantizado)
-  4. LiquidBit Inception (recursivo — usa v4.0 como experto)
+  4. SpectralAI Inception (recursivo — usa v4.0 como experto)
 
 Cada experto es un LM causal completo que recibe tokens y genera texto.
 El Orchestrator selecciona cual activar via BVHRouter.

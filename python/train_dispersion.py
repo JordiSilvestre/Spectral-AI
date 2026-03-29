@@ -407,7 +407,7 @@ def evaluate(model, X_val, y_val, device="cpu", num_senses=8):
 # ============================================================================
 
 def main():
-    parser = argparse.ArgumentParser(description="LiquidBit W_dispersion trainer")
+    parser = argparse.ArgumentParser(description="SpectralAI W_dispersion trainer")
     parser.add_argument("--epochs",       type=int,   default=150)
     parser.add_argument("--num-senses",   type=int,   default=8)
     parser.add_argument("--lr",           type=float, default=1e-3)

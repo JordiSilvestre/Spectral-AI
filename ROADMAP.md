@@ -1,4 +1,4 @@
-# LiquidBit Zero-Matrix — ROADMAP
+# SpectralAI Zero-Matrix — ROADMAP
 > Hoja de ruta completa del proyecto. Ultima actualizacion: 2026-03-29
 > Para decisiones y fallos: LEARNINGS.md | Para arquitectura: CLAUDE.md
 
@@ -6,7 +6,7 @@
 
 ## Vision
 
-**LiquidBit** elimina MatMul de la atencion de LLMs, sustituyendolo por
+**SpectralAI** elimina MatMul de la atencion de LLMs, sustituyendolo por
 geometria espacial acelerada por RT Cores de NVIDIA. El sistema usa los
 RT Cores como router O(log N) para seleccionar micro-expertos especializados,
 logrando inferencia en hardware de consumidor (RTX 4090/5070 Ti) en lugar
@@ -203,14 +203,14 @@ vs ~80 ciclos en CUDA cores. Speedup teorico: 10-20x sobre kernel actual.
 
 **Build completado (2026-03-28):**
 - ✅ 4 PTX shaders compilados: ray_generation (9KB), closest_hit (5KB), miss (2KB), ray_attention (41KB)
-- ✅ liquidbit_core.lib + liquidbit_optix.lib + inception_runner.exe
+- ✅ spectral_core.lib + spectral_optix.lib + inception_runner.exe
 - ✅ 0 errores de compilacion (solo warnings menores)
 
 **Host code overhaul (2026-03-28d):**
 - ✅ optix_host.cpp: split single module → 3 modules (raygen, hitgroup, miss)
 - ✅ Fix entry point names (alpha_bsh_* → optical_attention matching real shaders)
 - ✅ Remove non-existent __anyhit__ and __intersection__ references
-- ✅ Add loadPTXFile() + createLiquidBitOptixContextFromFiles() factory
+- ✅ Add loadPTXFile() + createSpectralAIOptixContextFromFiles() factory
 - ✅ Fix pipeline compile options (was nullptr → stored as member)
 - ✅ test_optix_pipeline.cpp: integration test with GAS build + CPU baseline
 
@@ -218,7 +218,7 @@ vs ~80 ciclos en CUDA cores. Speedup teorico: 10-20x sobre kernel actual.
 - ✅ optix_router_raygen.cu: minimal raygen (single-ray + top-K multi-ray fan)
 - ✅ optix_router_hitgroup.cu: closesthit returns primitiveIndex, miss returns sentinel
 - ✅ optix_router_host.cpp: RTCoreRouter class with GAS build + benchmark
-- ✅ CMakeLists.txt: liquidbit_rt_router lib + rt_router_benchmark executable
+- ✅ CMakeLists.txt: spectral_rt_router lib + rt_router_benchmark executable
 - ✅ benchmark_routing_backends.py: compare PyTorch vs CUDA ext vs 3D-PCA vs OptiX
 
 **Tareas:**
@@ -308,7 +308,7 @@ Preguntas dificiles → tau alto (mas compute).
 | LLaMA-3 (8B) | FlashAttention O(N2) | N2 | A100 |
 | Mixtral (47B MoE) | Sparse MoE O(N2) | N2 + routing | 4x A100 |
 | DeepSeek-V3 (671B) | MoE + Aux loss | N2 + routing | rack H100 |
-| **LiquidBit v5.0** | **RT Router O(log N)** | **O(log N) + O(k2)** | **RTX 5070 Ti** |
+| **SpectralAI v5.0** | **RT Router O(log N)** | **O(log N) + O(k2)** | **RTX 5070 Ti** |
 
 **Metricas del paper:**
 - [ ] Perplexity por dominio vs generalista
@@ -325,18 +325,18 @@ Preguntas dificiles → tau alto (mas compute).
 
 ## FASE 11 — App Store de Expertos [FUTURO]
 
-**Objetivo:** Modelo de negocio — LiquidBit como "placa base optica".
+**Objetivo:** Modelo de negocio — SpectralAI como "placa base optica".
 
 **El concepto:**
-- LiquidBit = el router BVH (la infraestructura)
+- SpectralAI = el router BVH (la infraestructura)
 - Comunidad/empresas crean micro-expertos y los "enchufan" en esferas
 - Bufete → esfera legal, Hospital → esfera medica, etc.
 
 **Tareas:**
-- [ ] Definir formato estandar de experto (.lbe — LiquidBit Expert)
+- [ ] Definir formato estandar de experto (.lbe — SpectralAI Expert)
 - [ ] API de registro: `router.register_expert(sphere_id, expert_path)`
 - [ ] Validacion de experto: calidad minima, tamano maximo, seguridad
-- [ ] CLI: `liquidbit install expert-legal-es`
+- [ ] CLI: `spectral install expert-legal-es`
 - [ ] Marketplace web (futuro)
 
 ---
@@ -344,7 +344,7 @@ Preguntas dificiles → tau alto (mas compute).
 ## Estructura del proyecto (post-reorganizacion 2026-03-26)
 
 ```
-liquidbit-zero-matrix/
+spectral-ai/
 ├── CLAUDE.md              # Arquitectura detallada
 ├── LEARNINGS.md           # Diario de decisiones y fallos
 ├── ROADMAP.md             # Este archivo
@@ -410,7 +410,7 @@ liquidbit-zero-matrix/
 - [x] Soporte ternario nativo (BitNet 2B, 1BitLLM 3B, TriLM 3.9B)
 - [x] Soporte post-training quant (Qwen2.5, Phi-3, TinyLlama)
 - [ ] Ejecutar demo con microsoft/bitnet-b1.58-2B-4T (MIT, 2B params, MMLU 52%)
-- [ ] Benchmark: LiquidBit (RTX 5070 Ti) vs modelo base
+- [ ] Benchmark: SpectralAI (RTX 5070 Ti) vs modelo base
 
 **Modelos ternarios nativos disponibles (CERO cuantizacion):**
 
@@ -581,7 +581,7 @@ Los **deltas relativos son comparables** y de hecho mejores gracias a calibracio
 - Pendiente: verificar con modelo real cuando GPU este libre
 
 **Paso 2c — Tecnicas Lyra para BVH Training (FASE B)** [EN PROGRESO]
-- ✅ 6 tecnicas implementadas en `python/lyra_techniques.py` (37/37 tests CPU)
+- ✅ 6 tecnicas implementadas en `python/spectral_techniques.py` (37/37 tests CPU)
 - ✅ SmoothBVHHit: BVH diferenciable para training E2E (el mayor blocker resuelto)
 - Pendiente: integrar en pipeline GPU, fine-tune E2E, medir PPL antes/despues
 
@@ -594,7 +594,7 @@ Los **deltas relativos son comparables** y de hecho mejores gracias a calibracio
 
 **Paso 3 — Build C++/CUDA con CMake** [✅ COMPILADO — PENDIENTE RECOMPILAR CON FIXES]
 - CUDA 13.2, OptiX 9.1, CMake 4.2.3, MSVC 18.4, sm_89+sm_120
-- ✅ 4 PTX shaders compilados, liquidbit_core.lib, liquidbit_optix.lib, inception_runner.exe
+- ✅ 4 PTX shaders compilados, spectral_core.lib, spectral_optix.lib, inception_runner.exe
 - Pendiente: recompilar con los 51 bug fixes aplicados y verificar
 
 ---
@@ -610,14 +610,14 @@ el entrenamiento end-to-end del BVH y mejorar PPL de 8.29 → ~6.8.
 
 | Componente | Archivo | Tests | Estado |
 |---|---|---|---|
-| SmoothTernarySTE | `python/lyra_techniques.py` | 8/8 | ✅ CPU OK |
-| SmoothBVHHit | `python/lyra_techniques.py` | 4/4 | ✅ CPU OK |
-| RMSNorm (SubLN) | `python/lyra_techniques.py` | 3/3 | ✅ CPU OK |
-| LiquidTimeGate | `python/lyra_techniques.py` | 6/6 | ✅ CPU OK |
-| DualLR param groups | `python/lyra_techniques.py` | 3/3 | ✅ CPU OK |
-| MetabolicBVH | `python/lyra_techniques.py` | 7/7 | ✅ CPU OK |
-| BetaScheduler | `python/lyra_techniques.py` | 4/4 | ✅ CPU OK |
-| Integration tests | `tests/test_lyra_techniques.py` | 2/2 | ✅ CPU OK |
+| SmoothTernarySTE | `python/spectral_techniques.py` | 8/8 | ✅ CPU OK |
+| SmoothBVHHit | `python/spectral_techniques.py` | 4/4 | ✅ CPU OK |
+| RMSNorm (SubLN) | `python/spectral_techniques.py` | 3/3 | ✅ CPU OK |
+| LiquidTimeGate | `python/spectral_techniques.py` | 6/6 | ✅ CPU OK |
+| DualLR param groups | `python/spectral_techniques.py` | 3/3 | ✅ CPU OK |
+| MetabolicBVH | `python/spectral_techniques.py` | 7/7 | ✅ CPU OK |
+| BetaScheduler | `python/spectral_techniques.py` | 4/4 | ✅ CPU OK |
+| Integration tests | `tests/test_spectral_techniques.py` | 2/2 | ✅ CPU OK |
 
 ### Tareas
 
@@ -634,11 +634,11 @@ el entrenamiento end-to-end del BVH y mejorar PPL de 8.29 → ~6.8.
 - [ ] Integrar RMSNorm post-routing en `orchestrator.py`
 - [ ] Integrar DualLR en training scripts (`olmoe_bvh_distill.py`)
 - [ ] Training E2E con SmoothSTE en GPU (RTX 5070 Ti)
-- [ ] Compilar smooth_bvh_hit.cu (CUDA kernel, instrucciones en lyra_techniques.py)
+- [ ] Compilar smooth_bvh_hit.cu (CUDA kernel, instrucciones en spectral_techniques.py)
 - [ ] Medir PPL antes/despues con fine-tune E2E
 - [ ] Activar MetabolicBVH en pipeline de inferencia
 
-### Impacto proyectado (LiquidBit antes → despues)
+### Impacto proyectado (SpectralAI antes → despues)
 
 | Metrica | Antes | Despues (est.) |
 |---|---|---|
@@ -647,7 +647,7 @@ el entrenamiento end-to-end del BVH y mejorar PPL de 8.29 → ~6.8.
 | Polisemia | 0% | 88.9% |
 | BVH nodos activos | 64 fijos | ~45 dinamico |
 
-**Archivos:** `python/lyra_techniques.py`, `tests/test_lyra_techniques.py`
+**Archivos:** `python/spectral_techniques.py`, `tests/test_spectral_techniques.py`
 **Referencia:** `vendor/Lyra-AGI/` (submodulo temporal), `MEJORAS.md` Seccion 3
 
 ---
@@ -658,7 +658,7 @@ el entrenamiento end-to-end del BVH y mejorar PPL de 8.29 → ~6.8.
 
 ```bash
 # Tests de tecnicas Lyra (37 tests, ~2 segundos)
-python -m pytest tests/test_lyra_techniques.py -v
+python -m pytest tests/test_spectral_techniques.py -v
 
 # Verificar que todos los archivos Python parsean correctamente
 python -c "
@@ -714,7 +714,7 @@ python python/olmoe_e2e_eval.py \
 
 # 4b. Re-entrenar 1 capa (L8) con SmoothSTE + SubLN + DualLR
 #     Modificar olmoe_bvh_distill.py para usar:
-#       from lyra_techniques import RMSNorm, get_dual_lr_param_groups, BetaScheduler
+#       from spectral_techniques import RMSNorm, get_dual_lr_param_groups, BetaScheduler
 #     Anadir RMSNorm despues del router forward
 #     Usar get_dual_lr_param_groups() en vez de optimizer directo
 #     Crear BetaScheduler y llamar .step() cada batch
@@ -751,7 +751,7 @@ python python/olmoe_e2e_eval.py \
 ### Paso 5: Compilar CUDA kernel de SmoothBVHHit (opcional, alto rendimiento)
 
 ```bash
-# Ver instrucciones detalladas en python/lyra_techniques.py (SMOOTH_BVH_HIT_CUDA_STUB)
+# Ver instrucciones detalladas en python/spectral_techniques.py (SMOOTH_BVH_HIT_CUDA_STUB)
 # Resumen: modificar cuda/closest_hit.cu lineas 111-118:
 #   float soft_hit = tanhf(c_beta * (semantic_radius - semantic_distance));
 #   soft_hit = fmaxf(soft_hit, 0.0f);
@@ -766,7 +766,7 @@ nvcc -arch=sm_89 -arch=sm_120 -c cuda/closest_hit.cu
 ```bash
 # Probar auto-poda en inferencia:
 python -c "
-from python.lyra_techniques import MetabolicBVH
+from python.spectral_techniques import MetabolicBVH
 import numpy as np
 
 mbvh = MetabolicBVH(n_nodes=64, max_age=100)

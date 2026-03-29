@@ -12,7 +12,7 @@ En esta sesion se hicieron 16 commits con +3007 lineas en 33 archivos:
 
 1. **Auditoria completa del codigo** → MEJORAS.md con 51 hallazgos
 2. **51/51 bugs arreglados** (16 CUDA, 12 C++, 11 Python, 5 CMake)
-3. **6 tecnicas Lyra adaptadas** → `python/lyra_techniques.py` (37/37 tests CPU)
+3. **6 tecnicas Lyra adaptadas** → `python/spectral_techniques.py` (37/37 tests CPU)
 4. **Rayos espectrales integrados en CUDA** → 4 archivos, +562 lineas, Ley de Snell
 5. **Script de verificacion** → `scripts/verify_all.sh` (18 OK, 0 FAIL)
 6. **ROADMAP actualizado** con FASE B, comandos GPU, y tareas pendientes
@@ -39,8 +39,8 @@ En esta sesion se hicieron 16 commits con +3007 lineas en 33 archivos:
 | Archivo | Lineas | Funcion |
 |---|---|---|
 | `MEJORAS.md` | ~760 | Auditoria completa: bugs, mejoras, proyecciones antes/despues |
-| `python/lyra_techniques.py` | 419 | 6 tecnicas Lyra adaptadas: SmoothSTE, SmoothBVHHit, RMSNorm, LiquidTimeGate, DualLR, MetabolicBVH |
-| `tests/test_lyra_techniques.py` | 451 | 37 tests unitarios + 2 de integracion, todos pasando |
+| `python/spectral_techniques.py` | 419 | 6 tecnicas Lyra adaptadas: SmoothSTE, SmoothBVHHit, RMSNorm, LiquidTimeGate, DualLR, MetabolicBVH |
+| `tests/test_spectral_techniques.py` | 451 | 37 tests unitarios + 2 de integracion, todos pasando |
 | `scripts/verify_all.sh` | 251 | Script de verificacion one-command (20 checks, 5 fases) |
 | `docs/HANDOFF_SESSION_2026_03_29.md` | Este archivo |
 
@@ -56,7 +56,7 @@ En esta sesion se hicieron 16 commits con +3007 lineas en 33 archivos:
 | `cuda/alpha_phase_a.cu` | 2.6 null deref bounds check, 2.16 cudaMalloc check |
 | `cuda/alpha_phase_b.cu` | 2.2 FP32->FP16 conversion kernel, 2.16 error check |
 | `cuda/async_pipeline.cu` | 2.7 buffer reuse, 2.9 benchmark zero input, 2.11 TODO |
-| `cuda/liquidbit_kernels.cu` | 2.4 coordinate space (object vs world) |
+| `cuda/spectral_kernels.cu` | 2.4 coordinate space (object vs world) |
 | `cuda/ternary_resonance.cu` | 2.8 loop invalid indices |
 | `cuda/inception_resonance.cu` | 2.10 Pi → CUDART_PI_F |
 | `cuda/inception_kernels.cu` | 2.15 childIAS sentinel TODO |
@@ -135,8 +135,8 @@ PrismaticRay { origin, direction, energy, color[16] }
 ```
 
 ### Constantes clave
-- `LIQUIDBIT_SPECTRAL_ENABLED` = 1 (0 para monocolor)
-- `LIQUIDBIT_CUDA_SPECTRAL_DIM` = 16 (reducido de 64 por registros GPU)
+- `SPECTRAL_SPECTRAL_ENABLED` = 1 (0 para monocolor)
+- `SPECTRAL_CUDA_SPECTRAL_DIM` = 16 (reducido de 64 por registros GPU)
 - `c_W_spectral` en constant memory (16x256 = 16KB)
 - `W_dispersion` por esfera en SBT hit record (OptiX idomatic)
 - Payload: 21 words (de 32 max OptiX)
@@ -145,14 +145,14 @@ PrismaticRay { origin, direction, energy, color[16] }
 
 ## Tecnicas Lyra — como integrar en GPU
 
-Las 6 tecnicas estan en `python/lyra_techniques.py`, testeadas en CPU.
+Las 6 tecnicas estan en `python/spectral_techniques.py`, testeadas en CPU.
 Para activarlas en el pipeline real:
 
 ### Paso 1: SmoothBVHHit en bvh_router.py
 
 ```python
 # En python/bvh_router.py, en el forward del BVHRouter:
-from lyra_techniques import SmoothBVHHit, set_ste_beta
+from spectral_techniques import SmoothBVHHit, set_ste_beta
 self.smooth_hit = SmoothBVHHit(lambda_decay=0.1)
 
 # En forward():
@@ -166,7 +166,7 @@ attention = self.smooth_hit(distances, radii, energy)
 
 ```python
 # En python/orchestrator.py, despues del router forward:
-from lyra_techniques import RMSNorm
+from spectral_techniques import RMSNorm
 self.post_routing_norm = RMSNorm(hidden_dim)
 
 # En forward():
@@ -178,7 +178,7 @@ router_output = self.post_routing_norm(router_output)
 
 ```python
 # En cualquier training script:
-from lyra_techniques import get_dual_lr_param_groups
+from spectral_techniques import get_dual_lr_param_groups
 param_groups = get_dual_lr_param_groups(model, lr=3e-4, bvh_lr_mult=0.1)
 optimizer = torch.optim.AdamW(param_groups)
 ```
@@ -186,7 +186,7 @@ optimizer = torch.optim.AdamW(param_groups)
 ### Paso 4: BetaScheduler en training loop
 
 ```python
-from lyra_techniques import BetaScheduler
+from spectral_techniques import BetaScheduler
 scheduler = BetaScheduler(max_beta=10.0, warmup_steps=100, total_steps=10000)
 
 for step, batch in enumerate(dataloader):
@@ -199,7 +199,7 @@ for step, batch in enumerate(dataloader):
 ### Paso 5: MetabolicBVH post-training
 
 ```python
-from lyra_techniques import MetabolicBVH
+from spectral_techniques import MetabolicBVH
 mbvh = MetabolicBVH(n_nodes=64, max_age=100)
 
 # Despues de cada batch de inferencia:

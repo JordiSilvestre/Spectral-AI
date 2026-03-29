@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 ╔══════════════════════════════════════════════════════════════════════════╗
-║  LiquidBit Zero-Matrix — Fuzzy BSH v2.0 con torch.autograd.Function   ║
+║  SpectralAI Zero-Matrix — Fuzzy BSH v2.0 con torch.autograd.Function   ║
 ║  ─────────────────────────────────────────────────────────────────────  ║
 ║  NUEVA IDEA (de los documentos subidos):                               ║
 ║  Implementar el BVH traversal como torch.autograd.Function para que   ║
@@ -377,7 +377,7 @@ class FuzzyBSHNumpy:
 
 def run_demo():
     print("╔══════════════════════════════════════════════════════════════════════════╗")
-    print("║    LiquidBit Zero-Matrix — Fuzzy BSH v2.0 (torch.autograd.Function)    ║")
+    print("║    SpectralAI Zero-Matrix — Fuzzy BSH v2.0 (torch.autograd.Function)    ║")
     print("╚══════════════════════════════════════════════════════════════════════════╝")
     print()
 

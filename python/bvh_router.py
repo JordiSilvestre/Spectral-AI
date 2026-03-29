@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-bvh_router.py — Router BVH Jerárquico para LiquidBit v5.0 "Orchestrator"
+bvh_router.py — Router BVH Jerárquico para SpectralAI v5.0 "Orchestrator"
 
 El RT Core NO calcula atención — RUTEA.
 4 niveles × 3D = 12 dimensiones semánticas → selección de micro-experto.

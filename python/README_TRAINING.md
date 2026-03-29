@@ -1,4 +1,4 @@
-# LiquidBit Zero-Matrix — Training Components
+# SpectralAI Zero-Matrix — Training Components
 
 > Last updated: 2026-03-27
 

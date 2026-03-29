@@ -13,7 +13,7 @@ Pipeline stages:
 
 Triple buffering: stages N, N-1, N-2 run concurrently on different streams.
 
-Copyright (c) 2026 LiquidBit Studio — Apache 2.0
+Copyright (c) 2026 SpectralAI Studio — Apache 2.0
 """
 
 from dataclasses import dataclass, field

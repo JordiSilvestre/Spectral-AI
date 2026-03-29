@@ -1,9 +1,9 @@
 """
 build_ternary_ext.py -- Compile the PyTorch Ternary Expert extension
-LiquidBit v5.0
+SpectralAI v5.0
 
 Usage from WSL2:
-    cd /tmp/liquidbit
+    cd /tmp/spectral
     source .venv_wsl/bin/activate
     python cuda/v5/build_ternary_ext.py
 

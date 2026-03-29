@@ -1,11 +1,11 @@
 """
-PROTOTIPO B: LiquidBit Voronoi Crystal
+PROTOTIPO B: SpectralAI Voronoi Crystal
 =======================================
 Arquitectura: Diagrama de Voronoi 3D + Rayos Coloreados
 Complejidad teórica: O(log N + k) routing donde k = planos por celda
 Hardware real: NVIDIA OptiX 8.x (rayo-plano, primitiva nativa)
 
-Autor: LiquidBit Research
+Autor: SpectralAI Research
 Fecha: 2026-03-24
 """
 
@@ -665,7 +665,7 @@ def main():
 
     print("\n")
     print("╔══════════════════════════════════════════════════════════════╗")
-    print("║           PROTOTIPO B: LiquidBit Voronoi Crystal            ║")
+    print("║           PROTOTIPO B: SpectralAI Voronoi Crystal            ║")
     print("║                                                              ║")
     print("║  Arquitectura: Diagrama de Voronoi 3D + Rayos Coloreados    ║")
     print("║  Complejidad: O(log N + k) donde k = planos por traversal   ║")

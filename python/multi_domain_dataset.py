@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-multi_domain_dataset.py — Dataset Multi-Dominio para LiquidBit v5.0 FASE 4
+multi_domain_dataset.py — Dataset Multi-Dominio para SpectralAI v5.0 FASE 4
 4 dominios con etiquetas para supervisar el routing.
 
 Dominios:

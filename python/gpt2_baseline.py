@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-gpt2_baseline.py — GPT-2 baseline para comparativa justa con LiquidBit
+gpt2_baseline.py — GPT-2 baseline para comparativa justa con SpectralAI
 
 Mismas condiciones exactas:
   - Vocab:    50,257 tokens (GPT-2 BPE via tiktoken)
@@ -11,7 +11,7 @@ Mismas condiciones exactas:
   - Dataset:  WikiText-2
   - Optimizer: AdamW, lr=5e-4, cosine decay
 
-Única diferencia vs LiquidBit: atención = scaled dot-product (MatMul O(N²))
+Única diferencia vs SpectralAI: atención = scaled dot-product (MatMul O(N²))
 
 Entrenamiento:
     python gpt2_baseline.py --epochs 10 --batch-size 32
@@ -34,12 +34,12 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 import numpy as np
 
-# Reusar WikiTextDataset del training script de LiquidBit
+# Reusar WikiTextDataset del training script de SpectralAI
 sys.path.insert(0, str(Path(__file__).parent))
-from train_liquidbit_lm import WikiTextDataset, SyntheticTextDataset
+from train_spectral_lm import WikiTextDataset, SyntheticTextDataset
 
 # ─────────────────────────────────────────────────────────────────
-# GPT-2 estándar (arquitectura idéntica a LiquidBit, atención diferente)
+# GPT-2 estándar (arquitectura idéntica a SpectralAI, atención diferente)
 # ─────────────────────────────────────────────────────────────────
 
 class CausalSelfAttention(nn.Module):
@@ -69,7 +69,7 @@ class CausalSelfAttention(nn.Module):
         K = K.view(B, S, self.num_heads, self.head_dim).transpose(1, 2)
         V = V.view(B, S, self.num_heads, self.head_dim).transpose(1, 2)
 
-        # O(N²) MatMul — esto es lo que LiquidBit reemplaza
+        # O(N²) MatMul — esto es lo que SpectralAI reemplaza
         scores = torch.matmul(Q, K.transpose(-2, -1)) * self.scale
         scores = scores.masked_fill(self.bias[:, :, :S, :S] == 0, float('-inf'))
         attn   = F.softmax(scores, dim=-1)
@@ -107,7 +107,7 @@ class GPT2Block(nn.Module):
 
 class GPT2Baseline(nn.Module):
     """
-    GPT-2 con mismos hiperparámetros que LiquidBit-small:
+    GPT-2 con mismos hiperparámetros que SpectralAI-small:
       vocab=50257, embed=256, layers=4, heads=4, ctx=256, mlp=1024
     """
 
@@ -187,7 +187,7 @@ def train(args):
     device = torch.device(args.device if torch.cuda.is_available() else "cpu")
 
     print("=" * 70)
-    print("GPT-2 Baseline — Comparativa con LiquidBit")
+    print("GPT-2 Baseline — Comparativa con SpectralAI")
     print("=" * 70)
     print(f"Device:     {device}")
     if device.type == "cuda":
@@ -303,7 +303,7 @@ def benchmark_speed(device_str: str = "cuda"):
     model.eval()
 
     print("\n" + "=" * 70)
-    print("Benchmark: GPT-2 baseline vs LiquidBit (misma arquitectura)")
+    print("Benchmark: GPT-2 baseline vs SpectralAI (misma arquitectura)")
     print("=" * 70)
 
     results = {}
@@ -350,8 +350,8 @@ def benchmark_speed(device_str: str = "cuda"):
         results["peak_mem_mb"] = mem
 
     print("\n" + "-" * 70)
-    print("Para comparar — lanza LiquidBit con mismos params:")
-    print("  python liquidbit_lm.py --benchmark")
+    print("Para comparar — lanza SpectralAI con mismos params:")
+    print("  python spectral_lm.py --benchmark")
 
     return results
 
@@ -361,7 +361,7 @@ def benchmark_speed(device_str: str = "cuda"):
 # ─────────────────────────────────────────────────────────────────
 
 def main():
-    parser = argparse.ArgumentParser(description="GPT-2 baseline — comparativa con LiquidBit")
+    parser = argparse.ArgumentParser(description="GPT-2 baseline — comparativa con SpectralAI")
     parser.add_argument("--epochs",          type=int,   default=10)
     parser.add_argument("--batch-size",      type=int,   default=32)
     parser.add_argument("--lr",              type=float, default=5e-4)

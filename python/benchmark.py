@@ -34,9 +34,9 @@ SCRIPT_DIR  = Path(__file__).parent
 PROJECT_DIR = SCRIPT_DIR.parent
 BUILD_DIR   = PROJECT_DIR / "build" / "Release"
 BUILD_ROOT  = PROJECT_DIR / "build"
-PTX_PATH    = BUILD_ROOT / "liquidbit_kernels.ptx"
+PTX_PATH    = BUILD_ROOT / "spectral_kernels.ptx"
 BATCH_EXE   = BUILD_DIR / "batch_runner.exe"
-CUDA_BENCH  = BUILD_DIR / "liquidbit_benchmark_full.exe"
+CUDA_BENCH  = BUILD_DIR / "spectral_benchmark_full.exe"
 
 from inference import (
     EmbeddingDB, embedding_to_fourier,
@@ -252,11 +252,11 @@ def benchmark_cublas_attention(db: EmbeddingDB, sentence: str,
     }
 
 # ─────────────────────────────────────────────────────────────────
-# Benchmark CUDA kernel (liquidbit_benchmark_full.exe)
+# Benchmark CUDA kernel (spectral_benchmark_full.exe)
 # ─────────────────────────────────────────────────────────────────
 
 def run_cuda_benchmark() -> Optional[str]:
-    """Corre liquidbit_benchmark_full.exe y retorna la salida."""
+    """Corre spectral_benchmark_full.exe y retorna la salida."""
     if not CUDA_BENCH.exists():
         return None
     try:
@@ -273,12 +273,12 @@ def run_cuda_benchmark() -> Optional[str]:
 # ─────────────────────────────────────────────────────────────────
 
 def main():
-    parser = argparse.ArgumentParser(description="LiquidBit Benchmark: OptiX vs cuBLAS")
+    parser = argparse.ArgumentParser(description="SpectralAI Benchmark: OptiX vs cuBLAS")
     parser.add_argument("--num-sentences", type=int, default=20)
     parser.add_argument("--num-rays",      type=int, default=16)
     parser.add_argument("--output",        type=str, default="benchmark_results.json")
     parser.add_argument("--cuda-bench",    action="store_true",
-                        help="Tambien correr liquidbit_benchmark_full.exe")
+                        help="Tambien correr spectral_benchmark_full.exe")
     args = parser.parse_args()
 
     print("[bench] Cargando embeddings...")
@@ -357,7 +357,7 @@ def main():
     # ── CUDA benchmark completo (opcional) ───────────────────────
     if args.cuda_bench:
         print(f"\n{'='*65}")
-        print("liquidbit_benchmark_full.exe:")
+        print("spectral_benchmark_full.exe:")
         print(f"{'='*65}")
         out = run_cuda_benchmark()
         if out:

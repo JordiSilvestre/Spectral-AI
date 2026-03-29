@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """
-PROTOTIPO A: LiquidBit BSH Espectral (Esferas + Prismas)
+PROTOTIPO A: SpectralAI BSH Espectral (Esferas + Prismas)
 =========================================================
 Arquitectura: Bounding Sphere Hierarchy + Rayos Coloreados + Refracción Prismática
 Complejidad teórica: O(log N) routing + O(k²) MatMul selectivo
 Simulación en Python puro (sin GPU)
 
-Autor: LiquidBit Research Team
+Autor: SpectralAI Research Team
 Fecha: 2026-03-24
 """
 

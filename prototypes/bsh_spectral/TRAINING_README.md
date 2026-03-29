@@ -1,8 +1,8 @@
-# LiquidBit Zero-Matrix — W_dispersion Training
+# SpectralAI Zero-Matrix — W_dispersion Training
 
 ## Descripción General
 
-Este directorio contiene la implementación del entrenamiento de `W_dispersion` para el mecanismo de refracción prismática de LiquidBit Espectral.
+Este directorio contiene la implementación del entrenamiento de `W_dispersion` para el mecanismo de refracción prismática de SpectralAI Espectral.
 
 **Problema:** En el test de integración original, la accuracy de polisemia era solo del 11% cuando `W_dispersion` era aleatorio.
 

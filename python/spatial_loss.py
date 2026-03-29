@@ -2,7 +2,7 @@
 """
 spatial_loss.py — Función de pérdida espacial para entrenamiento del árbol BSH
 
-FÓRMULA COMPLETA (del documento LiquidBit BSH Training.docx):
+FÓRMULA COMPLETA (del documento SpectralAI BSH Training.docx):
 ==============================================================
 
 L_total = L_task + α·L_spatial
@@ -24,7 +24,7 @@ Toda la pérdida es diferenciable respecto a:
 
 Esto permite entrenar la geometría del árbol BSH end-to-end con PyTorch.
 
-@author LiquidBit Zero-Matrix Team
+@author SpectralAI Zero-Matrix Team
 @date 2026
 """
 

@@ -1,5 +1,5 @@
 /**
- * @file liquidbit_resonance.cu
+ * @file spectral_resonance.cu
  * @brief Kernel CUDA para el cálculo de resonancia Fourier ON-THE-FLY
  *
  * CONCEPTO:
@@ -25,7 +25,7 @@
  *   Este archivo define tanto una función __device__ inline (usable desde
  *   otros kernels CUDA/OptiX) como un kernel independiente para pruebas.
  *
- * @author LiquidBit Zero-Matrix Team
+ * @author SpectralAI Zero-Matrix Team
  * @date 2026
  */
 
@@ -34,10 +34,10 @@
 #include <stdint.h>
 #include <stdio.h>
 
-#include "../include/liquidbit_resonance.h"
+#include "../include/spectral_resonance.h"
 
 // semanticStringResonance() está definida como __device__ __forceinline__ en
-// include/liquidbit_resonance.h para evitar problemas de linkage entre unidades
+// include/spectral_resonance.h para evitar problemas de linkage entre unidades
 // de compilación CUDA (ODR con --relocatable-device-code).
 
 /**

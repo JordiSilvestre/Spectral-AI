@@ -1,6 +1,6 @@
 """
 ╔══════════════════════════════════════════════════════════════════════╗
-║      LiquidBit Zero-Matrix — TEST DE INTEGRACIÓN COMPLETO          ║
+║      SpectralAI Zero-Matrix — TEST DE INTEGRACIÓN COMPLETO          ║
 ║      Las 3 ideas + documentos funcionando juntas en un pipeline     ║
 ╚══════════════════════════════════════════════════════════════════════╝
 
@@ -82,7 +82,7 @@ CONTEXT_CLUSTERS = {"Programación": 0, "Música": 1, "Física": 2}
 
 print()
 print("╔══════════════════════════════════════════════════════════════════════╗")
-print("║       LiquidBit Zero-Matrix — INTEGRATION TEST v1.0               ║")
+print("║       SpectralAI Zero-Matrix — INTEGRATION TEST v1.0               ║")
 print("╚══════════════════════════════════════════════════════════════════════╝")
 print(f"  Vocabulario: {N_TOKENS} tokens | Embedding D={D} | Spectral dim={SPECTRAL_DIM}")
 

@@ -5,7 +5,7 @@
  * DIFERENCIAS VS test_inception_pipeline.cpp:
  * =============================================
  * Este test valida el pipeline de inception_kernels.cu (nuevo, FASE 2.2), que usa:
- *   - __raygen__inception         (vs __raygen__liquidbit)
+ *   - __raygen__inception         (vs __raygen__spectral)
  *   - __closesthit__inception_portal  (vs __closesthit__semantic_portal)
  *   - __miss__inception_portal    (vs __miss__inception)
  *   - __intersection__inception_sphere  (vs __intersection__sphere)
@@ -30,7 +30,7 @@
  *   cmake --build build --target inception_engine
  *   build/Release/inception_engine.exe build/inception_kernels.ptx
  *
- * @author LiquidBit Zero-Matrix Team
+ * @author SpectralAI Zero-Matrix Team
  * @date 2026
  */
 
@@ -41,7 +41,7 @@
 #include <cuda_runtime.h>
 #include <cuda.h>
 
-#include "liquidbit_resonance.h"
+#include "spectral_resonance.h"
 #include "inception_engine.h"
 
 #include <iostream>
@@ -233,7 +233,7 @@ int main(int argc, char* argv[]) {
     std::string ptxPath = (argc > 1) ? argv[1] : "inception_kernels.ptx";
 
     std::cout << "==========================================================\n";
-    std::cout << " LiquidBit Inception Engine v4.0 — Test\n";
+    std::cout << " SpectralAI Inception Engine v4.0 — Test\n";
     std::cout << " PTX: " << ptxPath << "\n";
     std::cout << "==========================================================\n\n";
 

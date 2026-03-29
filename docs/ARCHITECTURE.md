@@ -1,17 +1,17 @@
-# LiquidBit Zero-Matrix — System Architecture
+# SpectralAI Zero-Matrix — System Architecture
 
 > Last updated: 2026-03-27. For full mathematical details see CLAUDE.md.
 
 ## Overview
 
-LiquidBit replaces the O(N^2) attention mechanism in Transformers with O(N log N) ray tracing.
+SpectralAI replaces the O(N^2) attention mechanism in Transformers with O(N log N) ray tracing.
 
 ```
 Traditional Transformer:
     Q, K, V = Linear(hidden)
     Attention = softmax(Q @ K^T / sqrt(d)) @ V    <-- O(N^2) MatMul
 
-LiquidBit:
+SpectralAI:
     pos_3d = PCA_project(hidden)                   <-- O(N)
     expert_id = BVH_traverse(pos_3d, spectral)     <-- O(log N) per token
     output = Expert_FFN[expert_id](hidden)          <-- O(k^2) local MatMul

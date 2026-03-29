@@ -29,7 +29,7 @@ SCRIPT_DIR  = Path(__file__).parent
 PROJECT_DIR = SCRIPT_DIR.parent
 BUILD_DIR   = PROJECT_DIR / "build" / "Release"
 BUILD_ROOT  = PROJECT_DIR / "build"
-PTX_PATH    = BUILD_ROOT / "liquidbit_kernels.ptx"
+PTX_PATH    = BUILD_ROOT / "spectral_kernels.ptx"
 BATCH_EXE   = BUILD_DIR / "batch_runner.exe"
 
 from inference import (

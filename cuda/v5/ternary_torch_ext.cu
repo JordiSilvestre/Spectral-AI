@@ -1,6 +1,6 @@
 /**
  * ternary_torch_ext.cu — PyTorch Extension for Arbitrary-Dimension Ternary MatMul
- * LiquidBit v5.0 "Orchestrator"
+ * SpectralAI v5.0 "Orchestrator"
  *
  * Replaces F.linear(x, w) where w is ternary {-1, 0, +1} with POPCOUNT-based
  * add/sub/skip — ZERO multiplications in the hot path.
@@ -17,7 +17,7 @@
  *   00 = zero, 01 = +1, 10 = -1
  *
  * Compile: python cuda/v5/build_ternary_ext.py
- * Copyright (c) 2026 LiquidBit Studio — Apache 2.0
+ * Copyright (c) 2026 SpectralAI Studio — Apache 2.0
  */
 
 #include <torch/extension.h>
@@ -343,7 +343,7 @@ torch::Tensor ternary_gated_mlp_impl(
 // ============================================================================
 
 PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
-    m.doc() = "LiquidBit Ternary Expert — PyTorch Extension (arbitrary dimensions, zero multiplications)";
+    m.doc() = "SpectralAI Ternary Expert — PyTorch Extension (arbitrary dimensions, zero multiplications)";
 
     m.def("pack_ternary", &pack_ternary_impl,
           "Pack int8 ternary weights {-1,0,+1} to uint32 (16 per uint32)",

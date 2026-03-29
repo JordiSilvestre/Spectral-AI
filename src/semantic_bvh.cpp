@@ -12,7 +12,7 @@
  *   3. Subir estructura del árbol a GPU con cudaMalloc/cudaMemcpy
  *   4. Compilar AccelerationStructure con OptiX
  *
- * @author LiquidBit Zero-Matrix Team
+ * @author SpectralAI Zero-Matrix Team
  * @date 2026
  */
 

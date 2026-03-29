@@ -1,4 +1,4 @@
-# LEARNINGS.md — LiquidBit Zero-Matrix
+# LEARNINGS.md — SpectralAI Zero-Matrix
 > Registro vivo de decisiones de diseño, fallos encontrados y lecciones aprendidas.
 > **SIEMPRE actualizar este archivo cuando algo sale mal o se toma una decisión importante.**
 
@@ -9,8 +9,8 @@
 **Contexto:** The spectral ray architecture (Idea 3: Prismatic Refraction) was fully designed in `include/spectral_ray.h` but disconnected from the actual CUDA/OptiX kernels which only used monochrome SemanticRay.
 
 **Problema/Decisión:** Key design decisions for the CUDA integration:
-1. **Spectral dimension reduced to 16** (from 64 in spectral_ray.h) for register pressure. 64 floats per ray would consume 256 bytes of registers per thread, causing severe occupancy issues on SM hardware. Configurable via `LIQUIDBIT_CUDA_SPECTRAL_DIM`.
-2. **Feature gated with `LIQUIDBIT_SPECTRAL_ENABLED`** — set to 0 to fall back to monochrome rays. Both paths compile.
+1. **Spectral dimension reduced to 16** (from 64 in spectral_ray.h) for register pressure. 64 floats per ray would consume 256 bytes of registers per thread, causing severe occupancy issues on SM hardware. Configurable via `SPECTRAL_CUDA_SPECTRAL_DIM`.
+2. **Feature gated with `SPECTRAL_SPECTRAL_ENABLED`** — set to 0 to fall back to monochrome rays. Both paths compile.
 3. **W_dispersion passed via SBT hit records** (SpectralHitSbtRecord) rather than global memory lookups. This is the OptiX-idiomatic way to pass per-primitive data to closest-hit shaders.
 4. **W_spectral in constant memory** — the projection matrix (16x256 = 4096 floats = 16KB) fits within the 64KB constant memory limit.
 5. **21 payload words** used (3 base + 16 spectral color + 2 spectral result), well within OptiX's 32-word limit.
@@ -178,7 +178,7 @@ Extrae posiciones 3D de expertos del checkpoint entrenado, permite routing via:
 - `optix_router_host.cpp` — clase `RTCoreRouter` auto-contenida con GAS build + benchmark
 - Payload mínimo: solo 2 registros (expert_id + distance) vs 6 del pipeline completo
 
-**Impacto:** Nuevos archivos en `cuda/`, nuevo target `liquidbit_rt_router` + `rt_router_benchmark` en CMakeLists.txt. No afecta al pipeline de atención existente.
+**Impacto:** Nuevos archivos en `cuda/`, nuevo target `spectral_rt_router` + `rt_router_benchmark` en CMakeLists.txt. No afecta al pipeline de atención existente.
 
 ### [2026-03-28] [MEJORA] Benchmark de routing backends para el paper
 
@@ -251,7 +251,7 @@ Produce tabla con speedup relativo para batch sizes 1-1024.
 
 **Solución:** Añadidas dos funciones:
 - `loadPTXFile()` — lee un .ptx de disco a string
-- `createLiquidBitOptixContextFromFiles()` — factory que carga 3 PTX y crea el contexto
+- `createSpectralAIOptixContextFromFiles()` — factory que carga 3 PTX y crea el contexto
 
 **Impacto:** Bridge directo entre `build/ptx/*.ptx` y el pipeline OptiX.
 
@@ -284,11 +284,11 @@ Target: PPL degradación <15% vs baseline.
 **Contexto:** 50+ errores de compilación en shaders OptiX tras migración a SDK 9.1.
 
 **Fixes aplicados (5 categorías):**
-1. float3 redefinición → free operators inline + macro LIQUIDBIT_HD
+1. float3 redefinición → free operators inline + macro SPECTRAL_HD
 2. AttentionResult → añadidos query_token_id, hit_count, total_attention, renombrados miembros
 3. RayPayload → nueva struct en optical_attention.h
 4. normalize/cross → renombrados a liqbit_normalize/liqbit_cross (evitar conflicto builtins)
-5. Constantes → LIQUIDBIT_MAX_TOP_TOKENS, LIQUIDBIT_ENERGY_THRESHOLD, LIQUIDBIT_MAX_SEQUENCE_LENGTH
+5. Constantes → SPECTRAL_MAX_TOP_TOKENS, SPECTRAL_ENERGY_THRESHOLD, SPECTRAL_MAX_SEQUENCE_LENGTH
 6. OptixAccelStruct → OptixTraversableHandle en semantic_bvh.h
 
 **Build output:** 0 errores, 4 PTX shaders + 3 libs + 1 exe
@@ -380,16 +380,16 @@ a CUDA antes de calibración. La falta de calibración hacía que todos los prom
 **Contexto:** CMakeLists.txt actualizado para OptiX 9.1 + sm_120. Build inicial fallaba con ~50 errores.
 
 **Fixes aplicados:**
-1. **`float3` redefinida** → Eliminado struct fallback, reemplazado por free operators inline sobre CUDA's float3 + macro `LIQUIDBIT_HD` para compatibilidad MSVC
+1. **`float3` redefinida** → Eliminado struct fallback, reemplazado por free operators inline sobre CUDA's float3 + macro `SPECTRAL_HD` para compatibilidad MSVC
 2. **`AttentionResult` incompleta** → Añadidos: `query_token_id`, `hit_count`, `total_attention`, renombrados `top_k_tokens`→`top_token_ids`, `attention_weights`→`top_attention_weights`
 3. **`RayPayload` no definida** → Añadida struct RayPayload en `optical_attention.h`
 4. **`normalize`/`cross` conflictos** → Renombrados a `liqbit_normalize`/`liqbit_cross` para evitar colisión con builtins
-5. **Constantes faltantes** → Añadidos `LIQUIDBIT_MAX_TOP_TOKENS`, `LIQUIDBIT_ENERGY_THRESHOLD`, `LIQUIDBIT_MAX_SEQUENCE_LENGTH`
+5. **Constantes faltantes** → Añadidos `SPECTRAL_MAX_TOP_TOKENS`, `SPECTRAL_ENERGY_THRESHOLD`, `SPECTRAL_MAX_SEQUENCE_LENGTH`
 6. **`OptixAccelStruct`** → Cambiado a `OptixTraversableHandle` en semantic_bvh.h
 
 **Build output (clean rebuild):** 0 errores, solo warnings (size_t→uint32_t, variable no inicializada en alpha_bsh.cpp)
 - 4 PTX shaders: ray_generation.ptx (9KB), closest_hit.ptx (5KB), miss.ptx (2KB), ray_attention.ptx (41KB)
-- liquidbit_core.lib (311KB), liquidbit_optix.lib (313KB), inception_runner.exe (14KB)
+- spectral_core.lib (311KB), spectral_optix.lib (313KB), inception_runner.exe (14KB)
 
 **Archivos modificados:** `cuda/ray_generation.cu`, `cuda/closest_hit.cu`, `cuda/miss.cu`, `cuda/ray_attention.cu`, `include/token_geometry.h`, `include/optical_attention.h`, `include/semantic_bvh.h`, `cuda/optix_host.cpp`, `src/semantic_bvh.cpp`
 
@@ -675,7 +675,7 @@ Donde `d_semantic` = distancia euclídea en el espacio 3D proyectado.
 
 ### [2026-03-24] [VALIDADO] Kernels CUDA/OptiX para mecanismo de atención óptica
 
-**Contexto:** Implementación de los 4 kernels core del motor de ray tracing para LiquidBit.
+**Contexto:** Implementación de los 4 kernels core del motor de ray tracing para SpectralAI.
 
 **Decisión:** Crear kernels separados para cada etapa del pipeline OptiX:
 1. `ray_attention.cu` — kernel principal que orquesta la traversal del BVH
@@ -695,7 +695,7 @@ Donde `d_semantic` = distancia euclídea en el espacio 3D proyectado.
 - **closest_hit.cu (__closesthit__ch_optical_attention):**
   - Programa OptiX que se ejecuta cuando un rayo golpea un token
   - Calcula attention_weight con fórmula: `w = E₀ · exp(-λ · d_semantic)`
-  - Verifica threshold de energía (LIQUIDBIT_ENERGY_THRESHOLD)
+  - Verifica threshold de energía (SPECTRAL_ENERGY_THRESHOLD)
   - Descarta hits si energía cae demasiado (optixIgnoreIntersection)
   - Versión alternativa con top-K heap para mejor escalabilidad
 
@@ -749,7 +749,7 @@ Donde `d_semantic` = distancia euclídea en el espacio 3D proyectado.
 | Arquitectura | Operaciones | VRAM | Speedup vs GPT-4 |
 |---|---|---|---|
 | GPT-4 clásico | 503.3 × 10¹⁸ | 20.133 GB | 1x |
-| LiquidBit BVH puro | 2.675 × 10¹⁵ | 0.384 GB | 188x |
+| SpectralAI BVH puro | 2.675 × 10¹⁵ | 0.384 GB | 188x |
 | **Alpha BSH conservador (k=√N=316)** | **5.03 × 10¹²** | **0.003 GB** | **100.000x** |
 | **Alpha BSH agresivo (k=N^⅓=46)** | **108 × 10⁹** | **0.0004 GB** | **4.641.580x** |
 
@@ -798,7 +798,7 @@ cos_i = -dot(d_in, normal)
 
 **Decisión:** Adoptar OHBSC (Overlapping Hierarchical Bounding Sphere Clustering) con Fuzzy BSH + annealing.
 
-**Del DOCX (LiquidBit BSH Training):**
+**Del DOCX (SpectralAI BSH Training):**
 - Clustering: Soft-HDBSCAN con membresía difusa — un concepto puede pertenecer a múltiples esferas
 - Nodos de intersección: dualidad parental — el nodo existe una sola vez en memoria, dos padres en el grafo
 - Pérdida: `L_total = L_prox + L_cover + L_inter + L_reg`

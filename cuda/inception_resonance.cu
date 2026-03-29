@@ -2,7 +2,7 @@
  * @file inception_resonance.cu
  * @brief Inception Engine — Resonancia Fourier con gradientes + evaluación batch
  *
- * EXTENSIONES SOBRE liquidbit_resonance.cu:
+ * EXTENSIONES SOBRE spectral_resonance.cu:
  * ==========================================
  * 1. Gradientes analíticos de W(ω) respecto a coeficientes a[], b[] y a ω
  *    → Necesario para training end-to-end de los SemanticStrings
@@ -29,11 +29,11 @@
  *
  * CONEXIÓN CON EL PIPELINE PYTHON:
  * ==================================
- * Los kernels de este archivo se llaman desde `python/train_liquidbit.py`
+ * Los kernels de este archivo se llaman desde `python/train_spectral.py`
  * via ctypes o via PyTorch custom CUDA extensions para hacer backprop real
  * a través de los coeficientes Fourier de los SemanticStrings.
  *
- * @author LiquidBit Zero-Matrix Team
+ * @author SpectralAI Zero-Matrix Team
  * @date 2026
  */
 
@@ -43,7 +43,7 @@
 #include <stdint.h>
 #include <stdio.h>
 
-#include "../include/liquidbit_resonance.h"
+#include "../include/spectral_resonance.h"
 #include "../include/inception_engine.h"
 
 // ============================================================================
@@ -195,7 +195,7 @@ void resonanceInceptionBatch(
         const float new_omega = row.x * ctx.x + row.y * ctx.y
                               + row.z * ctx.z + row.w * ctx.w;
         // Bug 2.10 fix: Use CUDART_PI_F for consistency with other files
-        // (e.g., liquidbit_kernels.cu:99) instead of truncated literal
+        // (e.g., spectral_kernels.cu:99) instead of truncated literal
         omega = fmodf(fabsf(new_omega), 2.0f * CUDART_PI_F);
     }
 
@@ -214,7 +214,7 @@ void resonanceInceptionBatch(
 /**
  * @brief Calcula dL/d(a_k) y dL/d(b_k) para un batch de strings.
  *
- * Llamado desde el training loop (python/train_liquidbit.py) para actualizar
+ * Llamado desde el training loop (python/train_spectral.py) para actualizar
  * los coeficientes Fourier de los SemanticStrings via AdamW.
  *
  * NOTA: Este kernel asume que los gradientes se acumulan (+=) en gradA/gradB
@@ -317,7 +317,7 @@ void resonanceCurveEval(
  *   v_t = β2·v_{t-1} + (1-β2)·g²
  *   param -= lr · m̂_t / (√v̂_t + ε) + wd · param
  *
- * Llamado desde train_liquidbit.py después de resonanceGradKernel.
+ * Llamado desde train_spectral.py después de resonanceGradKernel.
  *
  * Grid: <<< ceil(numStrings * RESONANCE_NUM_MODES / 256), 256 >>>
  *

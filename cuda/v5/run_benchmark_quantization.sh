@@ -1,12 +1,12 @@
 #!/bin/bash
 # run_benchmark_quantization.sh — FASE 5: Benchmark de Cuantización
-# Ejecutar desde WSL2: bash /tmp/liquidbit/cuda/v5/run_benchmark_quantization.sh
+# Ejecutar desde WSL2: bash /tmp/spectral/cuda/v5/run_benchmark_quantization.sh
 
 set -e
 
 export HOME=/home/jordi
 VENV="$HOME/liquidbit_venv"
-PROJECT="/tmp/liquidbit"
+PROJECT="/tmp/spectral"
 
 # Activar venv
 source "$VENV/bin/activate"

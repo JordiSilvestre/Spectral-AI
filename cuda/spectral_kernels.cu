@@ -1,5 +1,5 @@
 /**
- * @file liquidbit_kernels.cu
+ * @file spectral_kernels.cu
  * @brief Programas OptiX del String-Inception Engine
  *
  * ARQUITECTURA:
@@ -10,7 +10,7 @@
  *
  * FLUJO DE UN RAYO:
  * =================
- *   1. __raygen__liquidbit: genera el rayo con ω = baseOmega, lanza optixTrace() en el IAS raíz
+ *   1. __raygen__spectral: genera el rayo con ω = baseOmega, lanza optixTrace() en el IAS raíz
  *   2. Traversal hardware (RT Cores): el rayo desciende por los niveles IAS automáticamente
  *   3. __closesthit__semantic_portal: en cada colisión:
  *       - Si depth < MAX_DEPTH - 1: aplica AffinePortal, actualiza ω, continúa traversal
@@ -29,7 +29,7 @@
  *
  * El motor de traversal de OptiX ya navega por todos los niveles del IAS automáticamente.
  *
- * @author LiquidBit Zero-Matrix Team
+ * @author SpectralAI Zero-Matrix Team
  * @date 2026
  */
 
@@ -40,7 +40,7 @@
 #include <vector_types.h>
 #include <vector_functions.h>
 
-#include "../include/liquidbit_resonance.h"
+#include "../include/spectral_resonance.h"
 #include "../include/token_geometry.h"
 
 // ============================================================================
@@ -117,7 +117,7 @@ float applyPortal(const AffinePortal& portal, float omega) {
  *   - hitCount = 0
  */
 extern "C" __global__
-void __raygen__liquidbit() {
+void __raygen__spectral() {
     const uint32_t rayIdx = optixGetLaunchIndex().x;
     if (rayIdx >= c_params.numRays) return;
 

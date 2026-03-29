@@ -2,7 +2,7 @@
 export PATH=/usr/local/cuda-13.2/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 export LD_LIBRARY_PATH=/usr/local/cuda-13.2/lib64
 
-cd "/mnt/j/Proyectos/LiquidBit Zero-Matrix/cuda/v5"
+cd "/mnt/j/Proyectos/SpectralAI Zero-Matrix/cuda/v5"
 
 echo "=== Compilando test_router ==="
 nvcc -O3 \

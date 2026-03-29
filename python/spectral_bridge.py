@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-liquidbit_bridge.py — Python ↔ C++ bridge para LiquidBit Zero-Matrix
+spectral_bridge.py — Python ↔ C++ bridge para SpectralAI Zero-Matrix
 ======================================================================
 
 Conecta los embeddings pre-entrenados (GloVe-50d, ya descargados) con el
@@ -31,9 +31,9 @@ Formato binario (compatible con token_geometry.h — struct TokenNode):
     Total por token: 568 bytes
 
 Uso:
-    python liquidbit_bridge.py "the algorithm loops over the array"
-    python liquidbit_bridge.py --sentence "..." --output seq.bin --validate
-    python liquidbit_bridge.py --benchmark-seqs --sizes 100 1000 10000
+    python spectral_bridge.py "the algorithm loops over the array"
+    python spectral_bridge.py --sentence "..." --output seq.bin --validate
+    python spectral_bridge.py --benchmark-seqs --sizes 100 1000 10000
 """
 
 import struct
@@ -428,24 +428,24 @@ def export_topology_stats(db: EmbeddingDB, output_path: Path) -> dict:
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="LiquidBit Bridge: Python → C++ token serializer",
+        description="SpectralAI Bridge: Python → C++ token serializer",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Ejemplos:
   # Serializar una frase
-  python liquidbit_bridge.py "the algorithm loops over the array"
+  python spectral_bridge.py "the algorithm loops over the array"
 
   # Frase custom a archivo específico con validación
-  python liquidbit_bridge.py --sentence "for loop array function" --output seq.bin --validate
+  python spectral_bridge.py --sentence "for loop array function" --output seq.bin --validate
 
   # Generar secuencias de benchmark para C++
-  python liquidbit_bridge.py --benchmark-seqs --sizes 100 1000 10000 100000
+  python spectral_bridge.py --benchmark-seqs --sizes 100 1000 10000 100000
 
   # Ver vecinos semánticos de una palabra
-  python liquidbit_bridge.py --neighbors algorithm --k 8
+  python spectral_bridge.py --neighbors algorithm --k 8
 
   # Exportar estadísticas de topología
-  python liquidbit_bridge.py --stats
+  python spectral_bridge.py --stats
         """
     )
 

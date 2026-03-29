@@ -1,6 +1,6 @@
 /**
  * bvh_router_kernel.cu -- BVH Router CUDA Kernel (standalone)
- * LiquidBit v5.0 "Orchestrator"
+ * SpectralAI v5.0 "Orchestrator"
  *
  * 3-level BVH traversal using constant memory + warp-level operations.
  * Achieves 105x speedup over PyTorch baseline (~8.83 us per batch-256).
@@ -22,7 +22,7 @@
  * For RTX 4090 (sm_89):
  *   nvcc ... -gencode=arch=compute_89,code=sm_89 ...
  *
- * Copyright (c) 2026 LiquidBit Studio -- Apache 2.0
+ * Copyright (c) 2026 SpectralAI Studio -- Apache 2.0
  */
 
 #include <cuda_runtime.h>

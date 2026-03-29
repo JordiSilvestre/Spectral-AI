@@ -197,5 +197,5 @@ OUTPUT_DIM = 768                # Dimensión de salida
 ---
 
 **Última actualización**: 2026-03-24
-**Autor**: LiquidBit Research Team
+**Autor**: SpectralAI Research Team
 **Estado**: Prototipo validado, listo para CUDA

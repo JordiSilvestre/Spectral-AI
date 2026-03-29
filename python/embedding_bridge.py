@@ -602,7 +602,7 @@ def create_sample_code_vocab() -> Dict[str, np.ndarray]:
 
 def main():
     parser = argparse.ArgumentParser(
-        description="EmbeddingBridge: Proyecta embeddings al espacio 3D para LiquidBit Zero-Matrix"
+        description="EmbeddingBridge: Proyecta embeddings al espacio 3D para SpectralAI Zero-Matrix"
     )
 
     parser.add_argument('--load-glove', type=str, help='Ruta al archivo GloVe')

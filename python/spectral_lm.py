@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """
-liquidbit_lm.py — LiquidBit Language Model (comparable a GPT-2 small)
+spectral_lm.py — SpectralAI Language Model (comparable a GPT-2 small)
 
 Arquitectura:
   Embedding (10K vocab, 256d)
     ↓
-  [4× LiquidBitBlock]:
+  [4× SpectralAIBlock]:
     - OptiX Attention (RT Cores O(log N) vs MatMul O(N²))
     - MLP FeedForward (hidden=1024)
   ↓
@@ -15,7 +15,7 @@ Parámetros totales: ~20M (vs 124M GPT-2)
 Entrenable en: 3-5 días en RTX 5070 Ti
 
 Uso:
-    model = LiquidBitForCausalLM(vocab_size=10_000, embed_dim=256)
+    model = SpectralAIForCausalLM(vocab_size=10_000, embed_dim=256)
     logits = model(input_ids)  # (batch, seq_len, vocab_size)
     loss = F.cross_entropy(logits.view(-1, vocab_size), targets.view(-1))
 
@@ -183,10 +183,10 @@ class MLP(nn.Module):
 
 
 # ─────────────────────────────────────────────────────────────────
-# 3. LiquidBit Block (Atención + MLP)
+# 3. SpectralAI Block (Atención + MLP)
 # ─────────────────────────────────────────────────────────────────
 
-class LiquidBitBlock(nn.Module):
+class SpectralAIBlock(nn.Module):
     def __init__(self, embed_dim: int, num_heads: int = 4,
                  context_len: int = 256, mlp_hidden: int = 1024,
                  use_optiX: bool = True):
@@ -215,9 +215,9 @@ class LiquidBitBlock(nn.Module):
 # 4. Language Model (completo)
 # ─────────────────────────────────────────────────────────────────
 
-class LiquidBitForCausalLM(nn.Module):
+class SpectralAIForCausalLM(nn.Module):
     """
-    Modelo de lenguaje causal completo basado en LiquidBit.
+    Modelo de lenguaje causal completo basado en SpectralAI.
 
     Comparable a GPT-2 small pero con atención O(log N).
     """
@@ -244,7 +244,7 @@ class LiquidBitForCausalLM(nn.Module):
 
         # Transformer blocks
         self.h = nn.ModuleList([
-            LiquidBitBlock(embed_dim, num_heads, context_len, mlp_hidden,
+            SpectralAIBlock(embed_dim, num_heads, context_len, mlp_hidden,
                            use_optiX=True)
             for _ in range(num_layers)
         ])
@@ -389,11 +389,11 @@ class LiquidBitForCausalLM(nn.Module):
 
 if __name__ == "__main__":
     print("=" * 70)
-    print("LiquidBit Language Model — Testing")
+    print("SpectralAI Language Model — Testing")
     print("=" * 70)
 
     # Crear modelo
-    model = LiquidBitForCausalLM(
+    model = SpectralAIForCausalLM(
         vocab_size=10_000,
         embed_dim=256,
         num_layers=4,
@@ -436,4 +436,4 @@ if __name__ == "__main__":
     print("Todos los tests PASSED [OK]")
     print("=" * 70)
     print("\nPróximo: entrenar con WikiText-2")
-    print("  python train_liquidbit_lm.py --epochs 3 --batch-size 32")
+    print("  python train_spectral_lm.py --epochs 3 --batch-size 32")

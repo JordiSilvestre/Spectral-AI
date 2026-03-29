@@ -94,7 +94,7 @@ def validate_checkpoint(path: Path, layer: int) -> dict:
 
 def main() -> int:
     print("=" * 80)
-    print("  LiquidBit Zero-Matrix — Checkpoint Validation (16 layers)")
+    print("  SpectralAI Zero-Matrix — Checkpoint Validation (16 layers)")
     print("=" * 80)
 
     results = []

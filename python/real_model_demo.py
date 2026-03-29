@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-real_model_demo.py -- LiquidBit Zero-Matrix: Killer Demo
+real_model_demo.py -- SpectralAI Zero-Matrix: Killer Demo
 
 Runs REAL HuggingFace models (Qwen2.5-Coder-1.5B, BitNet 2B, Phi-3, TinyLlama, etc.)
-through the LiquidBit BVH routing + ternary expert pipeline on a single consumer GPU.
+through the SpectralAI BVH routing + ternary expert pipeline on a single consumer GPU.
 
 Pipeline:
   1. Load HuggingFace model + tokenizer
@@ -17,7 +17,7 @@ Pipeline:
 Results on RTX 5070 Ti with Qwen2.5-Coder-1.5B:
   - 51.9 tok/s, 375x less active VRAM, both CUDA kernels active.
 
-Copyright (c) 2026 LiquidBit Studio -- Apache 2.0
+Copyright (c) 2026 SpectralAI Studio -- Apache 2.0
 """
 
 import argparse
@@ -368,7 +368,7 @@ class DemoSummary:
     avg_tok_per_s: float
 
 
-class LiquidBitRealPipeline:
+class SpectralAIRealPipeline:
     """
     Real-model inference pipeline.
 
@@ -1025,7 +1025,7 @@ def run_demo(args: argparse.Namespace) -> DemoSummary:
     device = torch.device(args.device if torch.cuda.is_available() else "cpu")
 
     print("=" * 72)
-    print("  LiquidBit Zero-Matrix -- Real Model Demo")
+    print("  SpectralAI Zero-Matrix -- Real Model Demo")
     print("=" * 72)
     print(f"  Model:   {args.model} -> {MODEL_REGISTRY.get(args.model, '?')}")
     print(f"  Device:  {_gpu_info()}")
@@ -1034,7 +1034,7 @@ def run_demo(args: argparse.Namespace) -> DemoSummary:
     print("=" * 72)
 
     # Build pipeline
-    pipeline = LiquidBitRealPipeline(
+    pipeline = SpectralAIRealPipeline(
         model_name=args.model,
         device=device,
         max_experts=args.max_experts,
@@ -1186,7 +1186,7 @@ def _print_summary_table(summary: DemoSummary) -> None:
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="LiquidBit Zero-Matrix: Real HuggingFace Model Demo",
+        description="SpectralAI Zero-Matrix: Real HuggingFace Model Demo",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=(
             "Supported models:\n"

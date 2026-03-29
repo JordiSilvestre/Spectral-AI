@@ -9,7 +9,7 @@
  *   - Profiling y estadísticas
  *   - Carga lazy de MatrixBlocks
  *
- * @author LiquidBit Zero-Matrix Team
+ * @author SpectralAI Zero-Matrix Team
  * @date 2026
  */
 

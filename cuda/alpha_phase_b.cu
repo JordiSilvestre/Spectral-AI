@@ -29,7 +29,7 @@
  * Alpha B:  Usar Tensor Cores explícitamente para MatMul FP16
  *           => 100-1000x más rápido para operaciones densas en FP16
  *
- * @author LiquidBit Zero-Matrix Team
+ * @author SpectralAI Zero-Matrix Team
  * @date 2026
  */
 

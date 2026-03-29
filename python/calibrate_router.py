@@ -18,7 +18,7 @@ Usage:
         --real-data data/real_hiddens_layer8.pt \
         --mode linear
 
-Copyright (c) 2026 LiquidBit Studio — Apache 2.0
+Copyright (c) 2026 SpectralAI Studio — Apache 2.0
 """
 
 import argparse
@@ -234,7 +234,7 @@ def main():
     args = parser.parse_args()
 
     print("=" * 60)
-    print("  LiquidBit — BVH Router Weight Calibration")
+    print("  SpectralAI — BVH Router Weight Calibration")
     print("=" * 60)
 
     # Load router

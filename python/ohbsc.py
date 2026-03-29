@@ -33,7 +33,7 @@ COMPATIBILIDAD:
   - scipy (opcional, para bounding sphere exacta)
   - GloVe-300d embeddings proyectados a 3D via PCA
 
-@author LiquidBit Zero-Matrix Team
+@author SpectralAI Zero-Matrix Team
 @date 2026
 """
 

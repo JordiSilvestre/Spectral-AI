@@ -4,7 +4,7 @@
 set -e
 
 echo "=========================================="
-echo "LiquidBit Zero-Matrix — Training Test"
+echo "SpectralAI Zero-Matrix — Training Test"
 echo "=========================================="
 echo ""
 

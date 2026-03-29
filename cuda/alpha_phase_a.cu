@@ -20,7 +20,7 @@
  *
  * INNOVACIÓN RESPECTO AL PROYECTO ORIGINAL:
  * ==========================================
- * El proyecto original "LiquidBit Zero-Matrix" emitía MILES de rayos para
+ * El proyecto original "SpectralAI Zero-Matrix" emitía MILES de rayos para
  * acumular pesos de atención multi-head. ALPHA BSH solo emite UN rayo, cuyo
  * objetivo es encontrar UNA esfera, no acumular distribuciones.
  *
@@ -29,7 +29,7 @@
  *   - Alpha A:  1 rayo * (traversal) = O(log N)
  *   - Alpha B:  MatMul en esfera encontrada = O(M²)
  *
- * @author LiquidBit Zero-Matrix Team
+ * @author SpectralAI Zero-Matrix Team
  * @date 2026
  */
 

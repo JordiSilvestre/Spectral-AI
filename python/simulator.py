@@ -1,5 +1,5 @@
 """
-LiquidBit Zero-Matrix — Simulador de Complejidad
+SpectralAI Zero-Matrix — Simulador de Complejidad
 =================================================
 Simula empíricamente O(N log N) vs O(N²) y calcula si la arquitectura
 puede escalar a nivel GPT-4. Sin GPU requerida.
@@ -97,15 +97,15 @@ def count_bvh_nodes_visited(N, num_rays=64):
 
 def gpt4_scale_analysis():
     print("\n" + "═"*65)
-    print("  ANÁLISIS DE ESCALADO: ¿Puede LiquidBit competir con GPT-4?")
+    print("  ANÁLISIS DE ESCALADO: ¿Puede SpectralAI competir con GPT-4?")
     print("═"*65)
 
     configs = [
         ("GPT-2 pequeño",     1_024,   12,   768,    12),
         ("GPT-3 mediano",    16_384,   24,  4096,    32),
         ("GPT-4 contexto",  128_000,   96,  8192,   128),
-        ("LiquidBit v0.1",   10_000,    8,   768,    32),
-        ("LiquidBit v1.0",  100_000,   32,  4096,    64),
+        ("SpectralAI v0.1",   10_000,    8,   768,    32),
+        ("SpectralAI v1.0",  100_000,   32,  4096,    64),
     ]
 
     print(f"\n{'Modelo':<20} {'N tokens':>10} {'Ops Atención':>18} {'VRAM GB':>10} {'Speedup':>10}")
@@ -187,7 +187,7 @@ def run_benchmark():
 
 def honest_gpt4_answer():
     print("\n" + "═"*65)
-    print("  VEREDICTO HONESTO: ¿Puede LiquidBit construir un GPT-4?")
+    print("  VEREDICTO HONESTO: ¿Puede SpectralAI construir un GPT-4?")
     print("═"*65)
 
     print("""
@@ -209,7 +209,7 @@ def honest_gpt4_answer():
   Llama 3: ~70B parámetros, Meta Research, open source, COMPITE
   Mistral: ~7B parámetros, equipo pequeño, COMPITE en tareas
 
-  LiquidBit apunta a: Democratizar el CONTEXTO LARGO, no el tamaño.
+  SpectralAI apunta a: Democratizar el CONTEXTO LARGO, no el tamaño.
   El campo de batalla real no es "¿quién genera mejor texto?"
   Es: "¿quién puede leer 1M tokens en una GPU de escritorio?"
 
@@ -217,7 +217,7 @@ def honest_gpt4_answer():
   ⚔️  Hoy: NO puede construir un GPT-4 completo. Nadie puede solo.
   🎯  Pero: PUEDE destruir a GPT-4 en contexto largo con <$5K de HW.
   🚀  Ruta: Usar LLaMA-3 o Mistral de base + sustituir su atención
-             por LiquidBit → modelo híbrido que funciona en RTX.
+             por SpectralAI → modelo híbrido que funciona en RTX.
   """)
 
 # ─────────────────────────────────────────────

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-benchmark_e2e.py -- Benchmark End-to-End LiquidBit v5.0
+benchmark_e2e.py -- Benchmark End-to-End SpectralAI v5.0
 
 Mide el pipeline completo:
   1. Routing: PyTorch vs CUDA kernel
@@ -31,7 +31,7 @@ from micro_expert import (
     MiniTransformerLM, ExpertType, TernaryLinear,
     quantize_model_ternary, create_expert,
 )
-from orchestrator import LiquidBitOrchestrator, OrchestratorConfig
+from orchestrator import SpectralAIOrchestrator, OrchestratorConfig
 
 
 def benchmark_routing(device, n_iters=1000):
@@ -134,7 +134,7 @@ def benchmark_orchestrator(device, n_iters=200):
         n_level1=2, n_level2=2, n_level3=2,
         expert_embed_dim=128, expert_layers=2,
     )
-    model = LiquidBitOrchestrator(cfg, device).to(device).eval()
+    model = SpectralAIOrchestrator(cfg, device).to(device).eval()
     pc = model.param_count()
 
     batch_size = 32
@@ -218,7 +218,7 @@ def benchmark_generation(device):
         n_level1=2, n_level2=2, n_level3=2,
         expert_embed_dim=128, expert_layers=2,
     )
-    orch = LiquidBitOrchestrator(cfg, device).to(device).eval()
+    orch = SpectralAIOrchestrator(cfg, device).to(device).eval()
 
     # GPT-2
     from gpt2_baseline import GPT2Baseline
@@ -266,7 +266,7 @@ def main():
     device = torch.device(args.device if torch.cuda.is_available() else "cpu")
 
     print("=" * 70)
-    print("LiquidBit v5.0 — Benchmark End-to-End")
+    print("SpectralAI v5.0 — Benchmark End-to-End")
     print("=" * 70)
     if device.type == "cuda":
         print(f"GPU: {torch.cuda.get_device_name(0)}")

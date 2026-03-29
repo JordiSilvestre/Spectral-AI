@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-train_inception.py — Training del sistema LiquidBit v4.0 COMPLETO
+train_inception.py — Training del sistema SpectralAI v4.0 COMPLETO
 
-Entrena LiquidBitInceptionLM con:
+Entrena SpectralAIInceptionLM con:
   - WikiText-2 (GPT-2 BPE, 50K vocab)
   - L_total = L_task + alpha * L_spatial
   - Temperature annealing (soft → hard sphere assignment)
@@ -30,15 +30,15 @@ from tqdm import tqdm
 import numpy as np
 
 sys.path.insert(0, str(Path(__file__).parent))
-from inception_attention import LiquidBitInceptionLM, InceptionConfig
-from train_liquidbit_lm import WikiTextDataset
+from inception_attention import SpectralAIInceptionLM, InceptionConfig
+from train_spectral_lm import WikiTextDataset
 
 
 # ─────────────────────────────────────────────────────────────────
 # Spatial Loss (simplificada para integración en training loop)
 # ─────────────────────────────────────────────────────────────────
 
-def compute_spatial_loss(model: LiquidBitInceptionLM) -> torch.Tensor:
+def compute_spatial_loss(model: SpectralAIInceptionLM) -> torch.Tensor:
     """
     L_spatial = L_proximity + L_coverage + L_regularization
 
@@ -87,7 +87,7 @@ def train(args):
     device = torch.device(args.device if torch.cuda.is_available() else "cpu")
 
     print("=" * 70)
-    print("LiquidBit v4.0 Inception Engine — Training COMPLETO")
+    print("SpectralAI v4.0 Inception Engine — Training COMPLETO")
     print("=" * 70)
     print(f"Device:      {device}")
     if device.type == "cuda":
@@ -97,7 +97,7 @@ def train(args):
     print(f"Alpha spatial: {args.alpha_spatial}")
 
     # ── Modelo ────────────────────────────────────────────────────
-    model = LiquidBitInceptionLM(
+    model = SpectralAIInceptionLM(
         vocab_size=50_257,
         embed_dim=256,
         num_layers=4,
@@ -267,7 +267,7 @@ def train(args):
     data_dir = Path(__file__).parent.parent / "data"
     data_dir.mkdir(exist_ok=True)
     output = {
-        "model":  "LiquidBitInceptionLM",
+        "model":  "SpectralAIInceptionLM",
         "params": total_params,
         "config": {
             "n_domains": 4, "n_subdomains": 4, "n_concepts": 4,
@@ -322,7 +322,7 @@ def compare_results():
     data_dir = Path(__file__).parent.parent / "data"
     for name, path in [
         ("GPT-2 (MatMul)",     data_dir / "gpt2_baseline_log.json"),
-        ("LiquidBit Inception", data_dir / "inception_training_log.json"),
+        ("SpectralAI Inception", data_dir / "inception_training_log.json"),
     ]:
         p = Path(path)
         if p.exists():
@@ -335,7 +335,7 @@ def compare_results():
         return
 
     print("\n" + "=" * 72)
-    print("COMPARATIVA FINAL: LiquidBit Inception vs GPT-2")
+    print("COMPARATIVA FINAL: SpectralAI Inception vs GPT-2")
     print("=" * 72)
     print(f"{'Epoch':>5}", end="")
     for name in models:
@@ -368,7 +368,7 @@ def compare_results():
 
 def main():
     parser = argparse.ArgumentParser(
-        description="LiquidBit Inception Engine — Training completo"
+        description="SpectralAI Inception Engine — Training completo"
     )
     parser.add_argument("--epochs",        type=int,   default=10)
     parser.add_argument("--batch-size",    type=int,   default=32)

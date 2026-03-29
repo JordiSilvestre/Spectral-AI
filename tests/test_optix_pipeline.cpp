@@ -253,7 +253,7 @@ int main(int argc, char** argv) {
         if (strcmp(argv[i], "--benchmark") == 0) run_benchmark = true;
     }
 
-    printf("=== LiquidBit Zero-Matrix: OptiX RT Pipeline Test ===\n\n");
+    printf("=== SpectralAI Zero-Matrix: OptiX RT Pipeline Test ===\n\n");
 
     // ========================================================================
     // Step 1: Initialize CUDA and OptiX

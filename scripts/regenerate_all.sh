@@ -1,6 +1,6 @@
 #!/bin/bash
 # ============================================================
-# LiquidBit Zero-Matrix — Regenerate ALL checkpoints and data
+# SpectralAI Zero-Matrix — Regenerate ALL checkpoints and data
 # ============================================================
 # Run this in WSL after a data loss to get back to FASE 3 state.
 #
@@ -9,7 +9,7 @@
 #   - Python venv with: torch transformers accelerate safetensors datasets scikit-learn
 #
 # Usage:
-#   cd /tmp/liquidbit
+#   cd /tmp/spectral
 #   source .venv_wsl/bin/activate
 #   bash scripts/regenerate_all.sh
 # ============================================================
@@ -17,7 +17,7 @@
 set -e  # Exit on error
 
 echo "============================================================"
-echo "  LiquidBit — Full Pipeline Regeneration"
+echo "  SpectralAI — Full Pipeline Regeneration"
 echo "============================================================"
 
 MODEL_DIR="/mnt/j/Proyectos/models/olmoe-1b-7b"

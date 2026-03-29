@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 benchmark_e2e_final.py — Benchmark definitivo: PyTorch vs CUDA Extension
-LiquidBit v5.0 "Orchestrator"
+SpectralAI v5.0 "Orchestrator"
 
 Compara:
   1. PyTorch routing puro (BVHRouter.forward)
@@ -9,7 +9,7 @@ Compara:
   3. Orchestrator completo con cada routing
 
 Ejecutar desde WSL2:
-  cd /tmp/liquidbit
+  cd /tmp/spectral
   source /home/jordi/liquidbit_venv/bin/activate
   python python/benchmark_e2e_final.py
 """
@@ -24,7 +24,7 @@ import torch.nn as nn
 # Importar módulos del proyecto
 sys.path.insert(0, os.path.join(os.path.dirname(__file__)))
 from bvh_router import BVHRouter, RouterConfig, RoutingResult
-from orchestrator import LiquidBitOrchestrator, OrchestratorConfig
+from orchestrator import SpectralAIOrchestrator, OrchestratorConfig
 
 # Intentar importar extensión CUDA
 try:
@@ -218,7 +218,7 @@ def benchmark_orchestrator(router):
         spectral_dim=64,
     )
     dev = torch.device(DEVICE)
-    model = LiquidBitOrchestrator(orch_cfg, device=dev).to(dev).eval()
+    model = SpectralAIOrchestrator(orch_cfg, device=dev).to(dev).eval()
 
     # Preparar extensión CUDA con pesos del modelo
     if HAS_EXT:

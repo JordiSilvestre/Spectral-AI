@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-orchestrator.py -- LiquidBit v5.0 "Orchestrator" Pipeline Completo
+orchestrator.py -- SpectralAI v5.0 "Orchestrator" Pipeline Completo
 
 Flujo:
   1. Prompt -> embedding medio
@@ -80,10 +80,10 @@ class OrchestratorConfig:
 
 
 # ─────────────────────────────────────────────────────────────────
-# LiquidBit Orchestrator -- Pipeline completo
+# SpectralAI Orchestrator -- Pipeline completo
 # ─────────────────────────────────────────────────────────────────
 
-class LiquidBitOrchestrator(nn.Module):
+class SpectralAIOrchestrator(nn.Module):
     """
     Pipeline completo v5.0:
       Tokens -> Router BVH -> Micro-Experto -> Logits
@@ -394,7 +394,7 @@ def train(args):
     device = torch.device(args.device if torch.cuda.is_available() else "cpu")
 
     print("=" * 70)
-    print("LiquidBit v5.0 Orchestrator -- Training")
+    print("SpectralAI v5.0 Orchestrator -- Training")
     print("=" * 70)
     if device.type == "cuda":
         print(f"GPU: {torch.cuda.get_device_name(0)}")
@@ -412,7 +412,7 @@ def train(args):
         context_len=256,
     )
 
-    model = LiquidBitOrchestrator(cfg, device).to(device)
+    model = SpectralAIOrchestrator(cfg, device).to(device)
     pc = model.param_count()
 
     print(f"Dominios:        {cfg.n_experts} ({cfg.n_level1}x{cfg.n_level2}x{cfg.n_level3})")
@@ -618,7 +618,7 @@ def train(args):
 # ─────────────────────────────────────────────────────────────────
 
 def main():
-    parser = argparse.ArgumentParser(description="LiquidBit v5.0 Orchestrator")
+    parser = argparse.ArgumentParser(description="SpectralAI v5.0 Orchestrator")
     parser.add_argument("--epochs", type=int, default=10)
     parser.add_argument("--batch-size", type=int, default=32)
     parser.add_argument("--lr", type=float, default=3e-4)

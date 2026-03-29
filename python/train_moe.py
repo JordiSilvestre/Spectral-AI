@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-train_moe.py -- LiquidBit FASE A: Train MoE from Scratch
+train_moe.py -- SpectralAI FASE A: Train MoE from Scratch
 
 Trains a complete MoE model with BVH routing from random initialization.
 Unlike train_router.py (which uses frozen backbone + frozen experts),
@@ -23,7 +23,7 @@ Usage:
     # Resume from checkpoint
     python train_moe.py --resume data/moe_checkpoint.pt
 
-Copyright (c) 2026 LiquidBit Studio — Apache 2.0
+Copyright (c) 2026 SpectralAI Studio — Apache 2.0
 """
 
 import argparse
@@ -40,11 +40,11 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.utils.data import DataLoader, Dataset
 
-# LiquidBit imports
+# SpectralAI imports
 sys.path.insert(0, str(Path(__file__).parent))
 from bvh_router import RouterConfig
 from bvh_router_bridge import HybridBVHRouter
-from trainable_experts import TrainableExpertConfig, LiquidBitMoE
+from trainable_experts import TrainableExpertConfig, SpectralAIMoE
 
 
 # ─────────────────────────────────────────────────────────────────
@@ -110,11 +110,11 @@ def load_wikitext(tokenizer, seq_len: int, max_tokens: int):
 # ─────────────────────────────────────────────────────────────────
 
 class MoETrainer:
-    """Trains the full LiquidBit MoE model."""
+    """Trains the full SpectralAI MoE model."""
 
     def __init__(
         self,
-        model: LiquidBitMoE,
+        model: SpectralAIMoE,
         router: HybridBVHRouter,
         device: torch.device,
         lr: float = 3e-4,
@@ -290,7 +290,7 @@ class MoETrainer:
 # ─────────────────────────────────────────────────────────────────
 
 def main():
-    parser = argparse.ArgumentParser(description="LiquidBit FASE A: Train MoE from scratch")
+    parser = argparse.ArgumentParser(description="SpectralAI FASE A: Train MoE from scratch")
     parser.add_argument("--n-experts", type=int, default=16, help="Number of experts")
     parser.add_argument("--hidden-dim", type=int, default=512, help="Hidden dimension")
     parser.add_argument("--intermediate-dim", type=int, default=2048, help="Expert MLP intermediate dim")
@@ -307,7 +307,7 @@ def main():
     args = parser.parse_args()
 
     print("=" * 70)
-    print("  LiquidBit FASE A — Train MoE from Scratch")
+    print("  SpectralAI FASE A — Train MoE from Scratch")
     print("=" * 70)
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -334,7 +334,7 @@ def main():
         intermediate_dim=args.intermediate_dim,
     )
 
-    model = LiquidBitMoE(
+    model = SpectralAIMoE(
         vocab_size=vocab_size,
         expert_config=expert_config,
         router_embed_dim=256,

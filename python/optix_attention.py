@@ -41,7 +41,7 @@ import numpy as np
 _PROJECT = Path(__file__).parent.parent
 _BUILD   = _PROJECT / "build"
 _BATCH_RUNNER = _BUILD / "Release" / "batch_runner.exe"
-_PTX_PATH     = _BUILD / "liquidbit_kernels.ptx"
+_PTX_PATH     = _BUILD / "spectral_kernels.ptx"
 
 # Importar utilidades del bridge
 sys.path.insert(0, str(_PROJECT / "python"))
@@ -312,4 +312,4 @@ if __name__ == "__main__":
 
     print(f"\n[PASS] Todos los modos OK")
     print(f"\nbatch_runner.exe: {'FOUND' if _BATCH_RUNNER.exists() else 'NOT FOUND'}")
-    print(f"liquidbit_kernels.ptx: {'FOUND' if _PTX_PATH.exists() else 'NOT FOUND'}")
+    print(f"spectral_kernels.ptx: {'FOUND' if _PTX_PATH.exists() else 'NOT FOUND'}")
