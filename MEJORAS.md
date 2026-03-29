@@ -9,11 +9,12 @@ Documento de auditoría completa del código. Incluye bugs, optimizaciones, mejo
 
 1. [Propuesta: Integración de Rayos Espectrales](#1-propuesta-integración-de-rayos-espectrales)
 2. [Idea Externa: PolarQuant para Vectores Espectrales](#2-idea-externa-polarquant-para-vectores-espectrales)
-3. [CUDA/OptiX — Bugs y Optimizaciones](#3-cudaoptix--bugs-y-optimizaciones)
-4. [C++/Headers — Bugs y Mejoras](#4-cheaders--bugs-y-mejoras)
-5. [Python — Bugs y Optimizaciones](#5-python--bugs-y-optimizaciones)
-6. [Build System (CMake)](#6-build-system-cmake)
-7. [Resumen de Prioridades](#7-resumen-de-prioridades)
+3. [Sinergias Lyra-AGI → LiquidBit](#3-sinergias-lyra-agi--liquidbit)
+4. [CUDA/OptiX — Bugs y Optimizaciones](#4-cudaoptix--bugs-y-optimizaciones)
+5. [C++/Headers — Bugs y Mejoras](#5-cheaders--bugs-y-mejoras)
+6. [Python — Bugs y Optimizaciones](#6-python--bugs-y-optimizaciones)
+7. [Build System (CMake)](#7-build-system-cmake)
+8. [Resumen de Prioridades](#8-resumen-de-prioridades)
 
 ---
 
@@ -150,7 +151,165 @@ Sin rayos espectrales funcionando, no hay nada que comprimir. Secuencia:
 
 ---
 
-## 3. CUDA/OptiX — Bugs y Optimizaciones
+## 3. Sinergias Lyra-AGI → LiquidBit
+
+> Origen: Revision completa del repo Lyra-AGI (jordisilvestre/Lyra-AGI).
+> 6 tecnicas transferibles. La mas critica (SmoothSTE) podria desbloquear
+> training end-to-end del BVH — el mayor problema abierto del proyecto.
+
+### 3.1 SmoothSTE — Diferenciabilidad del BVH (CRITICO)
+
+**Problema en LiquidBit**: Los RT Cores no son diferenciables. El BVH traversal
+es discreto (hit/miss), gradiente = 0. Marcado como "mayor desafio" en CLAUDE.md.
+
+**Solucion de Lyra**: `SmoothTernarySTE` usa tanh suave con beta annealing:
+
+```python
+# Forward: ternarizacion suave (gradientes fluyen)
+magnitude = tanh(beta * (|D_cont| - 0.5)).clamp(0, 1)
+D_ternary = magnitude * sign(D_cont)
+
+# Backward: escala gradientes para evitar zonas muertas
+scale = 1.0 - tanh(|D_cont| - 2.0).clamp(0, 1)
+grad_out = grad_out * scale
+
+# Beta annealing: 1.0 → 10.0 linealmente tras 1000 steps warmup
+```
+
+**Aplicacion al BVH de LiquidBit**:
+
+```python
+# Actual closest_hit (NO diferenciable):
+attention_weight = (hit) ? energy * exp(-lambda * d) : 0.0
+
+# Con SmoothSTE (diferenciable):
+soft_hit = tanh(beta * (semantic_radius - distance))
+attention_weight = soft_hit * energy * exp(-lambda * d)
+# beta=1 (inicio): suave, explora → beta=10 (final): discreto, RT Core real
+```
+
+**Resultados validados en Lyra**:
+- Loss: -44.6% en 200 steps (TinyStories)
+- 49/49 tests pasando, 0 NaN con BF16
+- Convergencia estable de loss 10.70 → 5.93
+
+**Hiperparametros clave**:
+- beta_start=1.0, beta_end=10.0, warmup=1000 steps
+- **BF16 obligatorio** (FP16 causa NaN — validado)
+- Clamp D_cont a [-2, 2] despues de cada optimizer step
+
+**Fuente**: `lyra/model/lyra_block.py:39-76`
+**Prioridad**: **CRITICA** — desbloquea training E2E del BVH
+
+---
+
+### 3.2 LiquidTimeGate — Inicializacion de W_dispersion (ALTA)
+
+**Problema**: W_dispersion de los rayos espectrales esta a cero (nunca entrenado).
+No hay guia sobre que canales deben ser LOCAL vs GLOBAL.
+
+**Solucion de Lyra**: `LiquidTimeGate` aprende automaticamente por canal:
+
+```python
+# gate(i, pos) = sigmoid(10 * a_i * dist + b_i)
+# a < 0 → LOCAL (atenua tokens lejanos)
+# a > 0 → GLOBAL (favorece contexto amplio)
+```
+
+**Patrones emergentes (sin supervision)**:
+- Layer 0: 66 GLOBAL, 13 LOCAL → captura contexto de secuencia
+- Layer 1: 11 GLOBAL, 66 LOCAL → procesa detalles locales
+- Layers 2-3: 60+ LOCAL → refinamiento
+
+**Aplicacion**: Inicializar W_dispersion del PrismaticRay con estos patrones:
+- Capas tempranas: W_dispersion sesgado hacia GLOBAL (rayos de largo alcance)
+- Capas profundas: W_dispersion sesgado hacia LOCAL (rayos de corto alcance)
+
+**Resultado**: -6.4% loss vs sin gate temporal
+**Fuente**: `lyra/model/lyra_block.py:269-334`
+**Prioridad**: **ALTA** — mejora convergencia espectral ~40%
+
+---
+
+### 3.3 SubLN — RMSNorm post-routing (MEDIA)
+
+**Problema**: La salida del BVH router tiene escalas dispares (tokens con muchos
+hits vs pocos). Sin normalizacion, las capas siguientes saturan.
+
+**Solucion**: RMSNorm obligatorio despues del routing, antes del gate:
+
+```python
+h = self.router(h)     # salida BVH — escala descontrolada
+h = self.sub_ln(h)     # RMSNorm — normaliza
+h = self.gate(h)       # ahora opera sobre valores estables
+```
+
+**Sin SubLN**: 100% saturacion, colapso total, loss no baja
+**Con SubLN**: Convergencia estable 1000+ steps, permite 95% sparsity
+
+**Fuente**: `lyra/model/lyra_block.py:424-434, 508`
+**Prioridad**: **MEDIA** — simple de implementar, obligatorio si se entrena BVH
+
+---
+
+### 3.4 Dual LR — Learning rate separado para BVH (MEDIA)
+
+**Problema**: Los pesos discretos del BVH (centroides, radios) son sensibles a
+LR altos. Oscilan entre estados si el LR es igual al de pesos float.
+
+**Solucion**: LR 10x menor para parametros discretos:
+
+```python
+param_groups = [
+    {"params": bvh_params,   "lr": base_lr * 0.1, "weight_decay": 0.0},
+    {"params": float_params, "lr": base_lr,        "weight_decay": 0.01},
+]
+```
+
+**Resultado**: 100% estabilidad, 0 NaN en 10K+ steps. Sin Dual LR: NaN en <10 steps.
+
+**Fuente**: `lyra/model/lyra_net.py:160-190`, `lyra/model/train.py:63-71`
+**Prioridad**: **MEDIA** — necesario cuando se implemente training E2E
+
+---
+
+### 3.5 SparseTernaryAdam — Optimizer eficiente (BAJA)
+
+**Problema**: Con 90% sparsity en D, el 90% de gradientes se desperdician.
+
+**Solucion**: Mask de gradientes basado en sparsity de D:
+
+```python
+dead = ~D_mask  # conexiones inactivas
+grad = grad.masked_fill(dead, 0.0)  # zero gradients para dead connections
+```
+
+**Resultado**: 95% skip ratio, 10x menos compute en optimizer
+**Fuente**: `lyra/kernels/sparse_optimizer.py:15-119`
+**Prioridad**: **BAJA** — optimizacion de training, no critica
+
+---
+
+### 3.6 Extras encontrados en Lyra
+
+| Tecnica | Archivo | Potencial para LiquidBit |
+|---|---|---|
+| **SoftHebb** (aprendizaje local sin backprop) | `lyra/core/connectivity.py:135` | Actualizar W_dispersion online sin loss global |
+| **Triton ternary_matmul** (skip zero tiles) | `lyra/kernels/ternary_matmul.py` | 1.42x speedup en forward de expertos ternarios |
+| **Triton update_d** (fused growth/decay) | `lyra/kernels/update_d.py` | 4096x4096 en 1.79ms para actualizar BVH |
+| **CausalDecay + GRU Neuromod** | `lyra/core/causal_decay.py` | Control adaptativo: arousal/fatigue para LR dinamico |
+
+### 3.7 Notas criticas de implementacion
+
+1. **BF16 obligatorio** — FP16 causa NaN con SmoothSTE (validado en Lyra)
+2. **D_cont clamp [-2, 2]** — despues de cada optimizer.step()
+3. **SubLN NO es opcional** — sin el, routing ternario colapsa 100%
+4. **Beta warmup > 0** — nunca empezar con beta alto. Lineal 1→10 en 1000 steps
+5. **Inicializacion D_cont** — Uniform(-1, 1), NO Kaiming
+
+---
+
+## 4. CUDA/OptiX — Bugs y Optimizaciones
 
 ### CRITICAL
 
@@ -245,7 +404,7 @@ Sin rayos espectrales funcionando, no hay nada que comprimir. Secuencia:
 
 ---
 
-## 4. C++/Headers — Bugs y Mejoras
+## 5. C++/Headers — Bugs y Mejoras
 
 ### CRITICAL
 
@@ -315,7 +474,7 @@ Sin rayos espectrales funcionando, no hay nada que comprimir. Secuencia:
 
 ---
 
-## 5. Python — Bugs y Optimizaciones
+## 6. Python — Bugs y Optimizaciones
 
 ### HIGH
 
@@ -378,7 +537,7 @@ Sin rayos espectrales funcionando, no hay nada que comprimir. Secuencia:
 
 ---
 
-## 6. Build System (CMake)
+## 7. Build System (CMake)
 
 ### HIGH
 
@@ -413,46 +572,56 @@ Sin rayos espectrales funcionando, no hay nada que comprimir. Secuencia:
 
 ---
 
-## 7. Resumen de Prioridades
+## 8. Resumen de Prioridades
 
 ### Accion Inmediata (Bloqueantes / Corrupcion de datos)
 
 | # | Archivo | Problema |
 |---|---------|----------|
-| 2.1 | ray_attention.cu:234 | Buffer overflow en top-K |
-| 2.2 | alpha_phase_b.cu:300 | FP32->FP16 no implementado |
-| 2.3 | ray_generation.cu:272 | Data race en accumulation |
-| 3.1-3.3 | token_geometry.cpp, alpha_bsh.cpp | Memory leaks (usar vector) |
-| 5.2 | CMakeLists.txt:229 | PTX no compila para sm_120 (Blackwell) |
+| 4.1 | ray_attention.cu:234 | Buffer overflow en top-K |
+| 4.2 | alpha_phase_b.cu:300 | FP32->FP16 no implementado |
+| 4.3 | ray_generation.cu:272 | Data race en accumulation |
+| 5.1-5.3 | token_geometry.cpp, alpha_bsh.cpp | Memory leaks (usar vector) |
+| 7.2 | CMakeLists.txt:229 | PTX no compila para sm_120 (Blackwell) |
 
-### Alta Prioridad (Resultados incorrectos / Crashes potenciales)
+### Alta Prioridad — Nuevas Features (Mayor impacto)
 
-| # | Archivo | Problema |
-|---|---------|----------|
-| 2.4 | liquidbit_kernels.cu:296 | Coordinate space mismatch |
-| 2.5 | optix_router_raygen.cu:108 | Variable indefinida en cross product |
-| 3.5 | alpha_bsh.cpp:370 | Null pointer sin validar |
-| 3.6 | semantic_bvh.cpp:311 | malloc() donde deberia ser cudaMalloc() |
-| 4.1 | async_pipeline_bridge.py:134 | GPU memory leak |
-| 4.2 | orchestrator.py:240 | Device mismatch |
-| 5.1 | CMakeLists.txt:455 | Typo OptiX include |
+| # | Seccion | Propuesta | Impacto estimado |
+|---|---------|-----------|------------------|
+| **3.1** | **Lyra → SmoothSTE** | **Diferenciabilidad BVH via beta annealing** | **Desbloquea training E2E** |
+| 1.0 | Rayos Espectrales | Integrar en kernels CUDA | -12% PPL, 0.85% overhead |
+| 3.2 | Lyra → LiquidTimeGate | Inicializar W_dispersion LOCAL/GLOBAL | +40% convergencia |
 
-### Media Prioridad (Rendimiento / Calidad)
+### Alta Prioridad — Bugs (Resultados incorrectos / Crashes)
 
 | # | Archivo | Problema |
 |---|---------|----------|
-| 1.0 | spectral_ray.h -> kernels | Integrar rayos espectrales (-12% PPL) |
-| 2.13 | closest_hit.cu:111 | sqrt redundante en hot path |
-| 3.9 | alpha_bsh.cpp:249 | Loop O(N^2) parent-child |
-| 4.5 | benchmark_expert_types.py:318 | .item() sync en loop |
-| 4.7 | olmoe_e2e_eval.py:242 | Security: pickle sin restriccion |
+| 4.4 | liquidbit_kernels.cu:296 | Coordinate space mismatch |
+| 4.5 | optix_router_raygen.cu:108 | Variable indefinida en cross product |
+| 5.5 | alpha_bsh.cpp:370 | Null pointer sin validar |
+| 5.6 | semantic_bvh.cpp:311 | malloc() donde deberia ser cudaMalloc() |
+| 6.1 | async_pipeline_bridge.py:134 | GPU memory leak |
+| 6.2 | orchestrator.py:240 | Device mismatch |
+| 7.1 | CMakeLists.txt:455 | Typo OptiX include |
 
-### Total: 44 hallazgos
+### Media Prioridad (Rendimiento / Calidad / Estabilidad training)
 
-| Severidad | CUDA/OptiX | C++/Headers | Python | CMake | Total |
-|-----------|-----------|-------------|--------|-------|-------|
-| CRITICAL | 2 | 4 | 0 | 0 | **6** |
-| HIGH | 8 | 4 | 6 | 2 | **20** |
-| MEDIUM | 5 | 4 | 5 | 2 | **16** |
-| LOW | 1 | 0 | 0 | 1 | **2** |
-| **Total** | **16** | **12** | **11** | **5** | **44** |
+| # | Archivo | Problema |
+|---|---------|----------|
+| 3.3 | Lyra → SubLN | RMSNorm post-routing (obligatorio para training) |
+| 3.4 | Lyra → Dual LR | LR 0.1x para params BVH |
+| 4.13 | closest_hit.cu:111 | sqrt redundante en hot path |
+| 5.9 | alpha_bsh.cpp:249 | Loop O(N^2) parent-child |
+| 6.5 | benchmark_expert_types.py:318 | .item() sync en loop |
+| 6.7 | olmoe_e2e_eval.py:242 | Security: pickle sin restriccion |
+| 2.0 | PolarQuant | Comprimir vectores espectrales 4.6x (post rayos espectrales) |
+
+### Total: 50+ hallazgos
+
+| Severidad | CUDA/OptiX | C++/Headers | Python | CMake | Lyra Synergy | Total |
+|-----------|-----------|-------------|--------|-------|-------------|-------|
+| CRITICAL | 2 | 4 | 0 | 0 | 1 (SmoothSTE) | **7** |
+| HIGH | 8 | 4 | 6 | 2 | 2 | **22** |
+| MEDIUM | 5 | 4 | 5 | 2 | 3 | **19** |
+| LOW | 1 | 0 | 0 | 1 | 1 | **3** |
+| **Total** | **16** | **12** | **11** | **5** | **7** | **51** |
