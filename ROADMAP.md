@@ -423,7 +423,7 @@ liquidbit-zero-matrix/
 
 ---
 
-## FASE A — OLMoE BVH Distillation [✅ 16/16 COMPLETADA — PPL 8.29 (+16.1%)]
+## FASE A — OLMoE BVH Distillation [✅ 16/16 COMPLETADA — PPL 8.27 (+15.7%)]
 
 **Objetivo:** Reemplazar el gate lineal de OLMoE-1B-7B (7B params, 64 expertos) con
 nuestro BVH Router geometrico y medir el impacto en perplexity real.
@@ -454,7 +454,7 @@ especializan con solo 5M tokens. OLMoE-1B-7B tiene 64 expertos SwiGLU ya especia
 mejores** en el re-training (+0.6% y +4.2%) gracias a calibracion linear (4160 params)
 en vez de affine (128 params).
 
-**Degradacion ~1.0% por capa (superlinear).** Resultado real 16/16: PPL 8.29 (+16.1%) tras retrain L1+L2+L8+L13+L14.
+**Degradacion ~0.98% por capa (superlinear).** Resultado real 16/16: PPL 8.27 (+15.7%) tras retrain 7 layers.
 
 **PPL scaling curve completa (2026-03-28, transformers 5.4.0):**
 
@@ -467,20 +467,21 @@ en vez de affine (128 params).
 | BVH Router 14 capas (skip L1,L2) | 8.12 | **+13.6%** | 14/16 |
 | BVH Router 16 capas (ALL, pre-retrain) | 8.38 | +17.3% | 16/16 |
 | BVH Router 16 capas (retrain L1+L2+L8) | 8.35 | +16.8% | 16/16 |
-| **BVH Router 16 capas (retrain L1+L2+L8+L13+L14)** | **8.29** | **+16.1%** | **16/16** |
+| BVH Router 16 capas (retrain L1+L2+L8+L13+L14) | 8.29 | +16.1% | 16/16 |
+| **BVH Router 16 capas (retrain +L0+L4 = 7 layers)** | **8.27** | **+15.7%** | **16/16** |
 
 **Hallazgo clave:** Retrain iterativo de capas debiles mejora PPL progresivamente.
-L8 era el mayor cuello de botella (59.4% → 90.1%). Avg top-8 actual: 86.5%.
+L8 era el mayor cuello de botella (59.4% → 90.1%). Avg top-8 actual: 86.9%.
 
 ### Precision por capa (re-training vs original)
 
 | Capa | Top-8 Acc | Top-1 Acc | Cal cosine | Estado |
 |---|---|---|---|---|
-| L0 | 80.4% | 89.6% | 0.95 | ok |
+| L0 | 89.5% | 89.3% | 0.95 | retrained (was 80.4%) |
 | L1 | 79.3% | 85.3% | 0.94 | retrained (was 72.8%) |
 | L2 | 84.7% | 82.8% | 0.95 | retrained (was 78.4%) |
 | L3 | 80.5% | 81.5% | 0.95 | ok |
-| L4 | 80.2% | 79.6% | 0.96 | ok |
+| L4 | 86.6% | 80.6% | 0.96 | retrained (was 80.2%) |
 | L5 | 81.9% | 79.9% | 0.95 | ok |
 | L6 | 84.3% | 80.7% | 0.96 | ok |
 | L7 | 84.3% | 78.7% | 0.95 | ok |
