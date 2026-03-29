@@ -124,7 +124,7 @@ def create_fp16_backbone(cfg: OrchestratorConfig) -> nn.Module:
 def create_int8_backbone(cfg: OrchestratorConfig) -> nn.Module:
     """INT8 dynamic quantization (CPU only in PyTorch)."""
     model = create_fp32_backbone(cfg)
-    return torch.quantization.quantize_dynamic(
+    return torch.ao.quantization.quantize_dynamic(
         model, {nn.Linear}, dtype=torch.qint8
     )
 

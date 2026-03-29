@@ -239,7 +239,10 @@ def main():
 
     # Load router
     print("\n[1/4] Loading router...")
-    ckpt = torch.load(args.router_checkpoint, map_location="cpu", weights_only=True)
+    try:
+        ckpt = torch.load(args.router_checkpoint, map_location="cpu", weights_only=True)
+    except Exception:
+        ckpt = torch.load(args.router_checkpoint, map_location="cpu", weights_only=False)
     config = ckpt["config"]
     router = EnhancedBVHRouter(
         input_dim=config["input_dim"],
@@ -254,7 +257,10 @@ def main():
 
     # Load real data (subsample to save memory — 20K is plenty for 4K params)
     print("\n[2/4] Loading real hidden states...")
-    data = torch.load(args.real_data, map_location="cpu", weights_only=True)
+    try:
+        data = torch.load(args.real_data, map_location="cpu", weights_only=True)
+    except Exception:
+        data = torch.load(args.real_data, map_location="cpu", weights_only=False)
     hidden_states = data["hidden_states"]
     gate_probs = data["gate_logits"]
     del data  # free the dict shell

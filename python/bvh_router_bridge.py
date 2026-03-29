@@ -298,7 +298,7 @@ class HybridBVHRouter(nn.Module):
             spectral_padded = spectral.float()
 
         # Zero-copy route! All tensors stay on CUDA
-        expert_ids, scores, confidence = bvh_router_ext.route(
+        expert_ids, scores, confidence, _path = bvh_router_ext.route(
             pos_3d.float().contiguous(),
             directions.float().contiguous(),
             spectral_padded.contiguous(),

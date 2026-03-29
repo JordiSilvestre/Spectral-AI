@@ -256,7 +256,7 @@ def benchmark_orchestrator(router):
                 directions = torch.nn.functional.normalize(pos_3d, dim=-1).contiguous()
                 spec = spectral.contiguous()
 
-                expert_ids, scores, confidence = bvh_router_ext.route(
+                expert_ids, scores, confidence, _path = bvh_router_ext.route(
                     origins, directions, spec)
 
                 # Convertir a RoutingResult compatible

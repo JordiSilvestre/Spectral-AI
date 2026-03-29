@@ -2,6 +2,7 @@
 
 > Documento para el siguiente agente o desarrollador que continue el trabajo.
 > Resume todo lo hecho, el estado actual, y los proximos pasos exactos.
+> Actualizado post-review con fixes adicionales.
 
 ---
 
@@ -15,6 +16,21 @@ En esta sesion se hicieron 16 commits con +3007 lineas en 33 archivos:
 4. **Rayos espectrales integrados en CUDA** → 4 archivos, +562 lineas, Ley de Snell
 5. **Script de verificacion** → `scripts/verify_all.sh` (18 OK, 0 FAIL)
 6. **ROADMAP actualizado** con FASE B, comandos GPU, y tareas pendientes
+
+---
+
+## Issues encontrados en review final (y estado)
+
+| Severidad | Issue | Estado |
+|---|---|---|
+| **CRITICAL** | C1: `bvh_router_ext.route()` retorna 4-tuple, Python desempaqueta 3 → crash | ✅ ARREGLADO (bvh_router_bridge.py, benchmark_e2e_final.py) |
+| **CRITICAL** | C2: Race condition en raygen init (ray_in_query==0 sin sync) | ⚠️ CONOCIDO — pre-existente, requiere barrier CUDA |
+| HIGH | H1: Payload slots spectral vs origin — misleading struct pero no bug runtime | ℹ️ Documentado |
+| HIGH | H2: top_tokens[]/top_weights[] nunca escritos en closest_hit → lee basura | ⚠️ CONOCIDO — solo afecta modo top-K, no el path principal |
+| HIGH | H3: RayPayload struct >32 words — es staging area, trace usa 21 words | ℹ️ OK (diseño intencionado) |
+| HIGH | H4: BVHNode struct en .cpp vs .h — dos implementaciones separadas | ⚠️ CONOCIDO — pre-existente, no rompe |
+| HIGH | H5: torch.ao → torch.quantization era regresion | ✅ REVERTIDO |
+| MEDIUM | M5: weights_only=True rompe checkpoints con dict | ✅ ARREGLADO (fallback añadido) |
 
 ---
 

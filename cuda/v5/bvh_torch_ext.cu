@@ -11,7 +11,7 @@
  * Usar:
  *   import bvh_router_ext
  *   bvh_router_ext.upload_tree(centers, radii, portals, snell_w, snell_b)
- *   expert_ids, scores, confidence = bvh_router_ext.route(origins, directions, spectral)
+ *   expert_ids, scores, confidence, path = bvh_router_ext.route(origins, directions, spectral)
  */
 
 #include <torch/extension.h>
