@@ -276,8 +276,10 @@ extern "C" __global__ void __raygen__rg_optical_attention() {
         }
 
         // Añadir contribución de este rayo
-        result.total_attention += ray_payload.accumulated_attention;
-        result.hit_count = max(result.hit_count, ray_payload.hit_count);
+        // Bug 2.3 fix: use atomicAdd to prevent data race when multiple
+        // rays (threads) write to the same result concurrently
+        atomicAdd(&result.total_attention, ray_payload.accumulated_attention);
+        atomicMax(&result.hit_count, ray_payload.hit_count);
 
         // (Top-K tokens se gestionan en el kernel principal ray_traced_attention_kernel)
     }
@@ -362,8 +364,9 @@ extern "C" __global__ void __raygen__rg_optical_attention_gaussian() {
             result.hit_count = 0;
             result.total_attention = 0.0f;
         }
-        result.total_attention += ray_payload.accumulated_attention;
-        result.hit_count = max(result.hit_count, ray_payload.hit_count);
+        // Bug 2.3 fix: use atomicAdd to prevent data race (same as above)
+        atomicAdd(&result.total_attention, ray_payload.accumulated_attention);
+        atomicMax(&result.hit_count, ray_payload.hit_count);
     }
 }
 

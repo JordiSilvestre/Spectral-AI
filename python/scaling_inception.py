@@ -170,7 +170,7 @@ def measure_flash_ms(n: int, embed_dim: int = 300, repeats: int = 10) -> Optiona
         with torch.backends.cuda.sdp_kernel(enable_flash=True, enable_math=False, enable_mem_efficient=True):
             try:
                 _ = torch.nn.functional.scaled_dot_product_attention(Q, K, V)
-            except Exception:
+            except Exception as exc:
                 pass
     torch.cuda.synchronize()
 
@@ -182,7 +182,7 @@ def measure_flash_ms(n: int, embed_dim: int = 300, repeats: int = 10) -> Optiona
         try:
             with torch.backends.cuda.sdp_kernel(enable_flash=True, enable_math=False, enable_mem_efficient=True):
                 _out = torch.nn.functional.scaled_dot_product_attention(Q, K, V)
-        except Exception:
+        except Exception as exc:
             # Fallback to math kernel
             with torch.backends.cuda.sdp_kernel(enable_flash=False, enable_math=True, enable_mem_efficient=False):
                 _out = torch.nn.functional.scaled_dot_product_attention(Q, K, V)
@@ -240,13 +240,13 @@ def measure_optix_ms(n: int, num_rays: int = 64, repeats: int = 5) -> Optional[f
         times = [r["launch_ms"] for r in batch_results]
         return float(np.mean(times))
 
-    except Exception:
+    except Exception as e:
         return None
     finally:
         for p in [batch_path, results_path]:
             try:
                 os.unlink(p)
-            except Exception:
+            except Exception as e:
                 pass
 
 
@@ -274,7 +274,7 @@ def measure_inception_ms(n: int, num_rays: int = 64, repeats: int = 5) -> Option
                 parts = line.split(":")
                 if len(parts) >= 2:
                     return float(parts[-1].strip())
-    except Exception:
+    except Exception as e:
         pass
 
     return None

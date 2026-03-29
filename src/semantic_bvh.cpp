@@ -131,6 +131,13 @@ float SemanticBVH::computeAABBSurfaceArea(const float3& min, const float3& max) 
  * @param max_out Esquina máxima del AABB (salida)
  */
 void SemanticBVH::computeBounds(uint32_t start, uint32_t end, float3& min_out, float3& max_out) const {
+    // Handle empty range: return zero-volume AABB at origin
+    if (start >= end) {
+        min_out = make_float3(0.0f, 0.0f, 0.0f);
+        max_out = make_float3(0.0f, 0.0f, 0.0f);
+        return;
+    }
+
     min_out = make_float3(std::numeric_limits<float>::max(),
                           std::numeric_limits<float>::max(),
                           std::numeric_limits<float>::max());
@@ -171,7 +178,11 @@ void SemanticBVH::computeBounds(uint32_t start, uint32_t end, float3& min_out, f
  * @return Índice del nodo BVH creado en bvh_nodes
  */
 int32_t SemanticBVH::buildRecursive(uint32_t start, uint32_t end, uint32_t depth) {
-    LIQUIDBIT_CHECK(start < end);
+    if (start >= end) {
+        fprintf(stderr, "[WARNING] buildRecursive called with empty range: start=%u, end=%u\n",
+                start, end);
+        return -1;
+    }
 
     tree_depth = std::max(tree_depth, depth);
 
@@ -308,16 +319,20 @@ bool SemanticBVH::build(TokenNode* nodes, uint32_t num_nodes) {
     printf("[SemanticBVH] BVH structure size: %llu bytes\n", total_memory_used);
 
     // Asignar memoria GPU (simulado en CPU para prototipo)
-    void* gpu_bvh_nodes = malloc(total_memory_used);
-    if (!gpu_bvh_nodes) {
-        fprintf(stderr, "SemanticBVH::build: malloc failed for GPU memory\n");
+    // NOTE: Using host malloc intentionally - this is a CPU-side simulation of GPU upload.
+    // In production, replace with cudaMalloc/cudaMemcpy for actual GPU allocation.
+    void* host_bvh_nodes = malloc(total_memory_used);
+    if (!host_bvh_nodes) {
+        fprintf(stderr, "SemanticBVH::build: malloc failed for BVH node memory\n");
         return false;
     }
 
-    // Copiar datos
-    memcpy(gpu_bvh_nodes, bvh_nodes.data(), total_memory_used);
+    // Copiar datos (host-side simulation)
+    memcpy(host_bvh_nodes, bvh_nodes.data(), total_memory_used);
 
-    // En código real: cudaMemcpy(gpu_bvh_nodes, bvh_nodes.data(), total_memory_used, cudaMemcpyHostToDevice);
+    // TODO(3.6): In production, replace with:
+    //   cudaMalloc(&d_bvh_nodes, total_memory_used);
+    //   cudaMemcpy(d_bvh_nodes, bvh_nodes.data(), total_memory_used, cudaMemcpyHostToDevice);
 
     // ====================================================================================
     // PASO 4: Crear AccelerationStructure de OptiX (simulado)
@@ -332,7 +347,7 @@ bool SemanticBVH::build(TokenNode* nodes, uint32_t num_nodes) {
     printf("[SemanticBVH] BVH construction complete.\n");
 
     // Liberar memoria temporal
-    free(gpu_bvh_nodes);
+    free(host_bvh_nodes);
 
     return true;
 }

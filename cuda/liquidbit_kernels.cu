@@ -293,11 +293,13 @@ void __intersection__sphere() {
     const uint32_t primIdx = optixGetPrimitiveIndex();
     const SemanticSphere& sphere = c_params.spheres[primIdx];
 
-    // FIX CRITICAL: usar world-space porque sphere.center está en coords mundiales.
-    // optixGetObjectRayOrigin() daría coordenadas de objeto — incorrecto bajo instancias
-    // con transformaciones no-identidad. Para el prototipo usamos world space.
-    const float3 origin = optixGetWorldRayOrigin();
-    const float3 dir    = optixGetWorldRayDirection();
+    // Bug 2.4 fix: Use object-space ray coordinates. When using IAS (Instance
+    // Acceleration Structures) with non-identity transforms, sphere.center is
+    // defined in the local object space of the GAS. optixGetObjectRayOrigin()
+    // gives coordinates already transformed to object space by OptiX, matching
+    // the coordinate system where sphere.center is defined.
+    const float3 origin = optixGetObjectRayOrigin();
+    const float3 dir    = optixGetObjectRayDirection();
 
     // Vector desde el origen del rayo al centro de la esfera
     const float3 oc = make_float3(

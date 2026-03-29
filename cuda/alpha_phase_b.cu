@@ -308,11 +308,9 @@ __host__ AlphaExecutionResult launch_alpha_phase_b(
         cudaMemcpy(d_input_fp32, input_activations,
                    batch_size * dim_in * sizeof(float), cudaMemcpyHostToDevice);
 
-        // Convertir FP32 → FP16 inline (simple cast kernel)
-        // Para simplificar: directamente convertir en CPU
-        for (uint32_t i = 0; i < batch_size * dim_in; ++i) {
-            // En GPU requerería un pequeño kernel, omitido aquí
-        }
+        // Bug 2.2 fix: Actually perform FP32 → FP16 conversion on GPU
+        // using the convertFp32ToFp16 helper (defined at end of this file).
+        convertFp32ToFp16(d_input_fp32, d_input_fp16, total_elements);
 
         cudaFree(d_input_fp32);
     }
