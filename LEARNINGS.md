@@ -4,6 +4,29 @@
 
 ---
 
+### [2026-03-29] [FALLO] Fixed 12 C++/Header bugs from MEJORAS.md section 5
+
+**Contexto:** Audit de bugs documentados en MEJORAS.md seccion 5 (3.1-3.12).
+
+**Problema/Decision:** Se encontraron memory leaks (new[] sin delete en paths de excepcion), null pointer dereferences, cudaMemcpy sin error check, CUDA event leaks, y edge cases sin manejar.
+
+**Solucion/Razonamiento:**
+- 3.1, 3.2: Reemplazados `new float[]` con `std::vector<float>` en token_geometry.cpp (computePrincipalAxes, projectEmbeddingTo3D)
+- 3.3: Reemplazado `new SemanticSphereAlpha[]` con `std::vector` en alpha_bsh.cpp validateTreeStructure
+- 3.4: Agregado check de cudaError_t en validateTreeStructure cudaMemcpy
+- 3.5: Agregado null check para query_embedding en launchPhaseA
+- 3.6: Renombrado gpu_bvh_nodes a host_bvh_nodes con TODO para produccion
+- 3.7: Agregado guard start >= end en buildRecursive
+- 3.8: Agregado RAII cleanup lambda para cudaEvent_t en execute()
+- 3.9: Agregado TODO comment sobre O(N^2) loop
+- 3.10: Agregado TODO comment sobre perdida de informacion en proyeccion
+- 3.11: Agregado manejo explicito de rango vacio en computeBounds
+- 3.12: Ya estaba corregido en el codigo actual (nullptr after cudaFree)
+
+**Impacto:** `src/token_geometry.cpp`, `src/alpha_bsh.cpp`, `src/semantic_bvh.cpp`
+
+---
+
 ## 📅 Formato de Entradas
 
 ```

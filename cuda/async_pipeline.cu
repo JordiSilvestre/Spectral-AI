@@ -382,7 +382,7 @@ struct AsyncPipeline {
             weighted_combine_kernel<<<blocks, threads, 0, stream_expert>>>(
                 es.d_output,
                 es.d_hidden,  // placeholder for expert outputs
-                es.d_expert_weights,
+                es.d_softmax_weights,  // Bug 2.7: use softmax weights
                 es.batch_size,
                 hidden_dim,
                 TOP_K
@@ -410,6 +410,7 @@ struct AsyncPipeline {
             cudaFree(s.d_expert_weights);
             cudaFree(s.d_dispatch_indices);
             cudaFree(s.d_expert_counts);
+            cudaFree(s.d_softmax_weights);
             cudaFree(s.d_output);
             cudaEventDestroy(s.route_done);
             cudaEventDestroy(s.prep_done);
