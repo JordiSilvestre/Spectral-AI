@@ -309,6 +309,134 @@ grad = grad.masked_fill(dead, 0.0)  # zero gradients para dead connections
 
 ---
 
+### 3.8 BVH Vivo: Auto-poda metabolica (MEDIA)
+
+> Origen: `lyra/core/connectivity.py:144-172`, `lyra/core/compression.py`,
+> `lyra/core/llm_integration.py:7`
+
+**Concepto**: El BVH se convierte en un arbol vivo que se auto-limpia.
+Tres mecanismos de Lyra aplicados al BVH:
+
+**A. Poda por edad** — Nodos BVH que no reciben rayos en N steps se eliminan:
+
+```python
+# Cada esfera BVH tiene un contador de edad
+sphere.age += 1                       # cada step
+sphere.age = 0 if sphere.was_hit      # reset si recibio rayo
+if sphere.age > max_age:
+    bvh.remove(sphere)                # poda automatica
+```
+
+**B. Reservas metabolicas** — Mantener hijos cuesta energia:
+
+```python
+# Esferas con muchos hijos gastan mas energia
+sphere.reserves -= 0.001 * len(sphere.children) + 0.01
+if sphere.reserves <= 0:
+    bvh.collapse(sphere)  # nodo muere, hijos se redistribuyen
+```
+
+**C. Fatigue → compresion** — Cuando VRAM sube, comprimir esferas frias:
+
+```python
+if neuromodulator.fatigue > threshold:
+    cold_spheres = [s for s in bvh if s.age > warm_threshold]
+    for s in cold_spheres:
+        s.embedding = polar_quant.compress(s.embedding)  # 4.6x menos
+```
+
+**Resultados en Lyra**:
+- Sparsity auto-crece: 0.90 → 0.95 (auto-poda sin supervision)
+- Reservas metabolicas varian 0.22-0.78 entre capas (diferenciacion funcional)
+
+**Impacto en LiquidBit**:
+- BVH mas pequeno → traversal mas rapido (menos nodos = menos niveles)
+- VRAM adaptativa → comprimir esferas frias libera memoria para expertos
+- Auto-organizacion → el arbol se optimiza solo durante inferencia
+
+**Fuente**: `lyra/core/connectivity.py:144-172`, `lyra/core/compression.py`
+**Prioridad**: **MEDIA** — requiere rayos espectrales + SmoothSTE primero
+
+---
+
+### 3.9 Proyeccion de impacto: todas las mejoras Lyra aplicadas
+
+Si se implementaran todas las tecnicas de Lyra en LiquidBit y funcionaran
+como en el entorno original, esta seria la proyeccion:
+
+#### Estado actual (baseline medido)
+
+| Metrica | Valor actual | Fuente |
+|---|---|---|
+| PPL (16/16 capas) | 8.29 | commit 9bab7ce |
+| PPL baseline (linear gate) | 6.11 | ROADMAP |
+| Degradacion | +35.7% | 8.29/6.11 |
+| Routing latency | 10 us (CUDA), 64.6 us (OptiX) | benchmarks |
+| Expert forward | 940 us | benchmark_e2e |
+| VRAM activa | 7.86 MB (routing) | real_model_demo |
+| Polisemia | 0% resolucion | sin espectral |
+| Training BVH | NO (no diferenciable) | CLAUDE.md |
+| BVH auto-poda | NO (estatico) | — |
+
+#### Proyeccion con todas las mejoras
+
+| Mejora | Metrica afectada | Antes | Despues (est.) | Confianza |
+|---|---|---|---|---|
+| **Rayos espectrales** (Sec 1) | PPL | 8.29 | ~7.3 | Alta (88.9% polisemia medido) |
+| **SmoothSTE** (Sec 3.1) | Training E2E | Imposible | Posible | Alta (validado en Lyra: -44.6% loss) |
+| **SmoothSTE** → fine-tune BVH | PPL post-training | ~7.3 | ~6.8 | Media (extrapolacion) |
+| **LiquidTimeGate** (Sec 3.2) | Convergencia training | Baseline | +40% mas rapido | Media (validado: -6.4% loss) |
+| **SubLN** (Sec 3.3) | Estabilidad training | Inestable | Estable | Alta (obligatorio, validado) |
+| **Dual LR** (Sec 3.4) | NaN en training | Frecuente | 0% | Alta (validado en Lyra) |
+| **Auto-poda metabolica** (Sec 3.8) | Nodos BVH activos | 64 (fijos) | ~40-50 (dinamico) | Media |
+| **Auto-poda** → traversal | OptiX latency | 64.6 us | ~45-55 us (-15-25%) | Baja |
+| **PolarQuant** (Sec 2) | VRAM espectral | 528 KB/tok | 115 KB/tok | Alta (4.6x medido) |
+
+#### Numeros finales proyectados (mejor caso realista)
+
+| Metrica | Actual | Proyectado | Mejora |
+|---|---|---|---|
+| **PPL** | 8.29 (+35.7%) | **~6.8** (+11.3%) | **-18% PPL** (cierra 2/3 del gap) |
+| **Training E2E** | Imposible | **Posible** (SmoothSTE + SubLN + DualLR) | Desbloqueo total |
+| **Polisemia** | 0% | **88.9%** | Salto cualitativo |
+| **Convergencia** | — | **+40% mas rapido** | LiquidTimeGate |
+| **BVH nodos activos** | 64 (fijo) | **~45** (auto-poda) | -30% nodos |
+| **OptiX latency** | 64.6 us | **~50 us** | -23% |
+| **VRAM espectral** | 528 KB/tok | **115 KB/tok** | 4.6x menos |
+
+#### Secuencia de implementacion recomendada
+
+```
+Fase 1 (Mayor impacto, sin training):
+  1a. Rayos espectrales en kernels CUDA     → PPL 8.29 → ~7.3
+  1b. SubLN post-routing                    → estabilidad
+
+Fase 2 (Desbloquea training):
+  2a. SmoothSTE para BVH diferenciable      → training posible
+  2b. Dual LR (0.1x para BVH params)        → 0 NaN
+  2c. LiquidTimeGate → init W_dispersion    → convergencia +40%
+
+Fase 3 (Fine-tune con training E2E):
+  3a. Entrenar BVH end-to-end               → PPL ~7.3 → ~6.8
+  3b. SparseTernaryAdam                     → 10x optimizer speed
+
+Fase 4 (Optimizacion):
+  4a. Auto-poda metabolica del BVH          → -30% nodos, -23% latency
+  4b. PolarQuant para vectores espectrales  → 4.6x VRAM espectral
+```
+
+#### Caveat importante
+
+Estas proyecciones asumen que las tecnicas de Lyra (validadas en un modelo
+de 16.5M params con TinyStories) escalan a LiquidBit (OLMoE 1B-7B).
+Los numeros de PPL son extrapolaciones — el delta real dependera de:
+- Calidad de los embeddings proyectados al espacio 3D
+- Estabilidad del beta annealing a escala mayor
+- Interaccion entre las 16 capas BVH con SubLN
+Se recomienda validar con 1 capa antes de desplegar las 16.
+
+---
+
 ## 4. CUDA/OptiX — Bugs y Optimizaciones
 
 ### CRITICAL
