@@ -4,6 +4,22 @@
 
 ---
 
+### [2026-03-29] [DECISIÓN] Integrated spectral/colored rays into CUDA kernels
+
+**Contexto:** The spectral ray architecture (Idea 3: Prismatic Refraction) was fully designed in `include/spectral_ray.h` but disconnected from the actual CUDA/OptiX kernels which only used monochrome SemanticRay.
+
+**Problema/Decisión:** Key design decisions for the CUDA integration:
+1. **Spectral dimension reduced to 16** (from 64 in spectral_ray.h) for register pressure. 64 floats per ray would consume 256 bytes of registers per thread, causing severe occupancy issues on SM hardware. Configurable via `LIQUIDBIT_CUDA_SPECTRAL_DIM`.
+2. **Feature gated with `LIQUIDBIT_SPECTRAL_ENABLED`** — set to 0 to fall back to monochrome rays. Both paths compile.
+3. **W_dispersion passed via SBT hit records** (SpectralHitSbtRecord) rather than global memory lookups. This is the OptiX-idiomatic way to pass per-primitive data to closest-hit shaders.
+4. **W_spectral in constant memory** — the projection matrix (16x256 = 4096 floats = 16KB) fits within the 64KB constant memory limit.
+5. **21 payload words** used (3 base + 16 spectral color + 2 spectral result), well within OptiX's 32-word limit.
+6. **Did not include spectral_ray.h in .cu files** — it contains std::vector/std::array which are problematic in device code. Instead, used local constants and the SBT struct from optical_attention.h.
+
+**Impacto:** `include/optical_attention.h`, `cuda/ray_generation.cu`, `cuda/closest_hit.cu`, `cuda/ray_attention.cu`
+
+---
+
 ### [2026-03-29] [FALLO] Fixed 12 C++/Header bugs from MEJORAS.md section 5
 
 **Contexto:** Audit de bugs documentados en MEJORAS.md seccion 5 (3.1-3.12).

@@ -272,7 +272,7 @@ struct RayPayload {
 // ============================================================================
 
 /// Aligned SBT record header (OptiX requirement: 16-byte aligned header).
-struct __align__(OPTIX_SBT_RECORD_ALIGNMENT) SpectralHitSbtRecord {
+struct alignas(OPTIX_SBT_RECORD_ALIGNMENT) SpectralHitSbtRecord {
     /// OptiX SBT record header (opaque, written by optixSbtRecordPackHeader).
     char header[OPTIX_SBT_RECORD_HEADER_SIZE];
 
