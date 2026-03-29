@@ -1076,3 +1076,53 @@ v1.0 (Investigación)
 ├── Fine-tuning de la proyección semántica
 └── Paper de investigación
 ```
+
+---
+
+## Sesion 2026-03-29: Rename SpectralAI + Analisis GPU
+
+### Rename LiquidBit → SpectralAI
+- 142 archivos modificados, 9 archivos renombrados
+- Macros: LIQUIDBIT_ → SPECTRAL_
+- Targets CMake: liquidbit_core/optix/rt_router → spectral_core/optix/rt_router
+- Python: lyra_techniques → spectral_techniques, liquidbit_lm → spectral_lm, etc.
+- Git remote: jordisilvestre/Spectral-AI.git
+- Patents/ NO tocados (documentos legales)
+
+### Analisis GPU: ¿Usamos toda la tarjeta?
+
+**Estado real del pipeline GPU:**
+
+| Componente | GPU | Conectado al pipeline principal |
+|---|---|---|
+| BVH Router (PyTorch) | Si (via PyTorch) | Si (olmoe_bvh_distill.py) |
+| SpectralEncoder | Si (via PyTorch) | Solo con --lyra flag |
+| PrismaticRefraction | Si (via PyTorch) | Solo con --lyra flag |
+| SmoothBVHHit (Lyra) | Si | Solo con --lyra flag |
+| DualLR | CPU (optimizer) | Solo con --lyra flag |
+| BVH CUDA ext (zero-copy) | Si (RT Cores bypass via CUDA cores) | En eval, si compilado |
+| OptiX RT Cores | NO | Pipeline OptiX no funcional aun |
+| Tensor Cores | Si (via cuBLAS en expert forward) | Siempre activo |
+
+**Conclusion: NO usamos los RT Cores.** Estamos en la fase Python/CUDA cores.
+Los RT Cores requieren el pipeline OptiX v4 funcional (FASE 4 del roadmap).
+
+**Lo que SI usamos:**
+- CUDA cores: BVH routing kernel (105x vs PyTorch)
+- Tensor Cores: cuBLAS para expert forward (MLPs de 64 expertos)
+- VRAM: ~375x menos que KV Cache original (demo Qwen: 51.9 tok/s)
+
+**Lo que NO usamos todavia:**
+- RT Cores: OptiX pipeline no genera PTX funcional en sm_89 (bug conocido)
+- Spectral CUDA: solo en Python, falta integrar en kernel CUDA
+
+**Prioridad para usar toda la tarjeta:**
+1. FASE 3 terminada: 16/16 capas con Lyra → PPL < 7.0
+2. FASE 4: Fix CMakeLists.txt OptiX (PTX para sm_89) → RT Cores activos
+3. FASE 5: Demo end-to-end con RT Core routing + Lyra
+
+### Estado checkpoints (2026-03-29)
+- 16/16 capas: todas entrenadas, datos presentes
+- Solo L1 tiene Lyra (beta convergido a 10.0)
+- L11 critico: solo 16 epochs (training interrumpido)
+- Capas debiles (<85%): L3, L5, L6, L7, L11 — necesitan --lyra

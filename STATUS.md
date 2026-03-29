@@ -1,6 +1,6 @@
 # STATUS.md — SpectralAI Zero-Matrix
 > Estado real del proyecto, inventario de archivos, y roadmap por fases.
-> Ultima actualizacion: 2026-03-28
+> Ultima actualizacion: 2026-03-29
 
 ---
 
@@ -223,29 +223,38 @@
 - [x] **Linear 64→64 calibracion (4160 params) → PPL 6.16 (+0.8%), cosine 0.97**
 - [x] `calibrate_router.py` soporta ambos modos
 
-### FASE 3: Multi-layer replacement — 🔄 EN PROGRESO (5/16 capas)
-- [x] Extraer hidden states para capas 0, 4, 8, 12, 15
-- [x] Entrenar router por capa (50 epochs + sparse upcycling)
-- [x] Calibrar cada router (linear 4160 params)
-- [x] Eval incremental:
-  - [x] 1 capa (L8): PPL 6.16 (+0.8%) ✅
-  - [x] 2 capas (L4,8): PPL 6.23 (+2.0%) ✅
-  - [x] 5 capas (0,4,8,12,15): PPL 6.40 (+4.8%) ✅
-  - [ ] 8 capas
-  - [ ] 16/16 capas (target: <15%)
-- [ ] Entrenar capas restantes: 1,2,3,5,6,7,9,10,11,13,14
+### FASE 3: Multi-layer replacement — 🔄 EN PROGRESO (16/16 entrenadas, Lyra parcial)
+- [x] Extraer hidden states TODAS las 16 capas (data/real_hiddens_layer*.pt)
+- [x] Entrenar BVH router todas las 16 capas
+- [x] L1 reentrenada con --lyra: 79.3% → 81.9% top-8 (+2.6pp), beta=10.0
+- [x] PPL actual (16/16 sin Lyra completo): ~8.27
+- [ ] Retrain capas débiles con --lyra (script: scripts/train_remaining_layers.sh)
+- [ ] Calibrar todas las 16 capas post-Lyra
+- [ ] Eval PPL 16/16 post-Lyra (objetivo: 8.27 → ~7.5)
 
-**Per-layer accuracy:**
+**Per-layer accuracy (estado 2026-03-29):**
 
-| Capa | Top-8 | Top-1 | Calibracion cosine |
-|---|---|---|---|
-| L0 | 87.8% | 89.0% | 0.97 |
-| L4 | 86.4% | 73.0% | 0.97 |
-| L8 | 91.7% | 71.1% | 0.97 |
-| L12 | 92.2% | 74.5% | 0.97 |
-| L15 | 93.2% | 74.7% | 0.97 |
+| Capa | Top-8 | Top-1 | Epochs | Lyra | Estado |
+|------|-------|-------|--------|------|--------|
+| L0  | 89.5% | 89.3% | 198 | No  | OK |
+| L1  | 81.9% | 86.3% | 50  | YES | OK (Lyra!) |
+| L2  | 84.7% | 82.8% | 100 | No  | Borderline |
+| L3  | 80.5% | 81.5% | 48  | No  | WEAK — retrain con Lyra |
+| L4  | 86.6% | 80.6% | 197 | No  | OK |
+| L5  | 81.9% | 79.9% | 50  | No  | WEAK — retrain con Lyra |
+| L6  | 84.3% | 80.7% | 47  | No  | WEAK — retrain con Lyra |
+| L7  | 84.3% | 78.7% | 49  | No  | WEAK — retrain con Lyra |
+| L8  | 90.1% | 77.8% | 191 | No  | OK |
+| L9  | 88.3% | 77.9% | 49  | No  | OK |
+| L10 | 89.3% | 80.8% | 50  | No  | OK |
+| L11 | 81.8% | 78.4% | 16  | No  | CRITICO — solo 16ep, retrain |
+| L12 | 88.8% | 77.4% | 47  | No  | OK |
+| L13 | 92.4% | 77.9% | 200 | No  | OK |
+| L14 | 93.4% | 78.6% | 188 | No  | OK |
+| L15 | 89.3% | 80.2% | 50  | No  | OK |
 
-**⚠️ NOTA:** Los checkpoints y datos se perdieron (28-Mar). Necesitan re-generarse.
+**Prioridad de reentrenamiento con --lyra:**
+L11 (solo 16ep!) > L3 (más débil) > L5 > L6 > L7 > L2
 
 ### FASE 4: C++ / OptiX build (independiente de Python)
 - [ ] Fix CMakeLists.txt: resolver linker errors (alpha_bsh extern, ODR violations)
