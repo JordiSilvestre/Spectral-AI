@@ -71,6 +71,14 @@ find_package(CUDAToolkit REQUIRED)
 message(STATUS "CUDA Toolkit version: ${CUDAToolkit_VERSION}")
 message(STATUS "CUDA Include path: ${CUDAToolkit_INCLUDE_DIRS}")
 
+# sm_120 (Blackwell) requires CUDA 12.8+
+if(CUDAToolkit_VERSION VERSION_LESS "12.8")
+    message(WARNING "CUDA ${CUDAToolkit_VERSION} detected. sm_120 (Blackwell) requires CUDA 12.8+. Falling back to sm_89 only.")
+    set(LIQUIDBIT_SM120_SUPPORTED FALSE)
+else()
+    set(LIQUIDBIT_SM120_SUPPORTED TRUE)
+endif()
+
 # ============================================================================
 # Búsqueda de OptiX (con HINTS personalizados)
 # ============================================================================
@@ -121,7 +129,11 @@ include_directories(${CUDAToolkit_INCLUDE_DIRS})
 # sm_89  = Ada Lovelace (RTX 4090, RTX 6000 Ada)
 # sm_120 = Blackwell (RTX 5070 Ti) — CUDA 12.8+ / PyTorch reports as compute 12.0
 
-set(CUDA_ARCHITECTURES 89 120)
+if(LIQUIDBIT_SM120_SUPPORTED)
+    set(CMAKE_CUDA_ARCHITECTURES 89 120)
+else()
+    set(CMAKE_CUDA_ARCHITECTURES 89)
+endif()
 
 enable_language(CUDA)
 
@@ -152,7 +164,7 @@ if(NOT MSVC)
     endif()
 endif()
 
-message(STATUS "CUDA architectures: ${CUDA_ARCHITECTURES}")
+message(STATUS "CUDA architectures: ${CMAKE_CUDA_ARCHITECTURES}")
 message(STATUS "CUDA flags: ${CMAKE_CUDA_FLAGS}")
 
 # ============================================================================
@@ -210,6 +222,12 @@ if(LIQUIDBIT_BUILD_OPTIX AND OptiX_INCLUDE_DIR)
         optix_router_hitgroup.cu
     )
 
+    # Build gencode flags based on supported architectures
+    set(PTX_GENCODE_FLAGS -gencode=arch=compute_89,code=compute_89)
+    if(LIQUIDBIT_SM120_SUPPORTED)
+        list(APPEND PTX_GENCODE_FLAGS -gencode=arch=compute_120,code=compute_120)
+    endif()
+
     set(PTX_FILES "")
     foreach(SHADER ${OPTIX_SHADERS})
         get_filename_component(SHADER_NAME ${SHADER} NAME_WE)
@@ -226,7 +244,7 @@ if(LIQUIDBIT_BUILD_OPTIX AND OptiX_INCLUDE_DIR)
                 "-I${CMAKE_CURRENT_SOURCE_DIR}/include"
                 "-I${OptiX_INCLUDE_DIR}"
                 "-I${CUDAToolkit_INCLUDE_DIRS}"
-                -gencode=arch=compute_89,code=compute_89
+                ${PTX_GENCODE_FLAGS}
                 "${OPTIX_SHADER_DIR}/${SHADER}"
                 -o "${PTX_FILE}"
             DEPENDS "${OPTIX_SHADER_DIR}/${SHADER}"
@@ -452,11 +470,12 @@ if(LIQUIDBIT_BUILD_TESTS AND NOT MSVC)
     target_include_directories(test_optix_pipeline PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/include
         ${CUDAToolkit_INCLUDE_DIRS}
-        ${OptiX_INCLUDE}
+        ${OptiX_INCLUDE_DIR}
     )
 
     target_link_libraries(test_optix_pipeline
         liquidbit_core
+        liquidbit_optix
         CUDA::cudart
         CUDA::cuda_driver
     )

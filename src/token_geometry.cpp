@@ -17,6 +17,7 @@
 #include <cstring>
 #include <algorithm>
 #include <limits>
+#include <vector>
 
 // ============================================================================
 // Macro de manejo de errores CUDA (compatibilidad con código host)
@@ -116,8 +117,7 @@ static void computePrincipalAxes(
             float* v = principal_axes[axis_idx];
 
             // Calcular A^T * A * v (donde A son los embeddings centrados)
-            float* temp = new float[embed_dim];
-            std::fill(temp, temp + embed_dim, 0.0f);
+            std::vector<float> temp(embed_dim, 0.0f);
 
             // Multiplicar por matriz de covarianza: suma(embedding_i * <embedding_i, v>)
             for (uint32_t i = 0; i < num_tokens; ++i) {
@@ -162,7 +162,6 @@ static void computePrincipalAxes(
                 }
             }
 
-            delete[] temp;
         }
     }
 }
@@ -211,14 +210,14 @@ void projectEmbeddingTo3D(
     }
     norm = sqrtf(norm);
 
-    float* normalized = new float[embed_dim];
+    std::vector<float> normalized(embed_dim);
     if (norm > 1e-6f) {
         for (uint32_t i = 0; i < embed_dim; ++i) {
             normalized[i] = embedding[i] / norm;
         }
     } else {
         // Embedding nulo: asignar valor por defecto
-        std::copy(embedding, embedding + embed_dim, normalized);
+        std::copy(embedding, embedding + embed_dim, normalized.begin());
     }
 
     // ====================================================================================
@@ -231,6 +230,9 @@ void projectEmbeddingTo3D(
     //
     // Esto es rápido y preserva la topología relativa.
 
+    // TODO(3.10): This simplified even/odd + tail projection loses significant semantic
+    // information from the original D-dimensional embedding. Replace with proper PCA
+    // (pre-computed principal axes from corpus) to preserve more variance in the 3D projection.
     float sum_even = 0.0f, sum_odd = 0.0f;
     for (uint32_t i = 0; i < embed_dim; ++i) {
         if (i % 2 == 0) {
@@ -253,7 +255,6 @@ void projectEmbeddingTo3D(
     centroid_out.y = tanhf(sum_odd * 0.1f);
     centroid_out.z = tanhf(z * 0.1f);
 
-    delete[] normalized;
 }
 
 // ============================================================================
