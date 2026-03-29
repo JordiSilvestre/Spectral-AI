@@ -104,20 +104,31 @@ __device__ __forceinline__
 float ternaryStringResonance(const TernaryResonanceParams& params, float omega) {
     float accum = 0.0f;
 
+    // Bug 2.8 fix: The unrolled loop accesses all RESONANCE_NUM_MODES entries.
+    // If params.a[]/b[] are not fully initialized (e.g., fewer active modes),
+    // uninitialized values could cause incorrect accumulation.
+    // Guard: TERNARY_ZERO entries (0) are skipped, so zero-initialized padding is safe.
+    // Ensure callers always zero-initialize TernaryResonanceParams (see fp32ToTernary).
     #pragma unroll
     for (uint32_t k = 1; k <= RESONANCE_NUM_MODES; ++k) {
+        const int8_t ak = params.a[k - 1];
+        const int8_t bk = params.b[k - 1];
+
+        // Skip entirely if both coefficients are zero (common with sparse ternary)
+        if (ak == TERNARY_ZERO && bk == TERNARY_ZERO) continue;
+
         const float kw    = (float)k * omega;
         const float s_kw  = __sinf(kw);
         const float c_kw  = __cosf(kw);
 
         // Ternary accumulation: solo suma/resta según {-1, 0, +1}
         // El compilador convierte estas ramas en SELP (select predicate) sin divergencia
-        if (params.a[k - 1] == TERNARY_POS)       accum += s_kw;
-        else if (params.a[k - 1] == TERNARY_NEG)  accum -= s_kw;
+        if (ak == TERNARY_POS)       accum += s_kw;
+        else if (ak == TERNARY_NEG)  accum -= s_kw;
         // a=0: no operación
 
-        if (params.b[k - 1] == TERNARY_POS)       accum += c_kw;
-        else if (params.b[k - 1] == TERNARY_NEG)  accum -= c_kw;
+        if (bk == TERNARY_POS)       accum += c_kw;
+        else if (bk == TERNARY_NEG)  accum -= c_kw;
         // b=0: no operación
     }
 

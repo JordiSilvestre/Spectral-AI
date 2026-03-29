@@ -295,7 +295,15 @@ __host__ AlphaExecutionResult launch_alpha_phase_b(
 
     half* d_input_fp16;
     size_t input_size = batch_size * dim_in * sizeof(half);
-    cudaMalloc(&d_input_fp16, input_size);
+    // Bug 2.16 fix: check cudaMalloc return value
+    cudaError_t alloc_err = cudaMalloc(&d_input_fp16, input_size);
+    if (alloc_err != cudaSuccess) {
+        printf("[ERROR] cudaMalloc d_input_fp16 failed: %s\n", cudaGetErrorString(alloc_err));
+        result.confidence = 0.0f;
+        result.output_dim = 0;
+        result.output_activations = nullptr;
+        return result;
+    }
 
     {
         // Kernel simple: convert FP32 → FP16

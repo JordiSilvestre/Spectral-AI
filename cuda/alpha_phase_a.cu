@@ -232,8 +232,17 @@ __host__ AlphaRayPayload launch_alpha_phase_a_kernel(
     float lambda_decay) {
 
     // Alocar buffer GPU para payload resultado
+    // Bug 2.16 fix: check cudaMalloc return value
     AlphaRayPayload* d_payload;
-    cudaMalloc(&d_payload, sizeof(AlphaRayPayload));
+    cudaError_t alloc_err = cudaMalloc(&d_payload, sizeof(AlphaRayPayload));
+    if (alloc_err != cudaSuccess) {
+        AlphaRayPayload err_payload;
+        err_payload.hit_sphere_id = UINT32_MAX;
+        err_payload.energy = 0.0f;
+        err_payload.depth_reached = 0;
+        err_payload.best_similarity = 0.0f;
+        return err_payload;
+    }
 
     // Lanzar kernel: 1 block, 1 thread (el traversal es serial)
     alpha_bsh_traversal_kernel<<<1, 1>>>(

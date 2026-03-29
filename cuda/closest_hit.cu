@@ -108,6 +108,11 @@ extern "C" __global__ void __closesthit__ch_optical_attention() {
         hit_token.centroid.z - ray_origin.z
     );
 
+    // TODO(Bug 2.13): Consider using rsqrtf() or squared distance to avoid
+    // the expensive sqrtf() in this hot path. The decay formula
+    //   exp(-lambda * d) = exp(-lambda * sqrt(d2))
+    // could be reformulated as exp(-lambda_sq * d2) if acceptable for the model.
+    // Alternatively, use rsqrtf(d2) * d2 which maps to a single HW instruction.
     float semantic_distance = sqrtf(
         delta.x * delta.x +
         delta.y * delta.y +

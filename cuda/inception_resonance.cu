@@ -39,6 +39,7 @@
 
 #include <cuda_runtime.h>
 #include <math.h>
+#include <math_constants.h>
 #include <stdint.h>
 #include <stdio.h>
 
@@ -193,7 +194,9 @@ void resonanceInceptionBatch(
         const float4 row = portal.rows[3];
         const float new_omega = row.x * ctx.x + row.y * ctx.y
                               + row.z * ctx.z + row.w * ctx.w;
-        omega = fmodf(fabsf(new_omega), 2.0f * 3.14159265f);
+        // Bug 2.10 fix: Use CUDART_PI_F for consistency with other files
+        // (e.g., liquidbit_kernels.cu:99) instead of truncated literal
+        omega = fmodf(fabsf(new_omega), 2.0f * CUDART_PI_F);
     }
 
     // Añadir sesgo de frecuencia de la esfera (si está disponible)
@@ -297,7 +300,8 @@ void resonanceCurveEval(
     const uint32_t strIdx   = tid / numPoints;
     const uint32_t pointIdx = tid % numPoints;
 
-    const float omega = (float)pointIdx * (2.0f * 3.14159265f) / (float)numPoints;
+    // Bug 2.10 fix: Use CUDART_PI_F for consistency
+    const float omega = (float)pointIdx * (2.0f * CUDART_PI_F) / (float)numPoints;
     results[tid] = semanticStringResonance(strings[strIdx].resonance, omega);
 }
 

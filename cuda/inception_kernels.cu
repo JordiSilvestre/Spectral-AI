@@ -277,6 +277,10 @@ void __closesthit__inception_portal() {
         // Aplicamos AffinePortal para transformar el rayo al espacio local.
         // Luego lanzamos optixTrace en ese espacio — el "reset de coordenadas".
 
+        // TODO(Bug 2.15): childIAS == 0 is not guaranteed to be an invalid
+        // OptixTraversableHandle on all OptiX implementations. Consider using a
+        // dedicated boolean flag (e.g., sphere.hasChild) or a known-invalid sentinel
+        // value like UINT64_MAX for safer detection of leaf/incomplete nodes.
         if (sphere.childIAS != 0) {
             // Obtener posición y dirección del rayo en espacio actual
             const float3 worldOrigin = optixGetWorldRayOrigin();

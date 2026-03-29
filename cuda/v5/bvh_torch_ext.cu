@@ -306,7 +306,8 @@ void upload_tree_impl(
 // HOST: Route — Zero-Copy con tensores PyTorch
 // ============================================================================
 
-std::tuple<torch::Tensor, torch::Tensor, torch::Tensor> route_impl(
+// Bug 2.14 fix: return 4-tuple including path tensor
+std::tuple<torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor> route_impl(
     torch::Tensor ray_origins,
     torch::Tensor ray_directions,
     torch::Tensor ray_spectral
@@ -350,14 +351,16 @@ std::tuple<torch::Tensor, torch::Tensor, torch::Tensor> route_impl(
     TORCH_CHECK(err == cudaSuccess,
         "BVH kernel launch failed: ", cudaGetErrorString(err));
 
-    return std::make_tuple(expert_ids, scores, confidence);
+    // Bug 2.14 fix: return path tensor along with other outputs.
+    // The path was computed but discarded, wasting memory and losing useful debug info.
+    return std::make_tuple(expert_ids, scores, confidence, path);
 }
 
 // ============================================================================
 // HOST: Route síncrono (para benchmark — fuerza sincronización)
 // ============================================================================
 
-std::tuple<torch::Tensor, torch::Tensor, torch::Tensor> route_sync_impl(
+std::tuple<torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor> route_sync_impl(
     torch::Tensor ray_origins,
     torch::Tensor ray_directions,
     torch::Tensor ray_spectral
@@ -380,7 +383,7 @@ PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
           py::arg("snell_w"), py::arg("snell_b"));
 
     m.def("route", &route_impl,
-          "Routing BVH zero-copy (tensores CUDA). Retorna (expert_ids, scores, confidence)",
+          "Routing BVH zero-copy (tensores CUDA). Retorna (expert_ids, scores, confidence, path)",
           py::arg("ray_origins"), py::arg("ray_directions"), py::arg("ray_spectral"));
 
     m.def("route_sync", &route_sync_impl,

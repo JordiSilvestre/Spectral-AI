@@ -373,7 +373,13 @@ struct AsyncPipeline {
 
             // Batched expert forward pass via cuBLAS
             // Each active expert processes its assigned tokens
-            // TODO: cublasSgemmBatched for all active experts
+            // TODO(Bug 2.11): Implement expert forward pass using cublasSgemmBatched.
+            // Without this, weighted_combine_kernel below combines raw hidden states
+            // instead of expert-transformed outputs. The pipeline is incomplete:
+            //   for each active expert e:
+            //     expert_out[e] = GELU(W1_e * gathered_tokens[e] + b1_e)
+            //     expert_out[e] = W2_e * expert_out[e] + b2_e
+            //   Then scatter expert_out back to token positions before combine.
 
             // Weighted combine of top-K expert outputs
             const int total = es.batch_size * hidden_dim;
@@ -439,9 +445,33 @@ extern "C" void benchmark_async_pipeline(
     pipeline.initialize(hidden_dim, inter_dim);
 
     // Synthetic input
+    // Bug 2.9 fix: Initialize with random normalized vectors instead of zeros.
+    // Zero vectors produce degenerate behavior in BVH routing (zero-length
+    // directions) and don't reflect real-world performance.
     float* d_input;
     cudaMalloc(&d_input, batch_size * hidden_dim * sizeof(float));
-    cudaMemset(d_input, 0, batch_size * hidden_dim * sizeof(float));
+    {
+        // Create random input on host and copy to device
+        float* h_input = new float[batch_size * hidden_dim];
+        for (int i = 0; i < batch_size * hidden_dim; ++i) {
+            // Simple LCG pseudo-random in [-1, 1], then normalize per-row below
+            h_input[i] = (float)((i * 1103515245 + 12345) % 1000) / 500.0f - 1.0f;
+        }
+        // Normalize each row to unit length
+        for (int b = 0; b < batch_size; ++b) {
+            float norm = 0.0f;
+            for (int d = 0; d < hidden_dim; ++d) {
+                norm += h_input[b * hidden_dim + d] * h_input[b * hidden_dim + d];
+            }
+            norm = sqrtf(norm + 1e-8f);
+            for (int d = 0; d < hidden_dim; ++d) {
+                h_input[b * hidden_dim + d] /= norm;
+            }
+        }
+        cudaMemcpy(d_input, h_input, batch_size * hidden_dim * sizeof(float),
+                   cudaMemcpyHostToDevice);
+        delete[] h_input;
+    }
 
     // Warmup
     for (int i = 0; i < 5; ++i) {

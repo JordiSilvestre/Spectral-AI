@@ -324,6 +324,14 @@ extern "C" cudaError_t launch_ray_traced_attention_kernel(
     const float3* d_ray_directions,
     AttentionResult* d_output_results
 ) {
+    // Bug 2.16 fix: validate inputs before kernel launch
+    if (!d_query_tokens || !d_query_positions || !d_ray_directions || !d_output_results) {
+        return cudaErrorInvalidValue;
+    }
+    if (num_queries == 0 || grid_size == 0 || block_size == 0) {
+        return cudaErrorInvalidConfiguration;
+    }
+
     ray_traced_attention_kernel<<<grid_size, block_size>>>(
         d_query_tokens,
         d_query_positions,
