@@ -20,6 +20,7 @@
 #include <string>
 #include <algorithm>
 #include <cmath>
+#include <vector>
 
 // Declaración forward de kernels CUDA definidos en .cu
 extern AlphaRayPayload launch_alpha_phase_a_kernel(

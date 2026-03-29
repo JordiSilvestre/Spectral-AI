@@ -52,6 +52,9 @@ struct PipelineSlot {
     int* d_dispatch_indices;  // [num_experts, max_tokens_per_expert]
     int* d_expert_counts;     // [num_experts]
 
+    // Softmax output (separate from expert_weights to avoid overwrite)
+    float* d_softmax_weights; // [batch_size, top_k]
+
     // Expert output
     float* d_output;          // [batch_size, hidden_dim]
 
@@ -270,6 +273,8 @@ struct AsyncPipeline {
             cudaMalloc(&s.d_dispatch_indices,
                        NUM_EXPERTS * (MAX_BATCH / 4) * sizeof(int));
             cudaMalloc(&s.d_expert_counts, NUM_EXPERTS * sizeof(int));
+            // Bug 2.7 fix: separate buffer for softmax output so logits are preserved
+            cudaMalloc(&s.d_softmax_weights, MAX_BATCH * TOP_K * sizeof(float));
             cudaMalloc(&s.d_output, MAX_BATCH * hidden_dim * sizeof(float));
             cudaEventCreateWithFlags(&s.route_done, cudaEventDisableTiming);
             cudaEventCreateWithFlags(&s.prep_done, cudaEventDisableTiming);
@@ -329,10 +334,12 @@ struct AsyncPipeline {
             // apply_calibration_kernel<<<...>>>(stream_prep);
 
             // Softmax + top-K
+            // Bug 2.7 fix: write softmax output to d_softmax_weights instead of
+            // overwriting d_expert_weights (which holds the original logits)
             softmax_topk_kernel<<<ps.batch_size, 64, 0, stream_prep>>>(
-                ps.d_expert_weights,  // reused as logit buffer
-                ps.d_expert_ids,
-                ps.d_expert_weights,
+                ps.d_expert_weights,    // input: raw logits (preserved)
+                ps.d_expert_ids,        // output: top-K expert IDs
+                ps.d_softmax_weights,   // output: top-K softmax weights
                 ps.batch_size,
                 TOP_K
             );
@@ -346,7 +353,7 @@ struct AsyncPipeline {
             const int blocks = (total_assignments + threads - 1) / threads;
             scatter_by_expert_kernel<<<blocks, threads, 0, stream_prep>>>(
                 ps.d_expert_ids,
-                ps.d_expert_weights,
+                ps.d_softmax_weights,  // Bug 2.7: use softmax weights, not raw logits
                 ps.d_dispatch_indices,
                 ps.d_expert_counts,
                 ps.batch_size,

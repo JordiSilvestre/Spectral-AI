@@ -150,7 +150,10 @@ __global__ void alpha_bsh_traversal_kernel(
         uint32_t best_child_id = UINT32_MAX;
         float best_child_similarity = -1.0f;
 
-        for (uint32_t i = 0; i < current_sphere.num_children; ++i) {
+        // Bug 2.6 fix: clamp num_children to ALPHA_BSH_MAX_CHILDREN to prevent
+        // out-of-bounds access on children_ids[] array
+        uint32_t actual_children = min(current_sphere.num_children, (uint32_t)ALPHA_BSH_MAX_CHILDREN);
+        for (uint32_t i = 0; i < actual_children; ++i) {
             uint32_t child_id = current_sphere.children_ids[i];
             if (child_id == 0 || child_id >= num_spheres) continue;
 
