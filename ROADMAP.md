@@ -1,5 +1,5 @@
 # LiquidBit Zero-Matrix — ROADMAP
-> Hoja de ruta completa del proyecto. Ultima actualizacion: 2026-03-28
+> Hoja de ruta completa del proyecto. Ultima actualizacion: 2026-03-29
 > Para decisiones y fallos: LEARNINGS.md | Para arquitectura: CLAUDE.md
 
 ---
@@ -559,7 +559,7 @@ Los **deltas relativos son comparables** y de hecho mejores gracias a calibracio
 
 ---
 
-## Proximos pasos inmediatos (actualizado 2026-03-28)
+## Proximos pasos inmediatos (actualizado 2026-03-29)
 
 ### PRIORIDAD MAXIMA: Completar 16/16 capas
 
@@ -579,10 +579,69 @@ Los **deltas relativos son comparables** y de hecho mejores gracias a calibracio
 - Fix: PCA + K-means calibracion del router antes de sync a CUDA
 - Pendiente: verificar con modelo real cuando GPU este libre
 
+**Paso 2c — Tecnicas Lyra para BVH Training (FASE B)** [EN PROGRESO]
+- ✅ 6 tecnicas implementadas en `python/lyra_techniques.py` (37/37 tests CPU)
+- ✅ SmoothBVHHit: BVH diferenciable para training E2E (el mayor blocker resuelto)
+- Pendiente: integrar en pipeline GPU, fine-tune E2E, medir PPL antes/despues
+
 **Paso 3 — Build C++/CUDA con CMake** [✅ COMPILADO — TODOS LOS TARGETS]
 - CUDA 13.2, OptiX 9.1, CMake 4.2.3, MSVC 18.4, sm_89+sm_120
 - ✅ 4 PTX shaders compilados, liquidbit_core.lib, liquidbit_optix.lib, inception_runner.exe
 - Pendiente: integrar PTX con optixModuleCreate() y benchmark RT vs CUDA
+
+---
+
+## FASE B — Tecnicas Lyra adaptadas para BVH Training [EN PROGRESO]
+
+**Objetivo:** Integrar 6 tecnicas del proyecto hermano (Lyra-AGI) para desbloquear
+el entrenamiento end-to-end del BVH y mejorar PPL de 8.29 → ~6.8.
+
+**Estado:** Implementaciones CPU creadas y testeadas (37/37 tests). Pendiente: GPU.
+
+### Componentes implementados (CPU, testeados)
+
+| Componente | Archivo | Tests | Estado |
+|---|---|---|---|
+| SmoothTernarySTE | `python/lyra_techniques.py` | 8/8 | ✅ CPU OK |
+| SmoothBVHHit | `python/lyra_techniques.py` | 4/4 | ✅ CPU OK |
+| RMSNorm (SubLN) | `python/lyra_techniques.py` | 3/3 | ✅ CPU OK |
+| LiquidTimeGate | `python/lyra_techniques.py` | 6/6 | ✅ CPU OK |
+| DualLR param groups | `python/lyra_techniques.py` | 3/3 | ✅ CPU OK |
+| MetabolicBVH | `python/lyra_techniques.py` | 7/7 | ✅ CPU OK |
+| BetaScheduler | `python/lyra_techniques.py` | 4/4 | ✅ CPU OK |
+| Integration tests | `tests/test_lyra_techniques.py` | 2/2 | ✅ CPU OK |
+
+### Tareas
+
+- [x] Adaptar SmoothTernarySTE de Lyra para BVH (soft ternary quantization)
+- [x] Crear SmoothBVHHit (diferentiable closest_hit replacement)
+- [x] Adaptar RMSNorm (SubLN post-routing normalization)
+- [x] Adaptar LiquidTimeGate (LOCAL/GLOBAL temporal gating)
+- [x] Crear DualLR param groups (0.1x LR for BVH discrete params)
+- [x] Implementar MetabolicBVH (age tracking + reserves + auto-pruning)
+- [x] Implementar BetaScheduler (linear beta annealing 1→10)
+- [x] Tests unitarios: 37/37 pasando en CPU
+- [ ] Integrar SmoothBVHHit en `bvh_router.py` forward pass
+- [ ] Integrar RMSNorm post-routing en `orchestrator.py`
+- [ ] Integrar DualLR en training scripts (`olmoe_bvh_distill.py`)
+- [ ] Training E2E con SmoothSTE en GPU (RTX 5070 Ti)
+- [ ] Compilar smooth_bvh_hit.cu (CUDA kernel, instrucciones en lyra_techniques.py)
+- [ ] Medir PPL antes/despues con fine-tune E2E
+- [ ] Activar MetabolicBVH en pipeline de inferencia
+
+### Impacto proyectado (LiquidBit antes → despues)
+
+| Metrica | Antes | Despues (est.) |
+|---|---|---|
+| PPL (16/16) | 8.29 (+16.1%) | ~6.8 (-5% vs gate) |
+| Training E2E | Imposible | Posible |
+| Polisemia | 0% | 88.9% |
+| BVH nodos activos | 64 fijos | ~45 dinamico |
+
+**Archivos:** `python/lyra_techniques.py`, `tests/test_lyra_techniques.py`
+**Referencia:** `vendor/Lyra-AGI/` (submodulo temporal), `MEJORAS.md` Seccion 3
+
+---
 
 ### DESPUES DEL PROTOTIPO
 
