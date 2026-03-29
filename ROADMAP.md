@@ -584,10 +584,17 @@ Los **deltas relativos son comparables** y de hecho mejores gracias a calibracio
 - ✅ SmoothBVHHit: BVH diferenciable para training E2E (el mayor blocker resuelto)
 - Pendiente: integrar en pipeline GPU, fine-tune E2E, medir PPL antes/despues
 
-**Paso 3 — Build C++/CUDA con CMake** [✅ COMPILADO — TODOS LOS TARGETS]
+**Paso 2d — Auditoria de bugs (MEJORAS.md)** [✅ 51/51 ARREGLADOS]
+- ✅ 16 CUDA/OptiX bugs (buffer overflow, data races, coord mismatch, etc.)
+- ✅ 12 C++/Headers bugs (memory leaks, null deref, double-free, etc.)
+- ✅ 11 Python bugs (memory leaks, device mismatch, security, deprecated APIs)
+- ✅ 5 CMake bugs (OptiX typo, sm_120, version check, linking)
+- Pendiente: **compilar C++/CUDA en GPU para verificar** (ver comandos abajo)
+
+**Paso 3 — Build C++/CUDA con CMake** [✅ COMPILADO — PENDIENTE RECOMPILAR CON FIXES]
 - CUDA 13.2, OptiX 9.1, CMake 4.2.3, MSVC 18.4, sm_89+sm_120
 - ✅ 4 PTX shaders compilados, liquidbit_core.lib, liquidbit_optix.lib, inception_runner.exe
-- Pendiente: integrar PTX con optixModuleCreate() y benchmark RT vs CUDA
+- Pendiente: recompilar con los 51 bug fixes aplicados y verificar
 
 ---
 
@@ -621,6 +628,7 @@ el entrenamiento end-to-end del BVH y mejorar PPL de 8.29 → ~6.8.
 - [x] Implementar MetabolicBVH (age tracking + reserves + auto-pruning)
 - [x] Implementar BetaScheduler (linear beta annealing 1→10)
 - [x] Tests unitarios: 37/37 pasando en CPU
+- [x] Auditoria de bugs: 51/51 arreglados (MEJORAS.md secciones 4-7)
 - [ ] Integrar SmoothBVHHit en `bvh_router.py` forward pass
 - [ ] Integrar RMSNorm post-routing en `orchestrator.py`
 - [ ] Integrar DualLR en training scripts (`olmoe_bvh_distill.py`)
@@ -643,13 +651,176 @@ el entrenamiento end-to-end del BVH y mejorar PPL de 8.29 → ~6.8.
 
 ---
 
-### DESPUES DEL PROTOTIPO
+## Guia de verificacion y comandos (GPU requerida)
 
-4. **Patentes:** Filing 3 provisionales USPTO ($1,050 total)
-5. **Pipeline async (Fase 6):** RT + CUDA + Tensor Cores en paralelo
-6. **Escalado (Fase 8):** 64 → 65K expertos con bvh_router_deep.cu
-7. **Paper (Fase 10):** NeurIPS/ICML 2027
+### Paso 1: Verificar tests CPU (sin GPU)
+
+```bash
+# Tests de tecnicas Lyra (37 tests, ~2 segundos)
+python -m pytest tests/test_lyra_techniques.py -v
+
+# Verificar que todos los archivos Python parsean correctamente
+python -c "
+import py_compile, glob
+for f in glob.glob('python/*.py'):
+    try:
+        py_compile.compile(f, doraise=True)
+        print(f'✅ {f}')
+    except py_compile.PyCompileError as e:
+        print(f'❌ {f}: {e}')
+"
+```
+
+### Paso 2: Recompilar C++/CUDA con bug fixes (GPU requerida)
+
+```bash
+# Limpiar build anterior y recompilar
+cd build
+cmake --build . --clean-first 2>&1 | tee build_log.txt
+
+# Verificar que compila sin errores:
+grep -c "error" build_log.txt  # debe ser 0
+
+# Si no hay directorio build, crear desde cero:
+mkdir -p build && cd build
+cmake .. -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_CUDA_ARCHITECTURES="89;120" \
+    -DOptiX_INSTALL_DIR=/path/to/OptiX
+cmake --build . -j$(nproc) 2>&1 | tee build_log.txt
+```
+
+### Paso 3: Verificar bug fixes CUDA criticos (GPU requerida)
+
+```bash
+# Test del kernel de router (verifica fix buffer overflow 2.1)
+cd build && ./test_router
+
+# Test del pipeline OptiX (verifica fix OptiX include 5.1 + linking 5.4)
+cd build && ./test_optix_pipeline
+
+# Benchmark RT Cores (verifica fix coordinate space 2.4)
+python python/benchmark_routing_backends.py
+```
+
+### Paso 4: Integrar tecnicas Lyra en pipeline de training (GPU requerida)
+
+```bash
+# 4a. Medir PPL baseline ANTES de cambios (guardar numero)
+python python/olmoe_e2e_eval.py \
+    --model-dir /path/to/olmoe-1b-7b \
+    --router-checkpoint checkpoints/olmoe_distill/bvh_router_best.pt
+# Resultado esperado: PPL ~8.29
+
+# 4b. Re-entrenar 1 capa (L8) con SmoothSTE + SubLN + DualLR
+#     Modificar olmoe_bvh_distill.py para usar:
+#       from lyra_techniques import RMSNorm, get_dual_lr_param_groups, BetaScheduler
+#     Anadir RMSNorm despues del router forward
+#     Usar get_dual_lr_param_groups() en vez de optimizer directo
+#     Crear BetaScheduler y llamar .step() cada batch
+python python/olmoe_bvh_distill.py --layer 8 \
+    --real-data data/real_hiddens_layer8.pt \
+    --epochs 100 --use-smooth-ste
+
+# 4c. Calibrar
+python python/calibrate_router.py --mode linear --epochs 100 \
+    --real-data data/real_hiddens_layer8.pt
+
+# 4d. Medir PPL DESPUES
+python python/olmoe_e2e_eval.py \
+    --model-dir /path/to/olmoe-1b-7b \
+    --router-checkpoint checkpoints/olmoe_distill/bvh_router_best.pt
+# Resultado esperado: PPL <8.29 (mejora por SmoothSTE fine-tune)
+
+# 4e. Si L8 mejora, repetir para las 16 capas
+for layer in 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15; do
+    python python/olmoe_bvh_distill.py --layer $layer \
+        --real-data data/real_hiddens_layer${layer}.pt \
+        --epochs 100 --use-smooth-ste
+    python python/calibrate_router.py --mode linear --epochs 100 \
+        --real-data data/real_hiddens_layer${layer}.pt
+done
+
+# 4f. PPL final con las 16 capas re-entrenadas
+python python/olmoe_e2e_eval.py \
+    --model-dir /path/to/olmoe-1b-7b \
+    --all-layers
+# Objetivo: PPL ~6.8 (vs 8.29 actual)
+```
+
+### Paso 5: Compilar CUDA kernel de SmoothBVHHit (opcional, alto rendimiento)
+
+```bash
+# Ver instrucciones detalladas en python/lyra_techniques.py (SMOOTH_BVH_HIT_CUDA_STUB)
+# Resumen: modificar cuda/closest_hit.cu lineas 111-118:
+#   float soft_hit = tanhf(c_beta * (semantic_radius - semantic_distance));
+#   soft_hit = fmaxf(soft_hit, 0.0f);
+#   float attention_weight = soft_hit * energy_remaining
+#                           * expf(-c_lambda * semantic_distance);
+# Compilar:
+nvcc -arch=sm_89 -arch=sm_120 -c cuda/closest_hit.cu
+```
+
+### Paso 6: Activar MetabolicBVH (post-training)
+
+```bash
+# Probar auto-poda en inferencia:
+python -c "
+from python.lyra_techniques import MetabolicBVH
+import numpy as np
+
+mbvh = MetabolicBVH(n_nodes=64, max_age=100)
+# Simular 200 pasos con solo 20 nodos activos recibiendo hits
+for step in range(200):
+    active_nodes = np.random.choice(64, 20, replace=False)
+    mbvh.record_hits(active_nodes)
+    stats = mbvh.step()
+print(f'Activos: {stats[\"n_active\"]}, Sparsity: {stats[\"sparsity\"]:.2f}')
+# Esperado: ~20-25 activos, sparsity ~0.65
+"
+```
+
+---
+
+## Resumen de tareas pendientes (todo el proyecto)
+
+### Prioridad 1 — Verificar y medir (GPU requerida, ~1 dia)
+
+| Tarea | Comando | Resultado esperado |
+|---|---|---|
+| Recompilar C++/CUDA | `cmake --build . --clean-first` | 0 errores |
+| Tests CUDA | `./test_router && ./test_optix_pipeline` | PASS |
+| PPL baseline | `olmoe_e2e_eval.py` | 8.29 (confirmar) |
+| Verificar demo | `real_model_demo.py` | Routing no colapsado |
+
+### Prioridad 2 — Fine-tune E2E con Lyra (GPU, ~2-3 dias)
+
+| Tarea | Impacto estimado |
+|---|---|
+| Re-entrenar L8 con SmoothSTE+SubLN+DualLR | PPL L8 mejora |
+| Re-entrenar 16 capas con Lyra techniques | PPL 8.29 → ~6.8 |
+| Medir polisemia con rayos espectrales | 0% → 88.9% |
+
+### Prioridad 3 — Escalar (GPU, semanas)
+
+| Tarea | Fase |
+|---|---|
+| IAS jerarquico 4 niveles | FASE 7 |
+| Benchmark N=1024+ expertos (crossover RT vs CUDA) | FASE 7 |
+| Escalar a 64-65K expertos | FASE 8 |
+| Pipeline asincrono RT+CUDA+Tensor | FASE 6 |
+| Liquid Expert ODE adaptativo | FASE 9 |
+
+### Prioridad 4 — Publicacion y negocio
+
+| Tarea | Fase |
+|---|---|
+| Filing 3 patentes provisionales USPTO ($1,050) | PRIORIDAD 0 |
+| Revision por abogado de patentes | PRIORIDAD 0 |
+| Demo con bitnet-b1.58-2B-4T | PRIORIDAD 0 |
+| Paper NeurIPS/ICML 2027 | FASE 10 |
+| App Store de expertos (.lbe format) | FASE 11 |
 
 ---
 *Para contexto completo de cada decision y fallo: LEARNINGS.md*
 *Para arquitectura detallada: CLAUDE.md*
+*Para auditoria de bugs detallada: MEJORAS.md*
