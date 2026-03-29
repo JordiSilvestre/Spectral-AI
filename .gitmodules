@@ -1,0 +1,6 @@
+[submodule "vendor/turboquant"]
+	path = vendor/turboquant
+	url = https://github.com/jordisilvestre/turboquant.git
+[submodule "vendor/turboquant_plus"]
+	path = vendor/turboquant_plus
+	url = https://github.com/jordisilvestre/turboquant_plus.git
