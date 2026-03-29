@@ -1,4 +1,4 @@
-# LiquidBit Zero-Matrix
+# Spectral IA
 
 **Atencion sin multiplicacion de matrices.** Los RT Cores reemplazan MatMul con ray tracing O(log N).
 
