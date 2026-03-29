@@ -8,11 +8,12 @@ Documento de auditoría completa del código. Incluye bugs, optimizaciones, mejo
 ## Tabla de Contenidos
 
 1. [Propuesta: Integración de Rayos Espectrales](#1-propuesta-integración-de-rayos-espectrales)
-2. [CUDA/OptiX — Bugs y Optimizaciones](#2-cudaoptix--bugs-y-optimizaciones)
-3. [C++/Headers — Bugs y Mejoras](#3-cheaders--bugs-y-mejoras)
-4. [Python — Bugs y Optimizaciones](#4-python--bugs-y-optimizaciones)
-5. [Build System (CMake)](#5-build-system-cmake)
-6. [Resumen de Prioridades](#6-resumen-de-prioridades)
+2. [Idea Externa: PolarQuant para Vectores Espectrales](#2-idea-externa-polarquant-para-vectores-espectrales)
+3. [CUDA/OptiX — Bugs y Optimizaciones](#3-cudaoptix--bugs-y-optimizaciones)
+4. [C++/Headers — Bugs y Mejoras](#4-cheaders--bugs-y-mejoras)
+5. [Python — Bugs y Optimizaciones](#5-python--bugs-y-optimizaciones)
+6. [Build System (CMake)](#6-build-system-cmake)
+7. [Resumen de Prioridades](#7-resumen-de-prioridades)
 
 ---
 
@@ -65,7 +66,91 @@ Con espectral (88.9% polisemia):
 
 ---
 
-## 2. CUDA/OptiX — Bugs y Optimizaciones
+## 2. Idea Externa: PolarQuant para Vectores Espectrales
+
+> Origen: Revision de TurboQuant (ICLR 2026, arXiv:2504.19874) y TurboQuant+.
+> Repos evaluados y descartados como dependencia (no aportan al core de LiquidBit).
+> Solo esta tecnica especifica es relevante.
+
+### Contexto
+
+Los rayos espectrales de LiquidBit llevan un vector de color `f in R^64` (SpectralContext).
+Actualmente se almacena en FP16 (128 bytes por rayo). Con 4096 rayos/query, son **528 KB por token**.
+
+### La Tecnica: Rotacion + Cuantizacion Escalar Optima
+
+TurboQuant usa **PolarQuant**: una rotacion ortogonal aleatoria (matriz Haar) que
+"Gaussianiza" las coordenadas del vector, seguida de cuantizacion escalar Lloyd-Max
+por coordenada. Resultado: **near-lossless con 2-3 bits/coordenada**.
+
+```
+Vector espectral f (64D, FP16, 128 bytes)
+  -> Rotacion Pi (64x64, precomputada, seed-based)
+  -> Coordenadas Gaussianizadas ~ N(0, 1/d)
+  -> Lloyd-Max 3-bit por coordenada (codebook precomputado)
+  -> 64 * 3 bits = 192 bits = 24 bytes + 4 bytes norma = 28 bytes
+
+Compresion: 128 -> 28 bytes = 4.6x
+Con 4096 rayos/query: 528 KB -> 115 KB por token
+```
+
+### Aplicacion en LiquidBit
+
+| Donde | Que comprimir | Antes | Despues | Ahorro |
+|---|---|---|---|---|
+| `SpectralContext.color_vector[64]` | Vector de color del rayo | 128 B | 28 B | 4.6x |
+| `PrismaticSphere.W_dispersion[64]` | Pesos de dispersion | 128 B | 28 B | 4.6x |
+| BVH con 64 esferas (W_disp total) | Todas las esferas | 8 KB | 1.8 KB | 4.4x |
+| 4096 rayos/query (contextos) | Todos los rayos | 528 KB | 115 KB | 4.6x |
+
+### Calidad medida (TurboQuant paper)
+
+- **cos_sim** tras compresion 3-bit: **0.997** (practicamente lossless)
+- **PPL delta**: +0.23% a 4-bit, +1.06% a 3-bit
+- Gaussianizacion validada: kurtosis raw 900.4 -> 2.9 (ref Gaussiana = 3.0)
+
+### Implementacion sugerida
+
+No necesita dependencia externa. El algoritmo es simple (~50 lineas):
+
+```python
+# Pseudocodigo para comprimir vectores espectrales
+import numpy as np
+
+class SpectralCompressor:
+    def __init__(self, d=64, bits=3, seed=42):
+        rng = np.random.RandomState(seed)
+        # Rotacion ortogonal Haar (precomputada una vez)
+        H = rng.randn(d, d)
+        self.Q, _ = np.linalg.qr(H)
+        # Codebook Lloyd-Max para N(0, 1/d) con `bits` bits
+        self.codebook = precompute_lloyd_max(d, bits)
+
+    def compress(self, f):
+        norm = np.linalg.norm(f)
+        f_unit = f / (norm + 1e-10)
+        rotated = self.Q @ f_unit          # Gaussianiza
+        indices = self.codebook.quantize(rotated)  # 3-bit/coord
+        return indices, norm               # 28 bytes total
+
+    def decompress(self, indices, norm):
+        rotated = self.codebook.dequantize(indices)
+        f_unit = self.Q.T @ rotated        # Rotacion inversa
+        return f_unit * norm
+```
+
+### Prioridad
+
+**BAJA** — Solo relevante DESPUES de integrar rayos espectrales en kernels CUDA (Seccion 1).
+Sin rayos espectrales funcionando, no hay nada que comprimir. Secuencia:
+
+1. Integrar rayos espectrales en CUDA (Seccion 1) -> **-12% PPL**
+2. Si la memoria de los vectores espectrales se convierte en bottleneck -> aplicar PolarQuant
+3. Ahorro estimado: 4.6x en almacenamiento de contexto espectral
+
+---
+
+## 3. CUDA/OptiX — Bugs y Optimizaciones
 
 ### CRITICAL
 
@@ -160,7 +245,7 @@ Con espectral (88.9% polisemia):
 
 ---
 
-## 3. C++/Headers — Bugs y Mejoras
+## 4. C++/Headers — Bugs y Mejoras
 
 ### CRITICAL
 
@@ -230,7 +315,7 @@ Con espectral (88.9% polisemia):
 
 ---
 
-## 4. Python — Bugs y Optimizaciones
+## 5. Python — Bugs y Optimizaciones
 
 ### HIGH
 
@@ -293,7 +378,7 @@ Con espectral (88.9% polisemia):
 
 ---
 
-## 5. Build System (CMake)
+## 6. Build System (CMake)
 
 ### HIGH
 
@@ -328,7 +413,7 @@ Con espectral (88.9% polisemia):
 
 ---
 
-## 6. Resumen de Prioridades
+## 7. Resumen de Prioridades
 
 ### Accion Inmediata (Bloqueantes / Corrupcion de datos)
 
