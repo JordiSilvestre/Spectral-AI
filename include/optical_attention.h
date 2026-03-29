@@ -21,6 +21,25 @@
 #include <string>
 
 // ============================================================================
+// Spectral ray tracing feature gate
+// ============================================================================
+
+/// Define LIQUIDBIT_SPECTRAL_ENABLED=1 to activate spectral/colored rays
+/// (Snell refraction, per-sphere W_dispersion, context-dependent attention).
+/// When disabled (0), the kernels use the original monochrome ray model.
+#ifndef LIQUIDBIT_SPECTRAL_ENABLED
+#  define LIQUIDBIT_SPECTRAL_ENABLED 1
+#endif
+
+/// Spectral dimension used inside CUDA kernels. The full spectral_ray.h uses
+/// SPECTRAL_DIM=64, but 64 floats per ray causes severe register pressure on
+/// SM hardware. We default to 16 for the CUDA path; set to 32 or 64 if the
+/// target GPU has enough registers (e.g. RTX 5090).
+#ifndef LIQUIDBIT_CUDA_SPECTRAL_DIM
+#  define LIQUIDBIT_CUDA_SPECTRAL_DIM 16
+#endif
+
+// ============================================================================
 // Configuración de atención óptica
 // ============================================================================
 
@@ -218,7 +237,63 @@ struct RayPayload {
 
     /// Pesos correspondientes a top_tokens
     float    top_weights[LIQUIDBIT_MAX_TOP_TOKENS];
+
+#if LIQUIDBIT_SPECTRAL_ENABLED
+    // ========================================================================
+    // SPECTRAL PAYLOAD EXTENSION
+    //
+    // Carries the spectral "color" of the ray through the OptiX pipeline.
+    // The color modulates attention via Snell refraction at each hit.
+    // ========================================================================
+
+    /// Spectral color vector (reduced from SPECTRAL_DIM=64 to
+    /// LIQUIDBIT_CUDA_SPECTRAL_DIM to fit in registers).
+    float spectral_color[LIQUIDBIT_CUDA_SPECTRAL_DIM];
+
+    /// ID of the matrix block selected by prismatic refraction.
+    /// Set by closest_hit when it computes the refraction angle.
+    /// UINT32_MAX means "no spectral selection yet".
+    uint32_t selected_matrix_block_id;
+
+    /// Final refraction angle (degrees) from the last closest_hit.
+    /// Used downstream to weight the spectral modulation.
+    float refraction_angle_deg;
+#endif // LIQUIDBIT_SPECTRAL_ENABLED
 };
+
+#if LIQUIDBIT_SPECTRAL_ENABLED
+// ============================================================================
+// SBT Hit Record for spectral closest-hit program
+//
+// OptiX passes per-primitive data to closest_hit via the Shader Binding Table
+// (SBT). We embed the per-sphere W_dispersion weights and refraction
+// parameters here so the closest_hit shader can compute Snell refraction
+// without global memory lookups.
+// ============================================================================
+
+/// Aligned SBT record header (OptiX requirement: 16-byte aligned header).
+struct __align__(OPTIX_SBT_RECORD_ALIGNMENT) SpectralHitSbtRecord {
+    /// OptiX SBT record header (opaque, written by optixSbtRecordPackHeader).
+    char header[OPTIX_SBT_RECORD_HEADER_SIZE];
+
+    /// Per-sphere dispersion weights [LIQUIDBIT_CUDA_SPECTRAL_DIM].
+    /// Loaded from PrismaticSphere::W_dispersion (truncated/projected to
+    /// LIQUIDBIT_CUDA_SPECTRAL_DIM from the full SPECTRAL_DIM=64).
+    float W_dispersion[LIQUIDBIT_CUDA_SPECTRAL_DIM];
+
+    /// Base refractive index of the sphere (typically 1.0).
+    float base_refractive_index;
+
+    /// Number of matrix blocks available for this sphere.
+    uint32_t num_matrix_blocks;
+
+    /// Matrix block IDs indexed by refraction angle bucket.
+    uint32_t matrix_block_ids[8];   // MAX_DISPERSION_CONTEXTS
+
+    /// Refraction angle thresholds (degrees) for block selection.
+    float refraction_thresholds[8]; // MAX_DISPERSION_CONTEXTS
+};
+#endif // LIQUIDBIT_SPECTRAL_ENABLED
 
 // ============================================================================
 // Clase OpticalAttention: Gestor de atención óptica

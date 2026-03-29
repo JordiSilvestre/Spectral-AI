@@ -41,6 +41,36 @@ extern "C" __constant__ uint32_t c_num_tokens;
 // Número de rayos generados por query token
 extern "C" __constant__ uint32_t c_rays_per_query;
 
+#if LIQUIDBIT_SPECTRAL_ENABLED
+// W_spectral projection matrix: [LIQUIDBIT_CUDA_SPECTRAL_DIM x LIQUIDBIT_EMBEDDING_DIM]
+// Used by the kernel to compute spectral color from query embeddings.
+extern "C" __constant__ float c_W_spectral_kernel[LIQUIDBIT_CUDA_SPECTRAL_DIM * LIQUIDBIT_EMBEDDING_DIM];
+
+/**
+ * Compute spectral color from a token embedding using the W_spectral matrix.
+ * Identical to the version in ray_generation.cu but uses c_W_spectral_kernel.
+ */
+__device__ static void kernel_compute_spectral_color(
+    const half* embedding,
+    float* out_color
+) {
+    float norm_sq = 0.0f;
+    for (uint32_t j = 0; j < LIQUIDBIT_CUDA_SPECTRAL_DIM; ++j) {
+        float acc = 0.0f;
+        const uint32_t row_offset = j * LIQUIDBIT_EMBEDDING_DIM;
+        for (uint32_t i = 0; i < LIQUIDBIT_EMBEDDING_DIM; ++i) {
+            acc += c_W_spectral_kernel[row_offset + i] * __half2float(embedding[i]);
+        }
+        out_color[j] = acc;
+        norm_sq += acc * acc;
+    }
+    float inv_norm = (norm_sq > 1e-6f) ? rsqrtf(norm_sq) : 1.0f;
+    for (uint32_t j = 0; j < LIQUIDBIT_CUDA_SPECTRAL_DIM; ++j) {
+        out_color[j] *= inv_norm;
+    }
+}
+#endif // LIQUIDBIT_SPECTRAL_ENABLED
+
 /* ============================================================================
  * FUNCIÓN HELPER: insert_top_token
  *
@@ -167,6 +197,17 @@ __global__ void ray_traced_attention_kernel(
     // total_hit_count grows unbounded across rays, but the top-K array has fixed capacity.
     uint32_t accumulated_top_count = 0;
 
+#if LIQUIDBIT_SPECTRAL_ENABLED
+    // Compute spectral color once per query (shared across all rays of this query).
+    // The color encodes the conversational context and remains constant per query.
+    float query_spectral_color[LIQUIDBIT_CUDA_SPECTRAL_DIM];
+    {
+        // Use the query token's embedding from the global TokenNode buffer
+        const TokenNode& qt = c_token_nodes[thread_idx];
+        kernel_compute_spectral_color(qt.embedding, query_spectral_color);
+    }
+#endif
+
     for (uint32_t ray_idx = 0; ray_idx < c_rays_per_query; ray_idx++) {
         // Obtener la dirección normalizada del rayo actual
         uint32_t ray_dir_idx = rays_base_idx + ray_idx;
@@ -198,6 +239,15 @@ __global__ void ray_traced_attention_kernel(
         ray_payload.ray_origin_y = __float_as_uint(query_position.y);
         ray_payload.ray_origin_z = __float_as_uint(query_position.z);
 
+#if LIQUIDBIT_SPECTRAL_ENABLED
+        // Copy the pre-computed spectral color into the ray payload
+        for (uint32_t s = 0; s < LIQUIDBIT_CUDA_SPECTRAL_DIM; ++s) {
+            ray_payload.spectral_color[s] = query_spectral_color[s];
+        }
+        ray_payload.selected_matrix_block_id = UINT32_MAX;
+        ray_payload.refraction_angle_deg = 0.0f;
+#endif
+
         // Parámetros de optixTrace
         // t_min: distancia mínima (cerca del rayo)
         // t_max: distancia máxima (lejos del rayo)
@@ -209,7 +259,37 @@ __global__ void ray_traced_attention_kernel(
         uint32_t p1 = __float_as_uint(ray_payload.energy_remaining);
         uint32_t p2 = ray_payload.hit_count;
 
-        // Lanzar el rayo
+#if LIQUIDBIT_SPECTRAL_ENABLED
+        // Pack spectral color into payload words p3..p18 (16 floats as uint32)
+        uint32_t ps[LIQUIDBIT_CUDA_SPECTRAL_DIM];
+        for (uint32_t s = 0; s < LIQUIDBIT_CUDA_SPECTRAL_DIM; ++s) {
+            ps[s] = __float_as_uint(ray_payload.spectral_color[s]);
+        }
+        uint32_t p_blk = ray_payload.selected_matrix_block_id;
+        uint32_t p_ang = __float_as_uint(ray_payload.refraction_angle_deg);
+
+        // Lanzar el rayo with spectral payload (21 words total)
+        optixTrace(
+            c_bvh_handle,
+            query_position,
+            ray_direction,
+            t_min, t_max, 0.0f,
+            OptixVisibilityMask(255),
+            OPTIX_RAY_FLAG_NONE,
+            0, 0, 0,
+            p0, p1, p2,
+            ps[0],  ps[1],  ps[2],  ps[3],
+            ps[4],  ps[5],  ps[6],  ps[7],
+            ps[8],  ps[9],  ps[10], ps[11],
+            ps[12], ps[13], ps[14], ps[15],
+            p_blk, p_ang
+        );
+
+        // Read back spectral results
+        ray_payload.selected_matrix_block_id = p_blk;
+        ray_payload.refraction_angle_deg = __uint_as_float(p_ang);
+#else
+        // Lanzar el rayo (monochrome path)
         optixTrace(
             c_bvh_handle,              // Acceleration structure (BVH)
             query_position,            // Ray origin (posición del query)
@@ -224,6 +304,7 @@ __global__ void ray_traced_attention_kernel(
             0,                         // Miss SBT index
             p0, p1, p2                 // Payloads (uint32_t por referencia)
         );
+#endif // LIQUIDBIT_SPECTRAL_ENABLED
 
         // Después de optixTrace, p0/p1/p2 han sido actualizados por ClosestHit o Miss
         ray_payload.accumulated_attention = __uint_as_float(p0);

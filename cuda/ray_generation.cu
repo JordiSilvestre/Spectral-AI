@@ -47,6 +47,24 @@ extern "C" __constant__ uint32_t c_num_queries;
 extern "C" __constant__ uint32_t c_rays_per_query;
 extern "C" __constant__ uint32_t c_num_tokens;
 
+#if LIQUIDBIT_SPECTRAL_ENABLED
+// ============================================================================
+// SPECTRAL CONSTANTS
+//
+// W_spectral projects the token embedding (LIQUIDBIT_EMBEDDING_DIM=256) down
+// to the CUDA spectral dimension (LIQUIDBIT_CUDA_SPECTRAL_DIM, default 16).
+// Stored in constant memory for fast broadcast reads across warps.
+//
+// Layout: W_spectral[LIQUIDBIT_CUDA_SPECTRAL_DIM][LIQUIDBIT_EMBEDDING_DIM]
+//         row-major — each row produces one spectral component.
+// ============================================================================
+extern "C" __constant__ float c_W_spectral[LIQUIDBIT_CUDA_SPECTRAL_DIM * LIQUIDBIT_EMBEDDING_DIM];
+
+/// Local epsilon for normalization (mirrors SNELL_EPSILON from spectral_ray.h
+/// without pulling in the full header which contains std::vector).
+static constexpr float SPECTRAL_NORM_EPSILON = 1e-6f;
+#endif // LIQUIDBIT_SPECTRAL_ENABLED
+
 /* ============================================================================
  * FUNCIONES AUXILIARES
  * ============================================================================
@@ -148,6 +166,48 @@ __device__ void create_orthonormal_basis(
     v = liqbit_cross(w, u);
 }
 
+#if LIQUIDBIT_SPECTRAL_ENABLED
+/* ============================================================================
+ * SPECTRAL COLOR COMPUTATION
+ *
+ * Projects a token's FP16 embedding (256 dims) into the spectral color space
+ * (LIQUIDBIT_CUDA_SPECTRAL_DIM dims) via matrix-vector multiplication with
+ * c_W_spectral, then L2-normalizes the result.
+ *
+ * This is the CUDA-kernel equivalent of SpectralBSH::encodeContext() but
+ * operates on the reduced dimension and runs per-ray inside the raygen shader.
+ *
+ * Formula:
+ *   color[j] = sum_i( W_spectral[j * 256 + i] * embedding[i] )  for j in [0, spectral_dim)
+ *   color = color / ||color||_2
+ * ============================================================================
+ */
+__device__ static void compute_spectral_color_from_embedding(
+    const half* embedding,              // TokenNode::embedding [LIQUIDBIT_EMBEDDING_DIM]
+    float* out_color                    // output [LIQUIDBIT_CUDA_SPECTRAL_DIM]
+) {
+    // Matrix-vector product: color = W_spectral @ embedding
+    float norm_sq = 0.0f;
+    for (uint32_t j = 0; j < LIQUIDBIT_CUDA_SPECTRAL_DIM; ++j) {
+        float acc = 0.0f;
+        const uint32_t row_offset = j * LIQUIDBIT_EMBEDDING_DIM;
+        for (uint32_t i = 0; i < LIQUIDBIT_EMBEDDING_DIM; ++i) {
+            acc += c_W_spectral[row_offset + i] * __half2float(embedding[i]);
+        }
+        out_color[j] = acc;
+        norm_sq += acc * acc;
+    }
+
+    // L2 normalize to unit color vector
+    float inv_norm = (norm_sq > SPECTRAL_NORM_EPSILON)
+                     ? rsqrtf(norm_sq)
+                     : 1.0f;
+    for (uint32_t j = 0; j < LIQUIDBIT_CUDA_SPECTRAL_DIM; ++j) {
+        out_color[j] *= inv_norm;
+    }
+}
+#endif // LIQUIDBIT_SPECTRAL_ENABLED
+
 /* ============================================================================
  * PROGRAMA OPTIX: __raygen__
  *
@@ -223,6 +283,25 @@ extern "C" __global__ void __raygen__rg_optical_attention() {
     ray_payload.ray_origin_y = __float_as_uint(query_position.y);
     ray_payload.ray_origin_z = __float_as_uint(query_position.z);
 
+#if LIQUIDBIT_SPECTRAL_ENABLED
+    // ========================================================================
+    // COMPUTE SPECTRAL COLOR (Fase 0: Spectral Encoding)
+    //
+    // Project the query token's embedding through W_spectral to produce the
+    // ray's "color" — a compact spectral context vector. This color will
+    // modulate the refractive index at each hit, enabling context-dependent
+    // attention (polysemy resolution).
+    //
+    // color[j] = normalize( W_spectral[j,:] . embedding[:] )
+    // ========================================================================
+    compute_spectral_color_from_embedding(
+        query_token.embedding,
+        ray_payload.spectral_color
+    );
+    ray_payload.selected_matrix_block_id = UINT32_MAX;
+    ray_payload.refraction_angle_deg = 0.0f;
+#endif // LIQUIDBIT_SPECTRAL_ENABLED
+
     // ========================================================================
     // LANZAR RAYO EN EL BVH
     // ========================================================================
@@ -236,7 +315,48 @@ extern "C" __global__ void __raygen__rg_optical_attention() {
     uint32_t p1 = __float_as_uint(ray_payload.energy_remaining);
     uint32_t p2 = ray_payload.hit_count;
 
+#if LIQUIDBIT_SPECTRAL_ENABLED
+    // Pack spectral color into additional payload words (p3..p3+spectral_dim-1).
+    // OptiX supports up to 32 payload words; we use 3 (base) + spectral_dim.
+    // For LIQUIDBIT_CUDA_SPECTRAL_DIM=16 this totals 19 words — well within limit.
+    uint32_t p_spectral[LIQUIDBIT_CUDA_SPECTRAL_DIM];
+    for (uint32_t s = 0; s < LIQUIDBIT_CUDA_SPECTRAL_DIM; ++s) {
+        p_spectral[s] = __float_as_uint(ray_payload.spectral_color[s]);
+    }
+#endif
+
     // Lanzar el rayo
+    // NOTE: When spectral is enabled we pass additional payload words carrying
+    // the spectral color vector. OptiX allows up to 32 payload attributes.
+#if LIQUIDBIT_SPECTRAL_ENABLED
+    // With LIQUIDBIT_CUDA_SPECTRAL_DIM=16 we pass p0..p2 + 16 spectral words
+    // + 2 words for selected_matrix_block_id and refraction_angle_deg = 21 total.
+    uint32_t p_block_id = ray_payload.selected_matrix_block_id;
+    uint32_t p_refr_angle = __float_as_uint(ray_payload.refraction_angle_deg);
+
+    optixTrace(
+        c_bvh_handle,
+        query_position,
+        ray_direction,
+        t_min,
+        t_max,
+        0.0f,
+        OptixVisibilityMask(255),
+        OPTIX_RAY_FLAG_NONE,
+        0,                              // SBT offset
+        0,                              // SBT stride
+        0,                              // Miss SBT index
+        // Base payload (3 words)
+        p0, p1, p2,
+        // Spectral color (16 words at default LIQUIDBIT_CUDA_SPECTRAL_DIM)
+        p_spectral[0],  p_spectral[1],  p_spectral[2],  p_spectral[3],
+        p_spectral[4],  p_spectral[5],  p_spectral[6],  p_spectral[7],
+        p_spectral[8],  p_spectral[9],  p_spectral[10], p_spectral[11],
+        p_spectral[12], p_spectral[13], p_spectral[14], p_spectral[15],
+        // Spectral result words (2 words)
+        p_block_id, p_refr_angle
+    );
+#else
     optixTrace(
         c_bvh_handle,                   // Acceleration structure (BVH)
         query_position,                 // Ray origin (posición del query)
@@ -251,8 +371,9 @@ extern "C" __global__ void __raygen__rg_optical_attention() {
         0,                              // Miss SBT index
         p0, p1, p2                      // Payloads
     );
+#endif // LIQUIDBIT_SPECTRAL_ENABLED
 
-    // Después de optixTrace, los payloads (p0, p1, p2) han sido actualizados
+    // Después de optixTrace, los payloads (p0, p1, p2, ...) han sido actualizados
     // por ClosestHit o Miss
 
     // ========================================================================
@@ -263,6 +384,15 @@ extern "C" __global__ void __raygen__rg_optical_attention() {
     ray_payload.accumulated_attention = __uint_as_float(p0);
     ray_payload.energy_remaining = __uint_as_float(p1);
     ray_payload.hit_count = p2;
+
+#if LIQUIDBIT_SPECTRAL_ENABLED
+    // Read back spectral payload (color may have been modulated by closest_hit)
+    for (uint32_t s = 0; s < LIQUIDBIT_CUDA_SPECTRAL_DIM; ++s) {
+        ray_payload.spectral_color[s] = __uint_as_float(p_spectral[s]);
+    }
+    ray_payload.selected_matrix_block_id = p_block_id;
+    ray_payload.refraction_angle_deg = __uint_as_float(p_refr_angle);
+#endif // LIQUIDBIT_SPECTRAL_ENABLED
 
     // Almacenar resultado en el buffer de salida
     if (query_idx < c_num_queries) {
@@ -336,26 +466,63 @@ extern "C" __global__ void __raygen__rg_optical_attention_gaussian() {
     ray_payload.ray_origin_y = __float_as_uint(query_position.y);
     ray_payload.ray_origin_z = __float_as_uint(query_position.z);
 
+#if LIQUIDBIT_SPECTRAL_ENABLED
+    compute_spectral_color_from_embedding(
+        query_token.embedding,
+        ray_payload.spectral_color
+    );
+    ray_payload.selected_matrix_block_id = UINT32_MAX;
+    ray_payload.refraction_angle_deg = 0.0f;
+#endif
+
     uint32_t p0 = __float_as_uint(ray_payload.accumulated_attention);
     uint32_t p1 = __float_as_uint(ray_payload.energy_remaining);
     uint32_t p2 = ray_payload.hit_count;
+
+#if LIQUIDBIT_SPECTRAL_ENABLED
+    uint32_t p_spectral_g[LIQUIDBIT_CUDA_SPECTRAL_DIM];
+    for (uint32_t s = 0; s < LIQUIDBIT_CUDA_SPECTRAL_DIM; ++s) {
+        p_spectral_g[s] = __float_as_uint(ray_payload.spectral_color[s]);
+    }
+    uint32_t p_block_id_g = ray_payload.selected_matrix_block_id;
+    uint32_t p_refr_angle_g = __float_as_uint(ray_payload.refraction_angle_deg);
 
     optixTrace(
         c_bvh_handle,
         query_position,
         ray_direction,
-        0.001f,
-        1e16f,
-        0.0f,
+        0.001f, 1e16f, 0.0f,
+        OptixVisibilityMask(255),
+        OPTIX_RAY_FLAG_NONE,
+        0, 0, 0,
+        p0, p1, p2,
+        p_spectral_g[0],  p_spectral_g[1],  p_spectral_g[2],  p_spectral_g[3],
+        p_spectral_g[4],  p_spectral_g[5],  p_spectral_g[6],  p_spectral_g[7],
+        p_spectral_g[8],  p_spectral_g[9],  p_spectral_g[10], p_spectral_g[11],
+        p_spectral_g[12], p_spectral_g[13], p_spectral_g[14], p_spectral_g[15],
+        p_block_id_g, p_refr_angle_g
+    );
+#else
+    optixTrace(
+        c_bvh_handle,
+        query_position,
+        ray_direction,
+        0.001f, 1e16f, 0.0f,
         OptixVisibilityMask(255),
         OPTIX_RAY_FLAG_NONE,
         0, 0, 0,
         p0, p1, p2
     );
+#endif
 
     ray_payload.accumulated_attention = __uint_as_float(p0);
     ray_payload.energy_remaining = __uint_as_float(p1);
     ray_payload.hit_count = p2;
+
+#if LIQUIDBIT_SPECTRAL_ENABLED
+    ray_payload.selected_matrix_block_id = p_block_id_g;
+    ray_payload.refraction_angle_deg = __uint_as_float(p_refr_angle_g);
+#endif
 
     if (query_idx < c_num_queries) {
         AttentionResult& result = c_attention_results[query_idx];
