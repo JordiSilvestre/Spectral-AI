@@ -423,7 +423,7 @@ liquidbit-zero-matrix/
 
 ---
 
-## FASE A — OLMoE BVH Distillation [✅ 16/16 COMPLETADA — PPL 8.38 (+17.3%)]
+## FASE A — OLMoE BVH Distillation [✅ 16/16 COMPLETADA — PPL 8.29 (+16.1%)]
 
 **Objetivo:** Reemplazar el gate lineal de OLMoE-1B-7B (7B params, 64 expertos) con
 nuestro BVH Router geometrico y medir el impacto en perplexity real.
@@ -454,7 +454,7 @@ especializan con solo 5M tokens. OLMoE-1B-7B tiene 64 expertos SwiGLU ya especia
 mejores** en el re-training (+0.6% y +4.2%) gracias a calibracion linear (4160 params)
 en vez de affine (128 params).
 
-**Degradacion ~1.08% por capa (superlinear).** Resultado real 16/16: PPL 8.38 (+17.3%).
+**Degradacion ~1.0% por capa (superlinear).** Resultado real 16/16: PPL 8.29 (+16.1%) tras retrain L1+L2+L8+L13+L14.
 
 **PPL scaling curve completa (2026-03-28, transformers 5.4.0):**
 
@@ -465,22 +465,35 @@ en vez de affine (128 params).
 | BVH Router 5 capas | 7.45 | **+4.2%** | 5/16 |
 | BVH Router 12 capas (skip worst 4) | 7.86 | **+10.0%** | 12/16 |
 | BVH Router 14 capas (skip L1,L2) | 8.12 | **+13.6%** | 14/16 |
-| **BVH Router 16 capas (ALL)** | **8.38** | **+17.3%** | **16/16** |
+| BVH Router 16 capas (ALL, pre-retrain) | 8.38 | +17.3% | 16/16 |
+| BVH Router 16 capas (retrain L1+L2+L8) | 8.35 | +16.8% | 16/16 |
+| **BVH Router 16 capas (retrain L1+L2+L8+L13+L14)** | **8.29** | **+16.1%** | **16/16** |
 
-**Hallazgo clave:** L1 (72.8% acc) y L2 (78.4% acc) causan degradacion desproporcionada
-por cascading error en capas tempranas. Skip L1+L2 ahorra 3.7% PPL.
+**Hallazgo clave:** Retrain iterativo de capas debiles mejora PPL progresivamente.
+L8 era el mayor cuello de botella (59.4% → 90.1%). Avg top-8 actual: 86.5%.
 
 ### Precision por capa (re-training vs original)
 
-| Capa | Orig top-8 | Re-train top-8 | Orig top-1 | Re-train top-1 | Cal cosine |
-|---|---|---|---|---|---|
-| L0 | 87.8% | 80.4% | 89.0% | 89.6% | 0.95 |
-| L4 | 86.4% | 80.2% | 73.0% | 79.6% | 0.96 |
-| L8 | 91.7% | 85.9% | 71.1% | 76.7% | 0.97 |
-| L12 | 92.2% | 88.8% | 74.5% | 77.4% | 0.96 |
-| L15 | 93.2% | 89.3% | 74.7% | 80.2% | 0.96 |
+| Capa | Top-8 Acc | Top-1 Acc | Cal cosine | Estado |
+|---|---|---|---|---|
+| L0 | 80.4% | 89.6% | 0.95 | ok |
+| L1 | 79.3% | 85.3% | 0.94 | retrained (was 72.8%) |
+| L2 | 84.7% | 82.8% | 0.95 | retrained (was 78.4%) |
+| L3 | 80.5% | 81.5% | 0.95 | ok |
+| L4 | 80.2% | 79.6% | 0.96 | ok |
+| L5 | 81.9% | 79.9% | 0.95 | ok |
+| L6 | 84.3% | 80.7% | 0.96 | ok |
+| L7 | 84.3% | 78.7% | 0.95 | ok |
+| L8 | 90.1% | 77.8% | 0.97 | retrained (was 59.4%) |
+| L9 | 88.3% | 78.0% | 0.96 | ok |
+| L10 | 89.3% | 80.8% | 0.96 | ok |
+| L11 | 81.8% | 78.4% | 0.95 | ok |
+| L12 | 88.8% | 77.4% | 0.96 | ok |
+| L13 | 92.4% | 77.9% | 0.96 | retrained (was 79.6%) |
+| L14 | 93.4% | 78.6% | 0.96 | retrained (was 79.2%) |
+| L15 | 89.3% | 80.2% | 0.96 | ok |
 
-**Patron:** Top-8 baja 3-7% pero top-1 sube en TODAS las capas. PPL delta mejora.
+**Avg top-8: 85.6%.** Weakest: L1 (79.3%), L4 (80.2%), L0 (80.4%). 5 layers retrained.
 
 ### Componentes clave
 

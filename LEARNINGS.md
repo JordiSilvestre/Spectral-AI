@@ -18,6 +18,32 @@ Tipos: `[DECISIÓN]` | `[FALLO]` | `[ALTERNATIVA]` | `[BLOQUEANTE]` | `[VALIDADO
 
 ---
 
+## Sesion 2026-03-28h — Retrain weak layers, PPL 8.35 (+16.8%)
+
+### [2026-03-29] [VALIDADO] Retrain iterativo 5 layers: PPL 8.38 → 8.29 (+16.1%)
+
+**Contexto:** L8 tenia solo 59.4% top-8 (uncalibrated) — era el mayor cuello de botella. L1 (72.8%), L2 (78.4%), L13 (79.6%), L14 (79.2%) tambien eran debiles.
+
+**Resultados del retrain (200 epochs cada, --no-upcycle):**
+- L1: 72.8% → 79.3% (cosine 0.94)
+- L2: 78.4% → 84.7% (cosine 0.95)
+- L8: 59.4% → 90.1% (cosine 0.97) — mayor mejora individual
+- L13: 79.6% → 92.4% (cosine 0.96)
+- L14: 79.2% → 93.4% (cosine 0.96)
+
+**PPL progression:**
+- Original: 8.38 (+17.3%)
+- After L1+L2+L8: 8.35 (+16.8%)
+- After L13+L14: **8.29 (+16.1%)**
+
+**Hallazgo critico:** L8 sin calibrar causaba PPL 13.06 (82.8% delta). Calibracion es absolutamente critica — un solo layer uncalibrated destruye el resultado.
+
+**Patron:** Layers con <80% top-8 se benefician enormemente del retrain (200 epochs). Los que ya estan >80% mejoran poco. Retrain marginal returns above 85%.
+
+**Archivos:** `checkpoints/olmoe_distill*/bvh_router_best.pt`, `ROADMAP.md`
+
+---
+
 ## Sesion 2026-03-28g — 16/16 PPL evaluation, transformers 5.4.0 API fix
 
 ### [2026-03-28] [VALIDADO] 16/16 BVH Router PPL = 8.38 (+17.3% vs baseline 7.15)

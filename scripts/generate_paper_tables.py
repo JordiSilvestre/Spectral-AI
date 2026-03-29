@@ -94,7 +94,7 @@ def table_2_ppl_comparison() -> str:
     lines.append("| BVH Router 5 layers (L0,4,8,12,15) | 7.45 | **+4.2%** | 5/16 |")
     lines.append("| BVH Router 12 layers (skip worst 4) | 7.86 | **+10.0%** | 12/16 |")
     lines.append("| BVH Router 14 layers (skip L1,L2) | 8.12 | **+13.6%** | 14/16 |")
-    lines.append("| BVH Router 16 layers (all) | 8.38 | **+17.3%** | 16/16 |")
+    lines.append("| BVH Router 16 layers (all, post-retrain) | 8.29 | **+16.1%** | 16/16 |")
     lines.append("")
     lines.append("*Superlinear degradation: early layers (L1=72.8%, L2=78.4%) account for "
                  "disproportionate PPL loss due to error cascading. "

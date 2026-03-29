@@ -369,6 +369,7 @@ int main(int argc, char** argv) {
     if (argc > 1) ptx_dir = argv[1];
     if (argc > 2) batch_size = static_cast<unsigned int>(std::atoi(argv[2]));
     if (argc > 3) num_iters = static_cast<unsigned int>(std::atoi(argv[3]));
+    if (argc > 4) num_experts = static_cast<unsigned int>(std::atoi(argv[4]));
 
     std::string ptx_raygen   = ptx_dir + \"/ptx/optix_router_raygen.ptx\";
     std::string ptx_hitgroup = ptx_dir + \"/ptx/optix_router_hitgroup.ptx\";
