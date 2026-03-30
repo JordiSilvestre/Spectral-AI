@@ -24,6 +24,7 @@ Copyright (c) 2026 SpectralAI Studio — Apache 2.0
 """
 
 import os
+import sys
 import warnings
 import numpy as np
 import torch
@@ -49,21 +50,49 @@ except (ImportError, FileNotFoundError):
     HAS_CUDA_ROUTER = False
 
 # Try to import PyTorch zero-copy extension (preferred over ctypes)
-# JIT-compiled extensions live in ~/.cache/torch_extensions/
+# Windows split-build: cuda/v5/bvh_router_ext.pyd
+# Linux JIT-build: ~/.cache/torch_extensions/bvh_router_ext/
 HAS_TORCH_EXT = False
+
+# On Windows, add DLL directories so .pyd can find CUDA/Torch DLLs
+if sys.platform == "win32" and hasattr(os, "add_dll_directory"):
+    _cuda_bin = r"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.2\bin"
+    if os.path.isdir(_cuda_bin):
+        try:
+            os.add_dll_directory(_cuda_bin)
+        except OSError:
+            pass
+    try:
+        import torch as _torch
+        _torch_lib = os.path.join(os.path.dirname(_torch.__file__), "lib")
+        if os.path.isdir(_torch_lib):
+            os.add_dll_directory(_torch_lib)
+    except Exception:
+        pass
+
+_bvh_search_dirs = [
+    # Windows split build
+    os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "cuda", "v5"),
+    # Linux JIT build
+    os.path.expanduser("~/.cache/torch_extensions/bvh_router_ext"),
+    # Windows JIT build
+    os.path.expanduser("~/AppData/Local/torch_extensions/bvh_router_ext"),
+]
+
 try:
     import bvh_router_ext
     HAS_TORCH_EXT = True
 except ImportError:
-    try:
-        import sys as _sys
-        _ext_dir = os.path.expanduser("~/.cache/torch_extensions/bvh_router_ext")
-        if os.path.isdir(_ext_dir) and _ext_dir not in _sys.path:
-            _sys.path.insert(0, _ext_dir)
-        import bvh_router_ext
-        HAS_TORCH_EXT = True
-    except ImportError:
-        pass
+    for _ext_dir in _bvh_search_dirs:
+        _ext_dir = os.path.normpath(_ext_dir)
+        if os.path.isdir(_ext_dir) and _ext_dir not in sys.path:
+            sys.path.insert(0, _ext_dir)
+            try:
+                import bvh_router_ext
+                HAS_TORCH_EXT = True
+                break
+            except ImportError:
+                sys.path.remove(_ext_dir)
 
 
 def _find_lib_path() -> Optional[str]:
@@ -297,12 +326,19 @@ class HybridBVHRouter(nn.Module):
         else:
             spectral_padded = spectral.float()
 
-        # Zero-copy route! All tensors stay on CUDA
-        expert_ids, scores, confidence, _path = bvh_router_ext.route(
+        # Zero-copy route! All tensors stay on CUDA.
+        # Handle both old (3-tuple) and new (4-tuple) return format gracefully.
+        route_out = bvh_router_ext.route(
             pos_3d.float().contiguous(),
             directions.float().contiguous(),
             spectral_padded.contiguous(),
         )
+        if len(route_out) == 4:
+            expert_ids, scores, confidence, _path = route_out
+        elif len(route_out) == 3:
+            expert_ids, scores, confidence = route_out
+        else:
+            raise RuntimeError(f"bvh_router_ext.route returned {len(route_out)} values, expected 3 or 4")
 
         # Already PyTorch tensors on CUDA — no conversion needed
         return RoutingResult(

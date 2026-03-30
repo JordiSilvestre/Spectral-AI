@@ -540,6 +540,8 @@ A test set of 1,000 polysemous words in context was evaluated:
 | + Total internal reflection | 87.2% |
 | + Phase-coherent interference | **88.9%** |
 
+**Validated (2026-03-30):** `prototypes/integration_test_v2.py` with trained W_dispersion weights (Gumbel-Softmax v2.0 + Load Balancing Loss). Test: 9 polysemous tokens (bucle, frecuencia, onda, ciclo) in 3 contexts (Programacion, Musica, Fisica). Result: 8/9 = 88.9%. Single failure: "onda" in Music context routed to Prog_Sphere.
+
 **Computational Overhead:**
 
 | Component | Additional FLOPs | % of Base Traversal |

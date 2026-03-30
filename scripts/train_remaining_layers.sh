@@ -6,6 +6,9 @@
 #   - 16/16 capas entrenadas
 #   - L11 reentrenada con --spectral: 81.8% → 93.3% top-8
 #   - Weak (< 85%): L3(80.5%), L5(81.9%), L6(84.3%), L7(84.3%)
+#   - NEW: topk_matching_loss integrada (weight=0.3) — optimiza top-8 set
+#     directamente, no solo KL divergence. "THE key missing piece."
+#   - FORCE_RETRAIN=true por defecto para re-entrenar todas las capas
 #
 # Este script:
 #   FASE 0: Copiar datos a disco local (/tmp) para I/O rápido
@@ -35,6 +38,7 @@ fi
 MODEL_DIR="${MODEL_DIR:-/mnt/j/Proyectos/models/olmoe-1b-7b}"
 EPOCHS="${EPOCHS:-100}"
 DEVICE="${DEVICE:-cuda}"
+FORCE_RETRAIN="${FORCE_RETRAIN:-true}"   # Force retrain even if spectral checkpoint exists (to use new topk_matching_loss)
 DATA_SRC="data"
 DATA_LOCAL="/tmp/spectral_hiddens"
 
@@ -82,7 +86,7 @@ retrain_layer() {
     fi
 
     local NEEDS_SPECTRAL=true
-    if [ -f "$CKPT" ]; then
+    if [ -f "$CKPT" ] && [ "$FORCE_RETRAIN" != "true" ]; then
         local HAS_SPECTRAL
         HAS_SPECTRAL=$($PY -c "
 import torch
@@ -90,11 +94,13 @@ c = torch.load('$CKPT', map_location='cpu', weights_only=False)
 print('true' if c.get('spectral_mode', c.get('lyra_mode', False)) else 'false')
 " 2>&1 || echo "false")
         if [ "$HAS_SPECTRAL" = "true" ]; then
-            echo "  Layer $L: already has Spectral Techniques, skipping"
+            echo "  Layer $L: already has Spectral Techniques, skipping (use FORCE_RETRAIN=true to override)"
             NEEDS_SPECTRAL=false
         else
             echo "  Layer $L: needs Spectral retrain"
         fi
+    elif [ "$FORCE_RETRAIN" = "true" ]; then
+        echo "  Layer $L: FORCE_RETRAIN=true, retraining with topk_matching_loss"
     fi
 
     if [ "$NEEDS_SPECTRAL" = "true" ]; then
@@ -204,5 +210,5 @@ echo ""
 echo "============================================================"
 echo "  ALL PHASES COMPLETE"
 echo "  Spectral Techniques en todas las capas"
-echo "  PPL esperado: 8.27 -> ~7.0-7.5"
+echo "  PPL esperado: 8.27 -> ~6.5-7.0 (con topk_matching_loss)"
 echo "============================================================"

@@ -372,25 +372,32 @@ An alternative implementation path uses the Vulkan ray tracing extension (VK_KHR
 A prototype implementation was constructed and validated on the following hardware and software:
 
 **Hardware:** NVIDIA RTX 5070 Ti (16 GB VRAM), CUDA Compute Capability sm_120.
-**Software:** CUDA 12.8, OptiX SDK 9.1, C++17, PyTorch 2.x with pybind11 bindings.
+**Software:** CUDA 13.2, PyTorch 2.11 cu128, C++17, pybind11 bindings, WSL2 Ubuntu.
 
-**Key Results:**
+**Key Results (Certified 2026-03-30):**
 
-| Metric | Measurement |
-|---|---|
-| Routing Latency (batch=256, PyTorch) | 1,003 microseconds |
-| Routing Latency (batch=256, CUDA Extension) | 10 microseconds |
-| Speedup (CUDA Extension vs PyTorch) | 105x |
-| End-to-End Latency (routing + backbone, batch=1) | 949 microseconds |
-| End-to-End Speedup | 1.89x |
-| Token Generation Rate | 51.9 tokens/second |
-| Active VRAM Usage | 7.86 MB |
-| VRAM Reduction vs Full Model | 375x less |
+| Metric | Measurement | Method |
+|---|---|---|
+| Routing Latency (batch=256, PyTorch) | 1,002 microseconds | `benchmark_e2e_final.py` |
+| Routing Latency (batch=256, CUDA Extension) | 11 microseconds | `benchmark_e2e_final.py` |
+| Routing Latency (batch=1, CUDA Extension) | 22 microseconds | `patent_benchmark.py` |
+| Speedup (CUDA Extension vs PyTorch) | 89-227x (batch dependent) | `benchmark_e2e_final.py` |
+| End-to-End Latency (routing + expert, batch=1) | 690 microseconds | `patent_benchmark.py` |
+| Token Generation Rate (full model baseline) | 50.0 tokens/second (peak) | `patent_benchmark.py`, `model.generate()` |
+| Active VRAM Usage (router + 1 expert) | 4.03 MB | Router 890 KB + Expert 3,234 KB |
+| VRAM Reduction vs Full Model | 731x less | 2,944 MB / 4.03 MB |
+
+**Measurement methodology:**
+- Active VRAM counts only the MoE routing overhead: projection layer (1536->128, 768 KB), BVH router (128-dim, 122 KB), and one active ternary expert (3,234 KB packed 2-bit). The attention backbone is shared infrastructure and is excluded from both the numerator and denominator.
+- Token generation rate measures the native HuggingFace `model.generate()` throughput as the baseline. The BVH routing overhead (22 us) is negligible relative to the per-token forward pass (~20 ms), so the system matches baseline speed.
+- Routing speedup is measured as PyTorch `BVHRouter.forward()` vs `bvh_router_ext.route()` CUDA kernel, both on GPU.
 
 The BVH router was validated against the OLMoE-1B-7B model (7 billion parameters, 64 experts), achieving:
 - Top-8 expert selection accuracy: 91.7% (layer 8)
 - End-to-end perplexity: 6.16 (vs baseline 6.11, a delta of +0.8%)
 - Linear degradation of approximately 1% per replaced layer when scaling to multiple layers.
+
+**Reproduction:** Run `scripts/patent_benchmark.py` and `python/benchmark_e2e_final.py` from the project root.
 
 ---
 

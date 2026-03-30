@@ -51,25 +51,42 @@ cu_source = project_root / "cuda" / "v5" / "bvh_torch_ext.cu"
 safe_source = Path(build_dir) / "bvh_torch_ext.cu"
 shutil.copy2(cu_source, safe_source)
 
-torch_lib_dir = str(Path(torch.__file__).parent / "lib")
-needs_patch = " " in torch_lib_dir
+# Symlink entire torch package dir so ALL derived paths are space-free.
+# PyTorch's cpp_extension derives -L paths from torch.__file__ in multiple
+# places; patching library_paths alone misses the second -L injection.
+torch_pkg_dir = str(Path(torch.__file__).parent)
+torch_lib_dir = str(Path(torch_pkg_dir) / "lib")
+needs_patch = " " in torch_pkg_dir
+safe_torch_lib = torch_lib_dir
+
+_original_torch_file = torch.__file__
+_original_torch_path = list(torch.__path__) if torch.__path__ else []
 
 if needs_patch:
-    safe_torch_lib = "/tmp/_torch_lib_bvh"
-    if os.path.islink(safe_torch_lib):
-        os.unlink(safe_torch_lib)
-    os.symlink(torch_lib_dir, safe_torch_lib)
-    print(f"Torch lib has spaces -- symlinked to: {safe_torch_lib}")
+    safe_torch_pkg = "/tmp/_torch_pkg_bvh"
+    if os.path.islink(safe_torch_pkg):
+        os.unlink(safe_torch_pkg)
+    os.symlink(torch_pkg_dir, safe_torch_pkg)
+    print(f"Torch pkg symlinked: {safe_torch_pkg} -> {torch_pkg_dir}")
 
-    # Monkey-patch torch's library_paths to return the symlink
+    # Redirect ALL internal references through the symlink
+    torch.__file__ = torch.__file__.replace(torch_pkg_dir, safe_torch_pkg)
+    if torch.__path__:
+        torch.__path__[0] = safe_torch_pkg
+
+    safe_torch_lib = str(Path(safe_torch_pkg) / "lib")
+
+    # Patch module-level path variables computed at import time
+    if hasattr(cpp_ext, '_TORCH_PATH'):
+        cpp_ext._TORCH_PATH = safe_torch_pkg
+    if hasattr(cpp_ext, 'TORCH_LIB_PATH'):
+        cpp_ext.TORCH_LIB_PATH = safe_torch_lib
+
     _orig_lib_paths = cpp_ext.library_paths
     def _patched_lib_paths(cuda=False):
         paths = _orig_lib_paths(cuda)
-        return [p.replace(torch_lib_dir, safe_torch_lib) if torch_lib_dir in p else p for p in paths]
+        return [p.replace(torch_pkg_dir, safe_torch_pkg) if torch_pkg_dir in p else p for p in paths]
     cpp_ext.library_paths = _patched_lib_paths
-
-    if hasattr(cpp_ext, 'TORCH_LIB_PATH'):
-        cpp_ext.TORCH_LIB_PATH = safe_torch_lib
 
 print("\n=== Compilando extension PyTorch bvh_router_ext ===")
 ext = cpp_ext.load(
@@ -86,6 +103,12 @@ ext = cpp_ext.load(
     build_directory=build_dir,
     verbose=True,
 )
+
+# Restore torch paths
+if needs_patch:
+    torch.__file__ = _original_torch_file
+    if _original_torch_path:
+        torch.__path__[:] = _original_torch_path
 
 print("\n=== Extension compilada exitosamente ===")
 print(f"Modulo: {ext}")

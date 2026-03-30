@@ -42,7 +42,11 @@ if torch.cuda.is_available():
 # internal _get_torch_lib_path so the generated ninja file uses our symlink.
 # ============================================================================
 
-build_dir = os.path.expanduser("~/.cache/torch_extensions/ternary_expert_ext")
+if os.name == "nt":
+    build_dir = os.path.join(os.environ.get("LOCALAPPDATA", os.path.expanduser("~")),
+                             "torch_extensions", "ternary_expert_ext")
+else:
+    build_dir = os.path.expanduser("~/.cache/torch_extensions/ternary_expert_ext")
 os.makedirs(build_dir, exist_ok=True)
 
 # Copy .cu source to a path without spaces
@@ -54,11 +58,25 @@ torch_lib_dir = str(Path(torch.__file__).parent / "lib")
 needs_patch = " " in torch_lib_dir
 
 if needs_patch:
-    safe_torch_lib = "/tmp/_torch_lib_ternary"
-    if os.path.islink(safe_torch_lib):
-        os.unlink(safe_torch_lib)
-    os.symlink(torch_lib_dir, safe_torch_lib)
-    print(f"Torch lib has spaces — symlinked to: {safe_torch_lib}")
+    import sys as _sys
+    if _sys.platform == "win32":
+        # Windows: use junction (no admin needed) or short path
+        import tempfile
+        safe_torch_lib = os.path.join(tempfile.gettempdir(), "_torch_lib_ternary")
+    else:
+        safe_torch_lib = "/tmp/_torch_lib_ternary"
+    if os.path.islink(safe_torch_lib) or (os.path.isdir(safe_torch_lib) and _sys.platform == "win32"):
+        try:
+            os.unlink(safe_torch_lib)
+        except OSError:
+            import shutil as _shutil
+            _shutil.rmtree(safe_torch_lib, ignore_errors=True)
+    if _sys.platform == "win32":
+        # Use directory junction (works without admin on Windows)
+        os.system(f'mklink /J "{safe_torch_lib}" "{torch_lib_dir}"')
+    else:
+        os.symlink(torch_lib_dir, safe_torch_lib)
+    print(f"Torch lib has spaces — linked to: {safe_torch_lib}")
 
     # Monkey-patch torch's internal library path resolver
     _orig_prepare = cpp_ext._prepare_ldflags if hasattr(cpp_ext, '_prepare_ldflags') else None
@@ -87,6 +105,7 @@ ext = cpp_ext.load(
         "--expt-relaxed-constexpr",
         "--maxrregcount=64",
         "-DNDEBUG",
+        "-DCCCL_IGNORE_MSVC_TRADITIONAL_PREPROCESSOR_WARNING",
     ] + cuda_arch_flags,
     extra_ldflags=[f"-L{safe_torch_lib}"] if needs_patch else [],
     build_directory=build_dir,

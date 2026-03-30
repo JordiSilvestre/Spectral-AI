@@ -7,6 +7,7 @@
  * Miss: When a ray misses all experts, return sentinel values.
  *
  * Entry points:
+ *   __intersection__rt_router   (AABB custom primitive intersection)
  *   __closesthit__rt_router
  *   __miss__rt_router
  *
@@ -14,6 +15,26 @@
  */
 
 #include <optix.h>
+
+// ============================================================================
+// Intersection Program (REQUIRED for CUSTOM_PRIMITIVES / AABBs)
+// ============================================================================
+//
+// When OptiX traverses the BVH and finds a ray overlapping an AABB,
+// it calls this intersection program. We must call optixReportIntersection()
+// to confirm the hit; otherwise the primitive is skipped (all rays miss).
+//
+// For expert routing we treat the AABB itself as the geometry — any ray
+// entering the AABB counts as "hitting" that expert.
+
+extern "C" __global__ void __intersection__rt_router() {
+    // Accept hit at the AABB entry point.
+    // For custom primitives the ray is already clipped to the AABB,
+    // so reportintersection at the current tmin is the AABB surface.
+    // hitKind = 0 (custom, not triangle).
+    const float t_hit = optixGetRayTmin();
+    optixReportIntersection(t_hit, 0);
+}
 
 // ============================================================================
 // Closest Hit Program

@@ -419,6 +419,50 @@ int main(int argc, char** argv) {
     add_dependencies(rt_router_benchmark optix_ptx)
     message(STATUS "Created target: rt_router_benchmark")
 
+    # ── OptiX Training Extension (PyTorch pybind11) ──────────────
+    # PyTorch C++ extension that wraps RTCoreRouter for training.
+    # Built either via CMake (below) or JIT via cuda/v5/build_optix_ext.py.
+    # Requires: PyTorch, pybind11 (shipped with PyTorch)
+
+    option(SPECTRAL_BUILD_OPTIX_EXT "Build OptiX PyTorch training extension" OFF)
+
+    if(SPECTRAL_BUILD_OPTIX_EXT)
+        find_package(Python3 COMPONENTS Interpreter Development REQUIRED)
+        find_package(Torch REQUIRED)
+
+        add_library(optix_training_ext SHARED
+            cuda/v5/optix_training_ext.cu
+        )
+
+        target_compile_definitions(optix_training_ext PRIVATE
+            OPTIX_TRAINING_STANDALONE
+        )
+
+        target_include_directories(optix_training_ext PRIVATE
+            ${CMAKE_CURRENT_SOURCE_DIR}/include
+            ${OptiX_INCLUDE_DIR}
+            ${CUDAToolkit_INCLUDE_DIRS}
+            ${TORCH_INCLUDE_DIRS}
+            ${Python3_INCLUDE_DIRS}
+        )
+
+        target_link_libraries(optix_training_ext PRIVATE
+            spectral_rt_router
+            ${TORCH_LIBRARIES}
+            Python3::Python
+            CUDA::cudart
+            CUDA::cuda_driver
+        )
+
+        set_target_properties(optix_training_ext PROPERTIES
+            PREFIX ""
+            SUFFIX ".so"
+        )
+
+        add_dependencies(optix_training_ext optix_ptx)
+        message(STATUS "Created target: optix_training_ext (PyTorch OptiX training bridge)")
+    endif()
+
 else()
     message(STATUS "OptiX build DISABLED — set OptiX_INSTALL_DIR or install OptiX SDK 9.1")
 

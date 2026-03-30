@@ -19,24 +19,57 @@ Copyright (c) 2026 SpectralAI Studio — Apache 2.0
 import numpy as np
 import torch
 import torch.nn as nn
+from pathlib import Path
 from typing import Optional
 
 # Try to import the CUDA extension
-# JIT-compiled extensions live in ~/.cache/torch_extensions/
+# JIT-compiled extensions live in ~/.cache/torch_extensions/ (Linux)
+# or cuda/v5/ternary_expert_ext.pyd (Windows split build)
 HAS_TERNARY_EXT = False
+
+def _setup_dll_dirs():
+    """Add CUDA and Torch DLL directories on Windows so .pyd can find them."""
+    import os as _os, sys as _sys
+    if _sys.platform == "win32" and hasattr(_os, "add_dll_directory"):
+        cuda_bin = r"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.2\bin"
+        if _os.path.isdir(cuda_bin):
+            try:
+                _os.add_dll_directory(cuda_bin)
+            except OSError:
+                pass
+        try:
+            import torch as _torch
+            torch_lib = str(Path(_torch.__file__).parent / "lib")
+            if _os.path.isdir(torch_lib):
+                _os.add_dll_directory(torch_lib)
+        except Exception:
+            pass
+
+_setup_dll_dirs()
+
+_search_dirs = [
+    # Windows split build location
+    str(Path(__file__).resolve().parent.parent / "cuda" / "v5"),
+    # Linux JIT build location
+    str(Path("~/.cache/torch_extensions/ternary_expert_ext").expanduser()),
+    # Windows JIT build location
+    str(Path("~/AppData/Local/torch_extensions/ternary_expert_ext").expanduser()),
+]
+
 try:
     import ternary_expert_ext
     HAS_TERNARY_EXT = True
 except ImportError:
-    try:
-        import os as _os, sys as _sys
-        _ext_dir = _os.path.expanduser("~/.cache/torch_extensions/ternary_expert_ext")
-        if _os.path.isdir(_ext_dir) and _ext_dir not in _sys.path:
+    import sys as _sys
+    for _ext_dir in _search_dirs:
+        if Path(_ext_dir).is_dir() and _ext_dir not in _sys.path:
             _sys.path.insert(0, _ext_dir)
-        import ternary_expert_ext
-        HAS_TERNARY_EXT = True
-    except ImportError:
-        pass
+            try:
+                import ternary_expert_ext
+                HAS_TERNARY_EXT = True
+                break
+            except ImportError:
+                _sys.path.remove(_ext_dir)
 
 
 class CUDATernaryExpertModule(nn.Module):

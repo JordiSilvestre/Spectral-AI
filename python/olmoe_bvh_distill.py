@@ -923,7 +923,7 @@ def train_bvh_distillation(
         print(f"  [Spectral] SmoothBVHHit + RMSNorm + DualLR + BetaScheduler ACTIVE")
     alpha_soft = 0.7
     weight_entropy = 0.01
-    weight_topk = 0.0
+    weight_topk = 0.3
     print(f"  Distillation temp: {distill_temp}, alpha_soft: {alpha_soft}")
     print(f"  Weights: balance={weight_balance}, entropy={weight_entropy}, topk={weight_topk}")
     print(f"  LR: {lr}, Epochs: {epochs}, Batch: {batch_size}")
@@ -965,6 +965,7 @@ def train_bvh_distillation(
         for hidden, gate_logits_batch, topk_ids, top1_labels in train_loader:
             hidden = hidden.to(device, non_blocking=True)
             gate_logits_batch = gate_logits_batch.to(device, non_blocking=True)
+            topk_ids = topk_ids.to(device, non_blocking=True)
             top1_labels = top1_labels.to(device, non_blocking=True)
 
             # Ensure FP32 base (AMP autocast handles mixed precision)
@@ -1002,8 +1003,9 @@ def train_bvh_distillation(
             )
             l_balance = router.load_balancing_loss()
             l_entropy = entropy_regularization(student_logits, router.n_experts)
+            l_topk = topk_matching_loss(student_logits, topk_ids, k=8)
 
-            loss = l_distill + weight_balance * l_balance + weight_entropy * l_entropy
+            loss = l_distill + weight_balance * l_balance + weight_entropy * l_entropy + weight_topk * l_topk
 
             optimizer.zero_grad(set_to_none=True)
             scaler.scale(loss).backward()
@@ -1034,7 +1036,7 @@ def train_bvh_distillation(
             epoch_hard += l_hard.item()
             epoch_bal += l_balance.item()
             epoch_ent += l_entropy.item()
-            epoch_topk += 0.0  # topk loss not used in current config
+            epoch_topk += l_topk.item()
             n_batches += 1
             global_step += 1
 

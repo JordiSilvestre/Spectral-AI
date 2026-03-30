@@ -28,6 +28,7 @@
 
 #include <optix.h>
 #include <optix_stubs.h>
+#include <optix_function_table_definition.h>  // Defines g_optixFunctionTable symbol
 #include <cuda.h>
 #include <cuda_runtime.h>
 #include <iostream>

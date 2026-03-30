@@ -745,6 +745,10 @@ class InceptionAttention(nn.Module):
         self.register_buffer('temperature',
                              torch.tensor(cfg.temperature_init))
 
+        # Learnable mixing weight: inception vs QK attention.
+        # Initialized to logit(0.7) ≈ 0.847 so sigmoid gives ~0.7 at start.
+        self.alpha_mix_logit = nn.Parameter(torch.tensor(0.847))
+
         self.attn_drop = nn.Dropout(cfg.dropout)
 
     def anneal_temperature(self):
@@ -822,9 +826,10 @@ class InceptionAttention(nn.Module):
         # (B, H, S, S)
 
         # Mezclar: λ·inception_scores + (1-λ)·qk_scores
-        # λ controla cuánto peso tiene la estructura espacial
+        # λ es aprendible (sigmoid para mantenerse en [0, 1])
+        alpha = torch.sigmoid(self.alpha_mix_logit)
         inception_scores = scores.unsqueeze(1).expand_as(qk_scores)
-        combined_scores = 0.7 * inception_scores + 0.3 * qk_scores
+        combined_scores = alpha * inception_scores + (1.0 - alpha) * qk_scores
 
         # ── Causal mask ───────────────────────────────────────────
         if attention_mask is None:

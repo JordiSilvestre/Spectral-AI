@@ -74,7 +74,7 @@ def compute_spatial_loss(model: SpectralAIInceptionLM) -> torch.Tensor:
             eye = torch.zeros_like(T)
             for i in range(3):
                 eye[:, i, i] = 1.0
-            parts.append(((T - eye) ** 2).mean() * 0.01)
+            parts.append(((T - eye) ** 2).mean() * 0.2)
 
     return torch.stack(parts).sum()
 
@@ -155,9 +155,19 @@ def train(args):
         model.parameters(), lr=args.lr,
         weight_decay=0.1, betas=(0.9, 0.95),
     )
-    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
-        optimizer, T_max=args.epochs * len(train_loader),
-    )
+
+    # Cosine schedule with linear warmup (stabilizes BVH initialization)
+    total_steps = args.epochs * len(train_loader)
+    warmup_steps = min(500, total_steps // 10)  # 10% of training or 500 steps
+
+    def lr_lambda(step: int) -> float:
+        if step < warmup_steps:
+            return step / max(warmup_steps, 1)
+        progress = (step - warmup_steps) / max(total_steps - warmup_steps, 1)
+        return 0.5 * (1.0 + math.cos(math.pi * progress))
+
+    scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda)
+    print(f"[OPT] LR warmup: {warmup_steps} steps, then cosine decay over {total_steps} steps")
 
     best_val_loss = float('inf')
     log = []
@@ -186,13 +196,10 @@ def train(args):
                     batch[:, 1:].reshape(-1),
                 )
 
-                # L_spatial: cada 10 steps
-                if step % 10 == 0:
-                    spatial_loss = compute_spatial_loss(raw_model)
-                    cached_spat = spatial_loss.item()
-                    total_loss = task_loss + args.alpha_spatial * spatial_loss
-                else:
-                    total_loss = task_loss
+                # L_spatial: every step for consistent spatial enforcement
+                spatial_loss = compute_spatial_loss(raw_model)
+                cached_spat = spatial_loss.item()
+                total_loss = task_loss + args.alpha_spatial * spatial_loss
 
             # Backward con GradScaler (FP16 → FP32 gradientes)
             optimizer.zero_grad()
@@ -373,7 +380,7 @@ def main():
     parser.add_argument("--epochs",        type=int,   default=10)
     parser.add_argument("--batch-size",    type=int,   default=32)
     parser.add_argument("--lr",            type=float, default=5e-4)
-    parser.add_argument("--alpha-spatial", type=float, default=0.05,
+    parser.add_argument("--alpha-spatial", type=float, default=0.15,
                         help="Peso de L_spatial en L_total")
     parser.add_argument("--device",        type=str,   default="cuda")
     parser.add_argument("--compare-only",  action="store_true",
