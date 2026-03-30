@@ -222,11 +222,10 @@ if(SPECTRAL_BUILD_OPTIX AND OptiX_INCLUDE_DIR)
         optix_router_hitgroup.cu
     )
 
-    # Build gencode flags based on supported architectures
-    set(PTX_GENCODE_FLAGS -gencode=arch=compute_89,code=compute_89)
-    if(SPECTRAL_SM120_SUPPORTED)
-        list(APPEND PTX_GENCODE_FLAGS -gencode=arch=compute_120,code=compute_120)
-    endif()
+    # OptiX PTX must target a single virtual architecture.
+    # nvcc --ptx does not support multiple -gencode flags.
+    # We compile to compute_89 (Ada); OptiX JIT-compiles to the actual GPU.
+    set(PTX_ARCH_FLAG -arch=compute_89)
 
     set(PTX_FILES "")
     foreach(SHADER ${OPTIX_SHADERS})
@@ -244,7 +243,7 @@ if(SPECTRAL_BUILD_OPTIX AND OptiX_INCLUDE_DIR)
                 "-I${CMAKE_CURRENT_SOURCE_DIR}/include"
                 "-I${OptiX_INCLUDE_DIR}"
                 "-I${CUDAToolkit_INCLUDE_DIRS}"
-                ${PTX_GENCODE_FLAGS}
+                ${PTX_ARCH_FLAG}
                 "${OPTIX_SHADER_DIR}/${SHADER}"
                 -o "${PTX_FILE}"
             DEPENDS "${OPTIX_SHADER_DIR}/${SHADER}"
