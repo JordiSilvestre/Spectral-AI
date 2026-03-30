@@ -8,15 +8,11 @@
 #   - Weak (< 85%): L3(80.5%), L5(81.9%), L6(84.3%), L7(84.3%)
 #
 # Este script:
+#   FASE 0: Copiar datos a disco local (/tmp) para I/O rápido
 #   FASE A: Retrain capas débiles con --spectral (máximo impacto en PPL)
 #   FASE A2: Retrain capas fuertes con --spectral (mejora incremental)
 #   FASE B: Calibrar todas las capas
 #   FASE C: Evaluar PPL 16/16
-#
-# Prerequisites:
-#   - OLMoE model en MODEL_DIR
-#   - data/real_hiddens_layer*.pt disponibles (todos presentes)
-#   - Python venv activado (con torch, transformers)
 #
 # Usage (en WSL):
 #   cd /mnt/j/Proyectos/SPECTRAL\ AI
@@ -39,6 +35,8 @@ fi
 MODEL_DIR="${MODEL_DIR:-/mnt/j/Proyectos/models/olmoe-1b-7b}"
 EPOCHS="${EPOCHS:-100}"
 DEVICE="${DEVICE:-cuda}"
+DATA_SRC="data"
+DATA_LOCAL="/tmp/spectral_hiddens"
 
 echo "============================================================"
 echo "  SpectralAI — Retrain ALL layers with Spectral Techniques"
@@ -46,6 +44,27 @@ echo "  Model: $MODEL_DIR"
 echo "  Python: $PY"
 echo "  Epochs: $EPOCHS | Device: $DEVICE"
 echo "============================================================"
+
+# ── FASE 0: Copiar datos a disco local para I/O rápido ──────
+echo ""
+echo ">>> FASE 0: Copiando datos a disco local ($DATA_LOCAL)..."
+mkdir -p "$DATA_LOCAL"
+
+for L in 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15; do
+    SRC="${DATA_SRC}/real_hiddens_layer${L}.pt"
+    DST="${DATA_LOCAL}/real_hiddens_layer${L}.pt"
+    if [ -f "$SRC" ]; then
+        if [ ! -f "$DST" ] || [ "$SRC" -nt "$DST" ]; then
+            echo "  Copiando layer $L → $DST..."
+            cp "$SRC" "$DST"
+        else
+            echo "  Layer $L: ya en disco local"
+        fi
+    else
+        echo "  Layer $L: SIN DATOS ($SRC no existe)"
+    fi
+done
+echo ">>> FASE 0 COMPLETE — datos en disco local"
 
 # ── Helper: retrain a layer with --spectral if needed ───────
 retrain_layer() {
@@ -55,6 +74,12 @@ retrain_layer() {
         SAVE_DIR="checkpoints/olmoe_distill"
     fi
     local CKPT="${SAVE_DIR}/bvh_router_best.pt"
+    local DATA_FILE="${DATA_LOCAL}/real_hiddens_layer${L}.pt"
+
+    if [ ! -f "$DATA_FILE" ]; then
+        echo "  Layer $L: NO DATA, skipping"
+        return
+    fi
 
     local NEEDS_SPECTRAL=true
     if [ -f "$CKPT" ]; then
@@ -77,7 +102,7 @@ print('true' if c.get('spectral_mode', c.get('lyra_mode', False)) else 'false')
         mkdir -p "$SAVE_DIR"
         $PY python/olmoe_bvh_distill.py \
             --layer "$L" \
-            --real-data "data/real_hiddens_layer${L}.pt" \
+            --real-data "$DATA_FILE" \
             --epochs "$EPOCHS" \
             --save-dir "$SAVE_DIR" \
             --device "$DEVICE" \
@@ -137,7 +162,7 @@ for L in 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15; do
     $PY python/calibrate_router.py \
         --mode linear \
         --epochs 100 \
-        --real-data "data/real_hiddens_layer${L}.pt" \
+        --real-data "${DATA_LOCAL}/real_hiddens_layer${L}.pt" \
         --router-checkpoint "$CKPT" \
         --device cpu
     echo "  Layer $L: calibration done"
@@ -168,6 +193,11 @@ $PY python/olmoe_e2e_eval.py \
     --model-dir "$MODEL_DIR" \
     --multi-layer "$MULTI_LAYER" \
     --max-tokens 50000
+
+# ── Cleanup ─────────────────────────────────────────────────
+echo ""
+echo ">>> Limpiando datos locales ($DATA_LOCAL)..."
+rm -rf "$DATA_LOCAL"
 
 echo ""
 echo "============================================================"
