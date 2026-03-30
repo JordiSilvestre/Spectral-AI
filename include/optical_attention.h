@@ -39,6 +39,11 @@
 #  define SPECTRAL_CUDA_SPECTRAL_DIM 16
 #endif
 
+/// Maximum number of top-K tokens stored per ray payload
+#ifndef SPECTRAL_MAX_TOP_TOKENS
+#  define SPECTRAL_MAX_TOP_TOKENS 64
+#endif
+
 // ============================================================================
 // Configuración de atención óptica
 // ============================================================================

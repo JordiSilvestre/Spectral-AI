@@ -190,13 +190,13 @@ static void computePrincipalAxes(
  * @note Los vectores propios deberían precalcularse una vez del corpus completo
  *       y reutilizarse. Aquí se usa una aproximación simplificada.
  */
-void projectEmbeddingTo3D(
+float3 projectEmbeddingTo3D(
     const float* embedding,
-    uint32_t embed_dim,
-    float3& centroid_out) {
+    uint32_t embed_dim) {
 
     SPECTRAL_CHECK(embedding != nullptr);
     SPECTRAL_CHECK(embed_dim > 0);
+    float3 centroid_out;
 
     // ====================================================================================
     // PASO 1: Normalización L2 (convención estándar en embeddings)
@@ -255,6 +255,7 @@ void projectEmbeddingTo3D(
     centroid_out.y = tanhf(sum_odd * 0.1f);
     centroid_out.z = tanhf(z * 0.1f);
 
+    return centroid_out;
 }
 
 // ============================================================================
@@ -348,7 +349,7 @@ TokenNode createTokenNode(
     // ==================================================================================
     // PASO 1: Proyectar embedding a 3D
     // ==================================================================================
-    projectEmbeddingTo3D(embedding, embed_dim, node.centroid);
+    node.centroid = projectEmbeddingTo3D(embedding, embed_dim);
 
     // ==================================================================================
     // PASO 2: Computar AABB

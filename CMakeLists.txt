@@ -174,7 +174,7 @@ message(STATUS "CUDA flags: ${CMAKE_CUDA_FLAGS}")
 add_library(spectral_core STATIC
     src/token_geometry.cpp
     src/semantic_bvh.cpp
-    src/alpha_bsh.cpp
+    # src/alpha_bsh.cpp  # DISABLED: v4 research, depends on uncompiled alpha_phase kernels
 )
 
 target_include_directories(spectral_core PUBLIC
