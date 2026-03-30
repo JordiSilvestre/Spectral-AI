@@ -31,12 +31,11 @@
 #  define SPECTRAL_SPECTRAL_ENABLED 1
 #endif
 
-/// Spectral dimension used inside CUDA kernels. The full spectral_ray.h uses
-/// SPECTRAL_DIM=64, but 64 floats per ray causes severe register pressure on
-/// SM hardware. We default to 16 for the CUDA path; set to 32 or 64 if the
-/// target GPU has enough registers (e.g. RTX 5090).
+/// Spectral dimension used inside CUDA kernels. Matches SPECTRAL_DIM=64 from
+/// spectral_ray.h. RTX 4090/5070 Ti have sufficient registers for 64 floats.
+/// Reduces to 16 only if register spilling is measured (compile with --ptxas-options=-v).
 #ifndef SPECTRAL_CUDA_SPECTRAL_DIM
-#  define SPECTRAL_CUDA_SPECTRAL_DIM 16
+#  define SPECTRAL_CUDA_SPECTRAL_DIM 64
 #endif
 
 /// Maximum number of top-K tokens stored per ray payload

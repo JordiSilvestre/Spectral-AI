@@ -390,13 +390,13 @@ class EnhancedBVHRouter(nn.Module):
         # PrismaticRefraction: color → per-expert refractive index (polysemy routing)
         self.spectral_enabled = spectral_mode  # spectral encoder requires spectral_mode for differentiability
         if self.spectral_enabled:
-            self.spectral_dim = 16  # matches SPECTRAL_CUDA_SPECTRAL_DIM
-            # Lightweight spectral encoder: 256→16 (post input_proj, not raw 2048)
-            # This keeps params minimal while capturing semantic color
+            self.spectral_dim = 64  # richer color = better polysemy resolution
+            # Spectral encoder: 256→64 (post input_proj, not raw 2048)
+            # 64-dim color captures fine-grained context (code vs music vs physics)
             self.spectral_encoder = nn.Sequential(
-                nn.Linear(256, 64),
+                nn.Linear(256, 128),
                 nn.GELU(),
-                nn.Linear(64, self.spectral_dim),
+                nn.Linear(128, self.spectral_dim),
                 nn.Tanh(),
             )
             self.prismatic_refraction = PrismaticRefraction(

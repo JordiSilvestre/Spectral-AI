@@ -396,6 +396,184 @@ public:
     }
 
     /**
+     * Build GAS using native triangles instead of custom AABBs.
+     *
+     * Each expert sphere is approximated by an octahedron (8 triangles).
+     * Native triangle intersection is the fastest path on RT Cores —
+     * it's what the hardware was designed for (gaming).
+     *
+     * Advantages over AABB:
+     *   - Tighter fit to sphere → fewer false positives
+     *   - Hardware-native intersection (no custom IS program)
+     *   - Built-in barycentric coordinates for interpolation
+     *   - SBT indexing maps primitiveIndex → expert_id directly
+     *
+     * @param centers  Host pointer: [num_experts * 3] float (x,y,z per expert)
+     * @param radii    Host pointer: [num_experts] float
+     * @param num_experts Number of experts (64 typically)
+     * @return true on success
+     */
+    bool buildGAS_triangles(const float* centers, const float* radii,
+                            uint32_t num_experts) {
+        num_experts_ = num_experts;
+
+        if (d_gas_buffer_) {
+            cudaFree(reinterpret_cast<void*>(d_gas_buffer_));
+            d_gas_buffer_ = 0;
+        }
+
+        // ── Generate octahedron vertices + indices per expert ──
+        // Octahedron: 6 vertices, 8 triangles — good sphere approximation
+        const uint32_t verts_per_expert = 6;
+        const uint32_t tris_per_expert = 8;
+        const uint32_t total_verts = num_experts * verts_per_expert;
+        const uint32_t total_tris = num_experts * tris_per_expert;
+
+        std::vector<float3> vertices(total_verts);
+        std::vector<uint3> indices(total_tris);
+
+        // Octahedron template (unit sphere, 6 vertices along ±X, ±Y, ±Z)
+        const float3 oct_verts[6] = {
+            { 1, 0, 0}, {-1, 0, 0},
+            { 0, 1, 0}, { 0,-1, 0},
+            { 0, 0, 1}, { 0, 0,-1}
+        };
+        // 8 faces of the octahedron
+        const uint3 oct_faces[8] = {
+            {0, 2, 4}, {0, 4, 3}, {0, 3, 5}, {0, 5, 2},
+            {1, 4, 2}, {1, 3, 4}, {1, 5, 3}, {1, 2, 5}
+        };
+
+        for (uint32_t e = 0; e < num_experts; ++e) {
+            float cx = centers[e * 3 + 0];
+            float cy = centers[e * 3 + 1];
+            float cz = centers[e * 3 + 2];
+            float r  = radii[e];
+
+            uint32_t v_base = e * verts_per_expert;
+            uint32_t t_base = e * tris_per_expert;
+
+            // Scale + translate octahedron to expert sphere
+            for (uint32_t v = 0; v < verts_per_expert; ++v) {
+                vertices[v_base + v].x = cx + oct_verts[v].x * r;
+                vertices[v_base + v].y = cy + oct_verts[v].y * r;
+                vertices[v_base + v].z = cz + oct_verts[v].z * r;
+            }
+
+            for (uint32_t t = 0; t < tris_per_expert; ++t) {
+                indices[t_base + t].x = v_base + oct_faces[t].x;
+                indices[t_base + t].y = v_base + oct_faces[t].y;
+                indices[t_base + t].z = v_base + oct_faces[t].z;
+            }
+        }
+
+        // ── Upload to GPU ──────────────────────────────────────
+        CUdeviceptr d_vertices;
+        size_t vert_size = total_verts * sizeof(float3);
+        CUDA_CHECK(cudaMalloc(reinterpret_cast<void**>(&d_vertices), vert_size));
+        CUDA_CHECK(cudaMemcpy(reinterpret_cast<void*>(d_vertices),
+                              vertices.data(), vert_size, cudaMemcpyHostToDevice));
+
+        CUdeviceptr d_indices;
+        size_t idx_size = total_tris * sizeof(uint3);
+        CUDA_CHECK(cudaMalloc(reinterpret_cast<void**>(&d_indices), idx_size));
+        CUDA_CHECK(cudaMemcpy(reinterpret_cast<void*>(d_indices),
+                              indices.data(), idx_size, cudaMemcpyHostToDevice));
+
+        // ── SBT index offset per expert ────────────────────────
+        // Maps primitiveIndex / tris_per_expert → expert_id
+        // We use a single SBT record; the hitgroup program computes:
+        //   expert_id = optixGetPrimitiveIndex() / 8
+        std::vector<uint32_t> sbt_offsets(num_experts, 0);
+
+        // ── Build input (TRIANGLES — native RT Core path) ──────
+        uint32_t tri_flags = OPTIX_GEOMETRY_FLAG_DISABLE_ANYHIT;
+
+        OptixBuildInput build_input = {};
+        build_input.type = OPTIX_BUILD_INPUT_TYPE_TRIANGLES;
+        build_input.triangleArray.vertexFormat = OPTIX_VERTEX_FORMAT_FLOAT3;
+        build_input.triangleArray.vertexStrideInBytes = sizeof(float3);
+        build_input.triangleArray.numVertices = total_verts;
+        build_input.triangleArray.vertexBuffers = &d_vertices;
+        build_input.triangleArray.indexFormat = OPTIX_INDICES_FORMAT_UNSIGNED_INT3;
+        build_input.triangleArray.indexStrideInBytes = sizeof(uint3);
+        build_input.triangleArray.numIndexTriplets = total_tris;
+        build_input.triangleArray.indexBuffer = d_indices;
+        build_input.triangleArray.flags = &tri_flags;
+        build_input.triangleArray.numSbtRecords = 1;
+
+        // ── Accel build ────────────────────────────────────────
+        OptixAccelBuildOptions accel_opts = {};
+        accel_opts.buildFlags = OPTIX_BUILD_FLAG_PREFER_FAST_TRACE |
+                                OPTIX_BUILD_FLAG_ALLOW_COMPACTION;
+        accel_opts.operation = OPTIX_BUILD_OPERATION_BUILD;
+
+        OptixAccelBufferSizes buffer_sizes;
+        OPTIX_CHECK(optixAccelComputeMemoryUsage(
+            optix_context_, &accel_opts, &build_input, 1, &buffer_sizes));
+
+        CUdeviceptr d_temp_buffer;
+        CUDA_CHECK(cudaMalloc(reinterpret_cast<void**>(&d_temp_buffer),
+                              buffer_sizes.tempSizeInBytes));
+
+        CUdeviceptr d_output_buffer;
+        CUDA_CHECK(cudaMalloc(reinterpret_cast<void**>(&d_output_buffer),
+                              buffer_sizes.outputSizeInBytes));
+
+        CUdeviceptr d_compacted_size;
+        CUDA_CHECK(cudaMalloc(reinterpret_cast<void**>(&d_compacted_size),
+                              sizeof(size_t)));
+
+        OptixAccelEmitDesc emit_desc = {};
+        emit_desc.type = OPTIX_PROPERTY_TYPE_COMPACTED_SIZE;
+        emit_desc.result = d_compacted_size;
+
+        OPTIX_CHECK(optixAccelBuild(
+            optix_context_, 0,
+            &accel_opts, &build_input, 1,
+            d_temp_buffer, buffer_sizes.tempSizeInBytes,
+            d_output_buffer, buffer_sizes.outputSizeInBytes,
+            &gas_handle_, &emit_desc, 1));
+
+        CUDA_CHECK(cudaDeviceSynchronize());
+
+        // ── Compact ────────────────────────────────────────────
+        size_t compacted_size;
+        CUDA_CHECK(cudaMemcpy(&compacted_size,
+                              reinterpret_cast<void*>(d_compacted_size),
+                              sizeof(size_t), cudaMemcpyDeviceToHost));
+
+        if (compacted_size < buffer_sizes.outputSizeInBytes) {
+            CUdeviceptr d_compacted;
+            CUDA_CHECK(cudaMalloc(reinterpret_cast<void**>(&d_compacted),
+                                  compacted_size));
+            OPTIX_CHECK(optixAccelCompact(
+                optix_context_, 0, gas_handle_,
+                d_compacted, compacted_size, &gas_handle_));
+            CUDA_CHECK(cudaDeviceSynchronize());
+            cudaFree(reinterpret_cast<void*>(d_output_buffer));
+            d_gas_buffer_ = d_compacted;
+        } else {
+            d_gas_buffer_ = d_output_buffer;
+        }
+
+        // Cleanup
+        cudaFree(reinterpret_cast<void*>(d_temp_buffer));
+        cudaFree(reinterpret_cast<void*>(d_vertices));
+        cudaFree(reinterpret_cast<void*>(d_indices));
+        cudaFree(reinterpret_cast<void*>(d_compacted_size));
+
+        gas_built_ = true;
+        gas_size_bytes_ = compacted_size;
+
+        std::cout << "[RTRouter] Triangle GAS built: " << num_experts
+                  << " experts (" << total_tris << " triangles), "
+                  << (gas_size_bytes_ / 1024) << " KB" << std::endl;
+
+        return true;
+    }
+
+    /**
      * Route a batch of queries through the RT Core BVH.
      *
      * @param d_query_positions  Device pointer: [batch_size x 3] float3
@@ -692,6 +870,60 @@ extern "C" bool rtcore_router_benchmark(
     }
     std::cout << "Routing accuracy: " << correct << "/" << batch_size
               << " (" << (100.0f * correct / batch_size) << "%)" << std::endl;
+
+    // ── Now benchmark TRIANGLE GAS for comparison ──────────
+    std::cout << "\n--- Triangle GAS (octahedrons) ---" << std::endl;
+
+    RTCoreRouter tri_router;
+    if (!tri_router.initialize(ptx_raygen, ptx_hitgroup)) {
+        std::cerr << "Failed to initialize triangle router" << std::endl;
+    } else if (!tri_router.buildGAS_triangles(centers.data(), radii.data(), num_experts)) {
+        std::cerr << "Failed to build triangle GAS" << std::endl;
+    } else {
+        // Warmup
+        for (uint32_t i = 0; i < num_warmup; ++i) {
+            tri_router.route(d_positions, d_directions, batch_size,
+                             d_expert_ids, d_distances);
+        }
+
+        // Benchmark
+        cudaEventRecord(start);
+        for (uint32_t i = 0; i < num_iters; ++i) {
+            tri_router.route(d_positions, d_directions, batch_size,
+                             d_expert_ids, d_distances);
+        }
+        cudaEventRecord(stop);
+        cudaEventSynchronize(stop);
+
+        float tri_ms = 0;
+        cudaEventElapsedTime(&tri_ms, start, stop);
+        float tri_us = (tri_ms * 1000.0f) / num_iters;
+        float tri_throughput = static_cast<float>(batch_size) / (tri_us * 1e-6f);
+
+        // Verify
+        cudaMemcpy(h_expert_ids.data(), d_expert_ids,
+                   batch_size * sizeof(uint32_t), cudaMemcpyDeviceToHost);
+        uint32_t tri_correct = 0;
+        for (uint32_t i = 0; i < batch_size; ++i) {
+            uint32_t expected = i % num_experts;
+            if (h_expert_ids[i] == expected) ++tri_correct;
+        }
+
+        std::cout << "Latency: " << tri_us << " us/batch" << std::endl;
+        std::cout << "Throughput: " << (tri_throughput / 1e6f) << " M queries/s" << std::endl;
+        std::cout << "GAS size: " << tri_router.gasSize() << " bytes" << std::endl;
+        std::cout << "Routing accuracy: " << tri_correct << "/" << batch_size
+                  << " (" << (100.0f * tri_correct / batch_size) << "%)" << std::endl;
+
+        // Compare
+        float speedup = us_per_iter / tri_us;
+        std::cout << "\n=== AABB vs Triangle ===" << std::endl;
+        std::cout << "AABB:     " << us_per_iter << " us/batch" << std::endl;
+        std::cout << "Triangle: " << tri_us << " us/batch" << std::endl;
+        std::cout << "Speedup:  " << speedup << "x "
+                  << (speedup > 1.0f ? "(triangles faster)" : "(AABB faster)")
+                  << std::endl;
+    }
 
     // Cleanup
     cudaFree(d_positions);
