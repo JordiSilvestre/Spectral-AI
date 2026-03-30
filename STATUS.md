@@ -263,7 +263,9 @@
 | Test | dim | save_dir | Estado |
 |------|-----|----------|--------|
 | A | 64  | `checkpoints/olmoe_distill_layer3/` | ✅ **94.6% top-8, 82.2% top-1** |
-| B | 256 | `checkpoints/olmoe_distill_layer3_dim256/` | 🔄 Lanzado |
+| B | 256 | `checkpoints/olmoe_distill_layer3_dim256/` | ✅ **95.1% top-8, 82.7% top-1** ← WINNER |
+
+**RESULTADO: dim=256 es mejor. Retrain masivo usara `--spectral-dim 256`.**
 
 Coste dim=256: +61 MB total (16 capas), +0.2% latencia RT Core. Seguimos 3,750x más eficientes que Transformer.
 

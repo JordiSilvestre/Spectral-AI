@@ -106,7 +106,8 @@ print('true' if c.get('spectral_mode', c.get('lyra_mode', False)) else 'false')
             --epochs "$EPOCHS" \
             --save-dir "$SAVE_DIR" \
             --device "$DEVICE" \
-            --spectral
+            --spectral \
+            --spectral-dim 256
         echo "  Layer $L: done"
     fi
 }

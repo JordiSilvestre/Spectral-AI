@@ -1239,7 +1239,11 @@ Los RT Cores requieren el pipeline OptiX v4 funcional (FASE 4 del roadmap).
 | Test | Capa | spectral_dim | save_dir | Estado |
 |------|------|-------------|----------|--------|
 | A (baseline) | L3 | 64  | `checkpoints/olmoe_distill_layer3/` | ✅ **94.6% top-8, 82.2% top-1** (100 epochs) |
-| B (experiment) | L3 | 256 | `checkpoints/olmoe_distill_layer3_dim256/` | 🔄 Lanzado |
+| B (experiment) | L3 | 256 | `checkpoints/olmoe_distill_layer3_dim256/` | ✅ **95.1% top-8, 82.7% top-1** (100 epochs) |
+
+**VEREDICTO: dim=256 gana (+0.5pp top-8, +0.5pp top-1) con +7% params.**
+Coste marginal (~61 MB extra para 16 capas) vs beneficio medible.
+Decision: usar `--spectral-dim 256` para retrain masivo de todas las capas.
 
 **Por qué misma capa:** Cada capa tiene distribución de datos diferente y dificultad
 de routing diferente (L3 era 80.5%, L11 era 81.8%). Comparar capas distintas
