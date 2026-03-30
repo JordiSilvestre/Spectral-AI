@@ -36,6 +36,7 @@ class InceptionConfig:
         'temperature_init', 'temperature_min', 'temperature_decay',
         'lambda_absorption', 'dropout',
         'total_l1', 'total_l2', 'total_l3',
+        'advanced_optics', 'chromatic_bands', 'interference_rays',
     )
 
     def __init__(
@@ -53,6 +54,9 @@ class InceptionConfig:
         temperature_decay:float = 0.995,  # Annealing por epoch
         lambda_absorption:float = 0.1,    # Decay de energía del rayo
         dropout:          float = 0.1,
+        advanced_optics:  bool  = False,  # Patent P3 Claims 21-33
+        chromatic_bands:  int   = 4,      # Bands for ChromaticAberration
+        interference_rays:int   = 4,      # Rays for PhaseCoherentInterference
     ):
         self.embed_dim         = embed_dim
         self.num_heads         = num_heads
@@ -68,6 +72,9 @@ class InceptionConfig:
         self.temperature_decay = temperature_decay
         self.lambda_absorption = lambda_absorption
         self.dropout           = dropout
+        self.advanced_optics   = advanced_optics
+        self.chromatic_bands   = chromatic_bands
+        self.interference_rays = interference_rays
 
         # Total de esferas por nivel
         # L1: n_domains
@@ -564,21 +571,42 @@ class InceptionTraversal(nn.Module):
     def __init__(self, cfg: InceptionConfig):
         super().__init__()
         self.cfg = cfg
+        self.advanced_optics = cfg.advanced_optics
+
+        # Helper to create refraction module (simple or chromatic)
+        def make_refraction(n_spheres: int) -> nn.Module:
+            if cfg.advanced_optics:
+                return ChromaticAberration(
+                    n_spheres=n_spheres,
+                    spectral_dim=cfg.spectral_dim,
+                    n_bands=cfg.chromatic_bands,
+                )
+            return PrismaticRefraction(n_spheres, cfg.spectral_dim)
 
         # Nivel 1: dominios
         self.level1 = SphereLevel(cfg.n_domains, parent_spheres=1)
         self.portal1 = AffinePortal(cfg.total_l1)
-        self.refract1 = PrismaticRefraction(cfg.total_l1, cfg.spectral_dim)
+        self.refract1 = make_refraction(cfg.total_l1)
 
         # Nivel 2: subdominios (K2 por dominio)
         self.level2 = SphereLevel(cfg.n_subdomains, parent_spheres=cfg.total_l1)
         self.portal2 = AffinePortal(cfg.total_l2)
-        self.refract2 = PrismaticRefraction(cfg.total_l2, cfg.spectral_dim)
+        self.refract2 = make_refraction(cfg.total_l2)
 
         # Nivel 3: conceptos (K3 por subdominio)
         self.level3 = SphereLevel(cfg.n_concepts, parent_spheres=cfg.total_l2)
         self.portal3 = AffinePortal(cfg.total_l3)
-        self.refract3 = PrismaticRefraction(cfg.total_l3, cfg.spectral_dim)
+        self.refract3 = make_refraction(cfg.total_l3)
+
+        # Advanced optics: TIR + Phase Interference (Patent P3 Claims 26-33)
+        if cfg.advanced_optics:
+            self.tir1 = TotalInternalReflection(cfg.total_l1)
+            self.tir2 = TotalInternalReflection(cfg.total_l2)
+            self.tir3 = TotalInternalReflection(cfg.total_l3)
+            self.phase_interference = PhaseCoherentInterference(
+                spectral_dim=cfg.spectral_dim,
+                n_rays=cfg.interference_rays,
+            )
 
     def forward(self, pos_3d: torch.Tensor, spectral: torch.Tensor,
                 omega: torch.Tensor, temperature: torch.Tensor
@@ -603,6 +631,11 @@ class InceptionTraversal(nn.Module):
         m1 = m1 * n1
         m1 = m1 / (m1.sum(dim=-1, keepdim=True) + 1e-8)
 
+        # TIR: reject spheres with mismatched context (Claims 26-29)
+        if self.advanced_optics:
+            cos_i1 = e1  # use energy as proxy for cos(incidence)
+            m1, _ = self.tir1(n1, m1, cos_i1)
+
         # Portal: transformar posiciones al espacio local — vectorizado (sin loop)
         locals_1 = self.portal1.apply_all(pos_3d)  # (B, S, K1, 3)
         pos_l1 = (locals_1 * m1.unsqueeze(-1)).sum(dim=2)  # (B, S, 3)
@@ -614,9 +647,12 @@ class InceptionTraversal(nn.Module):
         # ── Nivel 2: Subdominios ──────────────────────────────────
         m2, e2 = self.level2(pos_l1, temperature, parent_membership=m1)
         n2 = self.refract2(spectral)
-        # n2 tiene shape (B, S, K1*K2), aplicar refracción
         m2 = m2 * n2
         m2 = m2 / (m2.sum(dim=-1, keepdim=True) + 1e-8)
+
+        if self.advanced_optics:
+            cos_i2 = e2
+            m2, _ = self.tir2(n2, m2, cos_i2)
 
         # Portal nivel 2 — vectorizado (sin loop)
         locals_2 = self.portal2.apply_all(pos_l1)  # (B, S, K2, 3)
@@ -627,9 +663,18 @@ class InceptionTraversal(nn.Module):
 
         # ── Nivel 3: Conceptos ────────────────────────────────────
         m3, e3 = self.level3(pos_l2, temperature, parent_membership=m2)
-        n3 = self.refract3(spectral)
+
+        # Phase-Coherent Interference at final level (Claims 30-33)
+        if self.advanced_optics:
+            n3 = self.phase_interference(spectral, self.refract3)
+        else:
+            n3 = self.refract3(spectral)
         m3 = m3 * n3
         m3 = m3 / (m3.sum(dim=-1, keepdim=True) + 1e-8)
+
+        if self.advanced_optics:
+            cos_i3 = e3
+            m3, _ = self.tir3(n3, m3, cos_i3)
 
         con_idx = m3.argmax(dim=-1)
         omega_3 = self.portal3.transform_omega(omega_2, con_idx)
