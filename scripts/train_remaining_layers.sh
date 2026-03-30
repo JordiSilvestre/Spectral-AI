@@ -23,7 +23,7 @@
 #   bash scripts/train_remaining_layers.sh
 # ============================================================
 
-set -euo pipefail
+set -eo pipefail
 
 MODEL_DIR="${MODEL_DIR:-/mnt/j/Proyectos/models/olmoe-1b-7b}"
 EPOCHS="${EPOCHS:-100}"
@@ -62,16 +62,19 @@ for L in $PRIORITY_LYRA; do
     NEEDS_LYRA=true
     if [ -f "$CKPT" ]; then
         HAS_LYRA=$(python -c "
-import torch, sys
-try:
-    c = torch.load('$CKPT', map_location='cpu', weights_only=False)
-    print('true' if c.get('lyra_mode', False) else 'false')
-except:
-    print('false')
-" 2>/dev/null)
+import torch
+c = torch.load('$CKPT', map_location='cpu', weights_only=False)
+print('true' if c.get('lyra_mode', False) else 'false')
+" 2>&1 || echo "false")
         if [ "$HAS_LYRA" = "true" ]; then
             echo "  Layer $L: already has Lyra, skipping"
             NEEDS_LYRA=false
+        else
+            echo "  Layer $L: top-8=$(python -c "
+import torch
+c = torch.load('$CKPT', map_location='cpu', weights_only=False)
+print(f\"{c.get('topk_accuracy', 0):.1%}\")
+" 2>/dev/null || echo '?'), needs Lyra retrain"
         fi
     fi
 
