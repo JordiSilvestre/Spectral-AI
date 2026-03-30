@@ -1,14 +1,15 @@
 #!/bin/bash
 # ============================================================
-# SpectralAI Zero-Matrix — Retrain weak layers with Lyra
+# SpectralAI Zero-Matrix — Retrain ALL layers with Spectral Techniques
 # ============================================================
-# Estado actual (2026-03-29):
-#   - 16/16 capas entrenadas (sin Lyra excepto L1)
-#   - L1: 81.9% top-8 (con Lyra) — referencia
-#   - Weak (< 85%): L3(80.5%), L5(81.9%), L6(84.3%), L7(84.3%), L11(81.8%,16ep)
+# Estado actual (2026-03-30):
+#   - 16/16 capas entrenadas
+#   - L11 reentrenada con --spectral: 81.8% → 93.3% top-8
+#   - Weak (< 85%): L3(80.5%), L5(81.9%), L6(84.3%), L7(84.3%)
 #
 # Este script:
-#   FASE A: Retrain capas débiles con --lyra (máximo impacto en PPL)
+#   FASE A: Retrain capas débiles con --spectral (máximo impacto en PPL)
+#   FASE A2: Retrain capas fuertes con --spectral (mejora incremental)
 #   FASE B: Calibrar todas las capas
 #   FASE C: Evaluar PPL 16/16
 #
@@ -40,48 +41,39 @@ EPOCHS="${EPOCHS:-100}"
 DEVICE="${DEVICE:-cuda}"
 
 echo "============================================================"
-echo "  SpectralAI — Retrain weak layers with Lyra (FASE 3)"
+echo "  SpectralAI — Retrain ALL layers with Spectral Techniques"
 echo "  Model: $MODEL_DIR"
 echo "  Python: $PY"
 echo "  Epochs: $EPOCHS | Device: $DEVICE"
 echo "============================================================"
 
-# ── Orden de prioridad (de más débil a más fuerte) ───────────
-# L11 primero: 81.8% Y solo 16 epochs (training incompleto!)
-# L3: 80.5% (el más débil sin Lyra)
-# L5: 81.9%
-# L6: 84.3%
-# L7: 84.3%
-# L2: 84.7% (borderline)
-PRIORITY_LYRA="11 3 5 6 7 2"
+# ── Helper: retrain a layer with --spectral if needed ───────
+retrain_layer() {
+    local L=$1
+    local SAVE_DIR="checkpoints/olmoe_distill_layer${L}"
+    if [ "$L" = "8" ]; then
+        SAVE_DIR="checkpoints/olmoe_distill"
+    fi
+    local CKPT="${SAVE_DIR}/bvh_router_best.pt"
 
-# ── FASE A: Retrain capas débiles con --lyra ─────────────────
-echo ""
-echo ">>> FASE A: Retraining weak layers with --lyra"
-echo "    Layers (priority order): $PRIORITY_LYRA"
-echo ""
-
-for L in $PRIORITY_LYRA; do
-    SAVE_DIR="checkpoints/olmoe_distill_layer${L}"
-    CKPT="${SAVE_DIR}/bvh_router_best.pt"
-
-    NEEDS_LYRA=true
+    local NEEDS_SPECTRAL=true
     if [ -f "$CKPT" ]; then
-        HAS_LYRA=$($PY -c "
+        local HAS_SPECTRAL
+        HAS_SPECTRAL=$($PY -c "
 import torch
 c = torch.load('$CKPT', map_location='cpu', weights_only=False)
-print('true' if c.get('lyra_mode', False) else 'false')
+print('true' if c.get('spectral_mode', c.get('lyra_mode', False)) else 'false')
 " 2>&1 || echo "false")
-        if [ "$HAS_LYRA" = "true" ]; then
-            echo "  Layer $L: already has Lyra, skipping"
-            NEEDS_LYRA=false
+        if [ "$HAS_SPECTRAL" = "true" ]; then
+            echo "  Layer $L: already has Spectral Techniques, skipping"
+            NEEDS_SPECTRAL=false
         else
-            echo "  Layer $L: needs Lyra retrain"
+            echo "  Layer $L: needs Spectral retrain"
         fi
     fi
 
-    if [ "$NEEDS_LYRA" = "true" ]; then
-        echo "  Layer $L: retraining with --lyra (epochs=$EPOCHS)..."
+    if [ "$NEEDS_SPECTRAL" = "true" ]; then
+        echo "  Layer $L: retraining with --spectral (epochs=$EPOCHS)..."
         mkdir -p "$SAVE_DIR"
         $PY python/olmoe_bvh_distill.py \
             --layer "$L" \
@@ -89,13 +81,40 @@ print('true' if c.get('lyra_mode', False) else 'false')
             --epochs "$EPOCHS" \
             --save-dir "$SAVE_DIR" \
             --device "$DEVICE" \
-            --lyra
+            --spectral
         echo "  Layer $L: done"
     fi
+}
+
+# ── FASE A: Retrain capas débiles primero (máximo impacto) ──
+PRIORITY_WEAK="3 5 6 7 2"
+
+echo ""
+echo ">>> FASE A: Retraining WEAK layers with --spectral"
+echo "    Layers (priority order): $PRIORITY_WEAK"
+echo ""
+
+for L in $PRIORITY_WEAK; do
+    retrain_layer "$L"
 done
 
 echo ""
 echo ">>> FASE A COMPLETE"
+
+# ── FASE A2: Retrain capas fuertes (mejora incremental) ─────
+PRIORITY_STRONG="0 1 4 8 9 10 12 13 14 15"
+
+echo ""
+echo ">>> FASE A2: Retraining STRONG layers with --spectral"
+echo "    Layers: $PRIORITY_STRONG"
+echo ""
+
+for L in $PRIORITY_STRONG; do
+    retrain_layer "$L"
+done
+
+echo ""
+echo ">>> FASE A2 COMPLETE"
 
 # ── FASE B: Calibrar todas las capas ─────────────────────────
 echo ""
@@ -152,6 +171,7 @@ $PY python/olmoe_e2e_eval.py \
 
 echo ""
 echo "============================================================"
-echo "  FASE 3 COMPLETE"
-echo "  Con Lyra en capas débiles, PPL esperado: 8.29 -> ~7.5-7.8"
+echo "  ALL PHASES COMPLETE"
+echo "  Spectral Techniques en todas las capas"
+echo "  PPL esperado: 8.27 -> ~7.0-7.5"
 echo "============================================================"

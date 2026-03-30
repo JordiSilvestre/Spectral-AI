@@ -71,7 +71,7 @@ spectral-ai/
 │   └── benchmark.cu        ← Benchmarks vs Transformer estándar
 │
 ├── scripts/                ← Scripts de automatización
-│   ├── train_remaining_layers.sh  ← Retrain capas débiles con --lyra
+│   ├── train_remaining_layers.sh  ← Retrain ALL capas con --spectral
 │   └── verify_all.sh              ← Verificación one-command
 │
 ├── CMakeLists.txt          ← Sistema de build (CMake + CUDA + OptiX)
@@ -250,8 +250,8 @@ L_inter = Σ ||pos(c) - proj_{Si∩Sj}(pos(c))||²      ← polisémicos en inte
 | BVH Router distillation | ✅ 16/16 capas | top-8: 80-93% por capa |
 | Spectral Techniques | ✅ 6 técnicas | SmoothBVHHit, RMSNorm, DualLR, etc. |
 | PPL actual (16/16 BVH) | 🔄 ~8.27 | Baseline OLMoE: 6.11. Objetivo: <7.0 |
-| Lyra en capas débiles | 🔄 En progreso | L1 con Lyra OK, L3/L5/L11 pendientes |
-| Pipeline OptiX RT Cores | ⏳ Pendiente | PTX no funcional en sm_89 |
+| Spectral en todas capas | 🔄 En progreso | L11 93.3%, resto pendientes |
+| Pipeline OptiX RT Cores | ✅ Compilado | 6 PTX + benchmark 39µs/batch |
 | Demo end-to-end | ⏳ Pendiente | Qwen 51.9 tok/s validado, falta integrar |
 | Patentes | ⏳ 3 redactadas | Filing USPTO pendiente ($1,050) |
 

@@ -78,21 +78,21 @@ check "Python syntax: benchmark_expert_types.py" \
 check "Python syntax: scaling_inception.py" \
     "python -c \"import py_compile; py_compile.compile('python/scaling_inception.py', doraise=True)\""
 
-check "Python syntax: lyra_techniques.py" \
-    "python -c \"import py_compile; py_compile.compile('python/lyra_techniques.py', doraise=True)\""
+check "Python syntax: spectral_techniques.py" \
+    "python -c \"import py_compile; py_compile.compile('python/spectral_techniques.py', doraise=True)\""
 
 echo ""
 
 # -------------------------------------------
-# FASE 2: Tests Lyra techniques (pytest)
+# FASE 2: Tests Spectral Techniques (pytest)
 # -------------------------------------------
-echo -e "${YELLOW}[FASE 2] Tests Lyra techniques (37 tests)${NC}"
+echo -e "${YELLOW}[FASE 2] Tests Spectral Techniques (37 tests)${NC}"
 
 if python -c "import pytest" 2>/dev/null; then
-    check "pytest tests/test_lyra_techniques.py (37 tests)" \
-        "python -m pytest tests/test_lyra_techniques.py -q --tb=short"
+    check "pytest tests/test_spectral_techniques.py (37 tests)" \
+        "python -m pytest tests/test_spectral_techniques.py -q --tb=short"
 else
-    skip "pytest tests/test_lyra_techniques.py" "pytest no instalado (pip install pytest)"
+    skip "pytest tests/test_spectral_techniques.py" "pytest no instalado (pip install pytest)"
 fi
 
 echo ""
@@ -100,13 +100,13 @@ echo ""
 # -------------------------------------------
 # FASE 3: Verificacion de componentes Lyra
 # -------------------------------------------
-echo -e "${YELLOW}[FASE 3] Componentes Lyra (antes/despues)${NC}"
+echo -e "${YELLOW}[FASE 3] Componentes Spectral (antes/despues)${NC}"
 
 check "SmoothTernarySTE: gradientes fluyen" \
     "python -c \"
 import sys; sys.path.insert(0,'python')
 import torch
-from lyra_techniques import ternary_ste, set_ste_beta
+from spectral_techniques import ternary_ste, set_ste_beta
 set_ste_beta(1.0)
 x = torch.randn(50, requires_grad=True)
 y = ternary_ste(x)
@@ -118,7 +118,7 @@ check "SmoothBVHHit: diferenciable + ordenado" \
     "python -c \"
 import sys; sys.path.insert(0,'python')
 import torch
-from lyra_techniques import SmoothBVHHit, set_ste_beta
+from spectral_techniques import SmoothBVHHit, set_ste_beta
 set_ste_beta(5.0)
 hit = SmoothBVHHit(0.1)
 d = torch.tensor([[0.1, 1.0, 5.0]], requires_grad=True)
@@ -134,7 +134,7 @@ check "RMSNorm: normaliza correctamente" \
     "python -c \"
 import sys; sys.path.insert(0,'python')
 import torch
-from lyra_techniques import RMSNorm
+from spectral_techniques import RMSNorm
 norm = RMSNorm(64)
 x = torch.randn(2, 10, 64) * 100
 y = norm(x)
@@ -145,7 +145,7 @@ check "LiquidTimeGate: LOCAL/GLOBAL split" \
     "python -c \"
 import sys; sys.path.insert(0,'python')
 import torch
-from lyra_techniques import LiquidTimeGate
+from spectral_techniques import LiquidTimeGate
 g = LiquidTimeGate(32)
 g.time_a.data[:16] = -1.0
 g.time_a.data[16:] = 1.0
@@ -157,7 +157,7 @@ check "MetabolicBVH: poda funciona" \
     "python -c \"
 import sys; sys.path.insert(0,'python')
 import numpy as np
-from lyra_techniques import MetabolicBVH
+from spectral_techniques import MetabolicBVH
 m = MetabolicBVH(64, max_age=5)
 for i in range(10):
     m.record_hits(np.array([0,1,2]))
@@ -169,7 +169,7 @@ assert s['n_pruned'] > 50, f'Pruning not working: {s}'
 check "BetaScheduler: annealing 1→10" \
     "python -c \"
 import sys; sys.path.insert(0,'python')
-from lyra_techniques import BetaScheduler, get_ste_beta
+from spectral_techniques import BetaScheduler, get_ste_beta
 s = BetaScheduler(max_beta=10.0, warmup_steps=10, total_steps=100)
 s.step(0); assert abs(get_ste_beta() - 1.0) < 0.01
 s.step(100); assert abs(get_ste_beta() - 10.0) < 0.01
@@ -180,7 +180,7 @@ check "DualLR: param groups separados" \
 import sys; sys.path.insert(0,'python')
 import torch
 import torch.nn as nn
-from lyra_techniques import get_dual_lr_param_groups
+from spectral_techniques import get_dual_lr_param_groups
 m = nn.Module()
 m.D_cont = nn.Parameter(torch.randn(10))
 m.fc = nn.Linear(10, 5)

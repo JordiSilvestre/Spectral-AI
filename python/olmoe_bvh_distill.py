@@ -243,17 +243,17 @@ class HierarchicalLevel(nn.Module):
     The 3D geometry determines the routing structure (which branch),
     while the feature vector preserves the full semantic information.
 
-    With lyra_mode=True, uses SmoothBVHHit for differentiable geometric
+    With spectral_mode=True, uses SmoothBVHHit for differentiable geometric
     routing with beta annealing (soft→hard), enabling end-to-end BVH
     training as described in MEJORAS.md Section 3.1.
     """
 
     def __init__(self, input_dim: int, n_children: int, feature_dim: int = 128,
-                 lyra_mode: bool = False):
+                 spectral_mode: bool = False):
         super().__init__()
         self.n_children = n_children
         self.feature_dim = feature_dim
-        self.lyra_mode = lyra_mode
+        self.spectral_mode = spectral_mode
 
         # 3D geometric routing (the BVH part)
         self.to_3d = nn.Linear(input_dim, 3)
@@ -270,8 +270,8 @@ class HierarchicalLevel(nn.Module):
         # Combine geometry + features for routing logits
         self.route_head = nn.Linear(feature_dim + 3, n_children)
 
-        # Lyra: SmoothBVHHit for differentiable geometric routing
-        if lyra_mode:
+        # Spectral Techniques: SmoothBVHHit for differentiable geometric routing
+        if spectral_mode:
             self.smooth_hit = SmoothBVHHit(lambda_decay=0.1)
 
     def forward(
@@ -292,7 +292,7 @@ class HierarchicalLevel(nn.Module):
         diff = pos_3d.unsqueeze(1) - self.centers.unsqueeze(0)  # (B, K, 3)
         d_sq = (diff ** 2).sum(dim=-1)  # (B, K)
 
-        if self.lyra_mode:
+        if self.spectral_mode:
             # SmoothBVHHit: soft_hit = tanh(beta * (radius - distance))
             # As beta anneals 1→10, converges to hard RT Core hit/miss
             distances = torch.sqrt(d_sq + 1e-8)  # (B, K)
@@ -345,7 +345,7 @@ class EnhancedBVHRouter(nn.Module):
         n_level3: int = 4,
         feature_dim: int = 128,
         temperature_init: float = 1.0,
-        lyra_mode: bool = False,
+        spectral_mode: bool = False,
     ):
         super().__init__()
         self.n_level1 = n_level1
@@ -353,7 +353,7 @@ class EnhancedBVHRouter(nn.Module):
         self.n_level3 = n_level3
         self.n_experts = n_level1 * n_level2 * n_level3
         self.feature_dim = feature_dim
-        self.lyra_mode = lyra_mode
+        self.spectral_mode = spectral_mode
 
         # Input projection (compress from 2048 to manageable size)
         self.input_proj = nn.Sequential(
@@ -365,11 +365,11 @@ class EnhancedBVHRouter(nn.Module):
 
         # Three hierarchical levels
         self.level1 = HierarchicalLevel(256, n_level1, feature_dim,
-                                         lyra_mode=lyra_mode)
+                                         spectral_mode=spectral_mode)
         self.level2 = HierarchicalLevel(feature_dim, n_level2, feature_dim,
-                                         lyra_mode=lyra_mode)
+                                         spectral_mode=spectral_mode)
         self.level3 = HierarchicalLevel(feature_dim, n_level3, feature_dim,
-                                         lyra_mode=lyra_mode)
+                                         spectral_mode=spectral_mode)
 
         # Final expert logit head: maps hierarchical routing to 64 expert probs
         # Uses: level features + routing decisions at each level
@@ -380,15 +380,15 @@ class EnhancedBVHRouter(nn.Module):
             nn.Linear(256, self.n_experts),
         )
 
-        # Lyra: RMSNorm post-routing (MEJORAS.md 3.3 — mandatory for stable training)
+        # Spectral Techniques: RMSNorm post-routing (MEJORAS.md 3.3 — mandatory for stable training)
         # Without SubLN: 100% saturation, all connections collapse
-        if lyra_mode:
+        if spectral_mode:
             self.post_routing_norm = RMSNorm(self.n_experts)
 
         # Spectral: encode hidden states as "colored" rays (MEJORAS.md Section 1)
         # SpectralEncoder: 2048 → spectral_dim color vector
         # PrismaticRefraction: color → per-expert refractive index (polysemy routing)
-        self.spectral_enabled = lyra_mode  # spectral requires Lyra for differentiability
+        self.spectral_enabled = spectral_mode  # spectral encoder requires spectral_mode for differentiability
         if self.spectral_enabled:
             self.spectral_dim = 16  # matches SPECTRAL_CUDA_SPECTRAL_DIM
             # Lightweight spectral encoder: 256→16 (post input_proj, not raw 2048)
@@ -449,8 +449,8 @@ class EnhancedBVHRouter(nn.Module):
             spectral_bias = self.spectral_gate(refraction_idx)  # (B, 64)
             logits = logits + spectral_bias
 
-        # Lyra: RMSNorm post-routing to prevent scale collapse
-        if self.lyra_mode:
+        # Spectral Techniques: RMSNorm post-routing to prevent scale collapse
+        if self.spectral_mode:
             logits = self.post_routing_norm(logits)
 
         self._last_logits = logits
@@ -809,7 +809,7 @@ def train_bvh_distillation(
     device: str = "cuda",
     save_dir: str = "checkpoints",
     real_data_path: str = None,
-    lyra_mode: bool = False,
+    spectral_mode: bool = False,
 ):
     """
     Train enhanced BVH router to match OLMoE gate via knowledge distillation.
@@ -856,9 +856,9 @@ def train_bvh_distillation(
     # (Direct BF16 causes dtype mismatches with gumbel_softmax)
     router = router.to(device).float()
 
-    # Lyra: DualLR — BVH discrete params get 0.1x LR to prevent oscillation
+    # Spectral Techniques: DualLR — BVH discrete params get 0.1x LR to prevent oscillation
     # Without DualLR: NaN in <10 steps. With: 100% stability. (MEJORAS.md 3.4)
-    if lyra_mode:
+    if spectral_mode:
         bvh_keywords = ('centers', 'log_radii', 'to_3d')
         param_groups = get_dual_lr_param_groups(
             router, lr=lr, bvh_lr_mult=0.1,
@@ -867,7 +867,7 @@ def train_bvh_distillation(
         optimizer = torch.optim.AdamW(param_groups)
         n_bvh = sum(p.numel() for g in param_groups if g.get("name") == "bvh_discrete" for p in g["params"])
         n_float = sum(p.numel() for g in param_groups if g.get("name") != "bvh_discrete" for p in g["params"])
-        print(f"  [Lyra] DualLR: {n_bvh:,} BVH params @ {lr*0.1:.1e}, "
+        print(f"  [Spectral] DualLR: {n_bvh:,} BVH params @ {lr*0.1:.1e}, "
               f"{n_float:,} float params @ {lr:.1e}")
     else:
         optimizer = torch.optim.AdamW(router.parameters(), lr=lr, weight_decay=0.01)
@@ -875,17 +875,17 @@ def train_bvh_distillation(
     total_steps = epochs * len(train_loader)
     warmup_steps = min(500, total_steps // 10)
 
-    # Lyra: BetaScheduler for SmoothSTE annealing (1.0->10.0)
+    # Spectral Techniques: BetaScheduler for SmoothSTE annealing (1.0->10.0)
     # beta=1 (start): soft, gradients flow → beta=10 (end): hard RT Core behavior
     beta_scheduler = None
-    if lyra_mode:
+    if spectral_mode:
         beta_scheduler = BetaScheduler(
             max_beta=10.0,
             warmup_steps=min(1000, total_steps // 5),
             total_steps=total_steps,
         )
         set_ste_beta(1.0)  # start soft
-        print(f"  [Lyra] BetaScheduler: 1.0->10.0 over {total_steps} steps "
+        print(f"  [Spectral] BetaScheduler: 1.0->10.0 over {total_steps} steps "
               f"(warmup: {min(1000, total_steps // 5)})")
 
     def lr_schedule(step):
@@ -901,8 +901,8 @@ def train_bvh_distillation(
     print(f"  Hierarchy: {router.n_level1}x{router.n_level2}x{router.n_level3} = {router.n_experts} experts")
     print(f"  Feature dim: {router.feature_dim}")
     print(f"  Temperature: {router.temperature.item():.2f}")
-    if lyra_mode:
-        print(f"  [Lyra] SmoothBVHHit + RMSNorm + DualLR + BetaScheduler ACTIVE")
+    if spectral_mode:
+        print(f"  [Spectral] SmoothBVHHit + RMSNorm + DualLR + BetaScheduler ACTIVE")
     alpha_soft = 0.7
     weight_entropy = 0.01
     weight_topk = 0.0
@@ -916,7 +916,7 @@ def train_bvh_distillation(
 
     # ── Training ──────────────────────────────────────────────────
     print(f"\n[4/4] Training...")
-    if lyra_mode:
+    if spectral_mode:
         print(f"{'Ep':>3} {'Loss':>8} {'Soft':>8} {'Hard':>8} {'Bal':>8} {'Ent':>8} {'TkL':>8} "
               f"{'Top8%':>7} {'Top1%':>7} {'Temp':>6} {'Beta':>6} {'LR':>10}")
         print("-" * 106)
@@ -959,12 +959,12 @@ def train_bvh_distillation(
             combined = torch.cat([f3, p1, p2, p3], dim=-1)
             student_logits = router.expert_head(combined)
             # Apply spectral modulation if enabled (same as in router.forward)
-            if lyra_mode and hasattr(router, 'spectral_encoder'):
+            if spectral_mode and hasattr(router, 'spectral_encoder'):
                 sc = router.spectral_encoder(h)  # (B, spectral_dim)
                 ri = router.prismatic_refraction(sc.unsqueeze(1)).squeeze(1)
                 student_logits = student_logits + router.spectral_gate(ri)
-            # Apply RMSNorm if Lyra mode (same as in router.forward)
-            if lyra_mode and hasattr(router, 'post_routing_norm'):
+            # Apply RMSNorm if spectral mode (same as in router.forward)
+            if spectral_mode and hasattr(router, 'post_routing_norm'):
                 student_logits = router.post_routing_norm(student_logits)
 
             # Cast logits back to FP32 for stable loss computation
@@ -987,8 +987,8 @@ def train_bvh_distillation(
             optimizer.step()
             scheduler.step()
 
-            # Lyra: beta annealing + D_cont clamp (MEJORAS.md 3.7)
-            if lyra_mode and beta_scheduler is not None:
+            # Spectral Techniques: beta annealing + D_cont clamp (MEJORAS.md 3.7)
+            if spectral_mode and beta_scheduler is not None:
                 beta_scheduler.step(global_step)
                 # Clamp BVH discrete params to [-2, 2] to prevent oscillation
                 with torch.no_grad():
@@ -1045,7 +1045,7 @@ def train_bvh_distillation(
 
         current_lr = scheduler.get_last_lr()[0]
 
-        if lyra_mode:
+        if spectral_mode:
             print(f"{epoch+1:>3} {epoch_loss:>8.4f} {epoch_soft:>8.4f} {epoch_hard:>8.4f} "
                   f"{epoch_bal:>8.5f} {epoch_ent:>8.4f} {epoch_topk:>8.4f} {val_topk_acc*100:>6.1f}% {val_top1_acc*100:>6.1f}% "
                   f"{router.temperature.item():>6.3f} {get_ste_beta():>6.2f} {current_lr:>10.2e}")
@@ -1067,8 +1067,8 @@ def train_bvh_distillation(
                 "router_type": "mlp" if is_mlp else "bvh",
                 "topk_accuracy": val_topk_acc,
                 "top1_accuracy": val_top1_acc,
-                "lyra_mode": lyra_mode,
-                "beta": get_ste_beta() if lyra_mode else None,
+                "spectral_mode": spectral_mode,
+                "beta": get_ste_beta() if spectral_mode else None,
                 "config": {
                     "input_dim": 2048,
                     "n_experts": router.n_experts,
@@ -1076,7 +1076,7 @@ def train_bvh_distillation(
                     "n_level2": router.n_level2,
                     "n_level3": router.n_level3,
                     "feature_dim": router.feature_dim,
-                    "lyra_mode": lyra_mode,
+                    "spectral_mode": spectral_mode,
                 },
             }, ckpt_path)
             print(f"  -> NEW BEST (top-8: {val_topk_acc*100:.1f}%, top-1: {val_top1_acc*100:.1f}%)")
@@ -1216,14 +1216,14 @@ def main():
                         help="Use MLP baseline instead of BVH (sanity check)")
     parser.add_argument("--no-upcycle", action="store_true",
                         help="Skip sparse upcycling initialization")
-    parser.add_argument("--lyra", action="store_true",
-                        help="Enable Lyra techniques: SmoothBVHHit + RMSNorm + "
+    parser.add_argument("--spectral", action="store_true",
+                        help="Enable Spectral Techniques: SmoothBVHHit + RMSNorm + "
                              "DualLR + BetaScheduler for differentiable BVH training")
     args = parser.parse_args()
 
     print("=" * 60)
-    lyra_tag = " + Lyra" if args.lyra else ""
-    print(f"  SpectralAI FASE A v2.1 -- Enhanced BVH Distillation{lyra_tag}")
+    spectral_tag = " + Spectral" if args.spectral else ""
+    print(f"  SpectralAI FASE A v2.1 -- Enhanced BVH Distillation{spectral_tag}")
     print("=" * 60)
 
     olmoe_layer = None
@@ -1247,8 +1247,8 @@ def main():
         n_params = sum(p.numel() for p in router.parameters())
         print(f"  MLP params: {n_params:,}")
     else:
-        lyra_str = " + Lyra" if args.lyra else ""
-        print(f"\n[Step 2] Creating Enhanced BVH Router (4x4x4 = 64 experts){lyra_str}...")
+        spectral_str = " + Spectral" if args.spectral else ""
+        print(f"\n[Step 2] Creating Enhanced BVH Router (4x4x4 = 64 experts){spectral_str}...")
         router = EnhancedBVHRouter(
             input_dim=2048,
             n_level1=4,
@@ -1256,7 +1256,7 @@ def main():
             n_level3=4,
             feature_dim=128,
             temperature_init=1.0,
-            lyra_mode=args.lyra,
+            spectral_mode=args.spectral,
         )
 
         # Step 2b: Sparse Upcycling — initialize router from gate weights
@@ -1289,7 +1289,7 @@ def main():
         device=args.device,
         save_dir=args.save_dir,
         real_data_path=args.real_data,
-        lyra_mode=args.lyra,
+        spectral_mode=args.spectral,
     )
 
     # Step 4: Benchmark (only if model is loaded)
