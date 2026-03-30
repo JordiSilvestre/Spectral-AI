@@ -833,26 +833,83 @@ La arquitectura SpectralAI está diseñada como puente hacia computación fotón
 | PrismaticRefraction | Prisma óptico real (dispersión) | Hardware futuro |
 | BVH O(N log N) | O(1) paralelo en fotónica | Hardware futuro |
 
-**Claim para patente P3 (Spectral Routing):**
-> "The spectral color vector is designed to map directly to wavelength-division
-> multiplexing (WDM) on photonic hardware, where each dimension of the color
-> corresponds to a physical optical frequency. The Snell-based refraction
-> routing computes the same function as physical light refraction through
-> prismatic media, enabling direct hardware acceleration when photonic
-> processors become available. The architecture serves as an electronic
-> simulation of photonic attention that is forward-compatible with optical
-> computing platforms (LightGen, ACCEL, Q.ANT NPU)."
+**Claims para patente P3 (Spectral Routing):**
+
+```
+CLAIM 1 (Método de computación espectral híbrida):
+Un método para procesamiento de datos de alta dimensionalidad que comprende:
+  a) Recibir un vector de entrada de N dimensiones (N > 3);
+  b) Codificar el vector en un conjunto de M valores espectrales (M ≤ N),
+     donde cada valor representa una amplitud de frecuencia simulada;
+  c) Asociar los M valores espectrales a un rayo de luz virtual en un
+     espacio tridimensional mediante un sistema de rendering;
+  d) Propagar el rayo mediante trazado de rayos físicamente basado
+     (incluyendo leyes de Snell-Descartes por longitud de onda);
+  e) Recolectar el rayo en un detector virtual y decodificar los M valores
+     espectrales resultantes en un vector de salida de alta dimensionalidad;
+  f) Caracterizado porque los M valores espectrales están diseñados para
+     mapearse directamente a canales de multiplexación por división de
+     longitud de onda (WDM) en hardware fotónico futuro, donde cada
+     dimensión espectral corresponde a una frecuencia óptica física λ.
+
+CLAIM 2 (Arquitectura de puente fotónico):
+El método de la claim 1, donde el sistema de rendering actúa como
+simulador de comportamiento óptico de un chip fotónico programable,
+permitiendo la migración transparente del software al hardware cuando
+este último esté disponible.
+```
+
+**Texto para sección de patente (Forward Compatibility):**
+> The spectral color vector architecture described herein is explicitly
+> designed as a software abstraction of wavelength-division multiplexing
+> (WDM) photonic neural networks. Each dimension of the spectral color
+> vector s ∈ R^M corresponds to a virtual optical frequency λ_i, enabling
+> direct mapping to physical WDM channels on programmable photonic
+> integrated circuits (PICs).
+>
+> When photonic hardware accelerators become commercially available
+> (e.g., LightGen, ACCEL, Q.ANT NPU), the present invention enables
+> zero-modification migration: the spectral color vectors are directly
+> encoded onto physical optical wavelengths via microring resonator
+> modulators, processed through interferometric photonic layers, and
+> detected via integrated photodetectors — preserving the identical
+> mathematical operations (Snell-based refraction, spectral combination)
+> described in this patent.
+
+**Límites técnicos RT Core payload (hardware 2026):**
+
+| Recurso | Límite | Implicación |
+|---|---|---|
+| Payload registers | 16 × 32-bit = 64 bytes | 32 half-floats viajan "gratis" con el rayo |
+| Con fat pointer | Puntero en payload → VRAM | spectral_dim ilimitado (penalty: 1 acceso VRAM) |
+| RTX 4090 bandwidth | ~1 TB/s | 256D × 2B = 512B → ~20-30M rayos/s |
+| RTX 5090 bandwidth | ~1.5 TB/s | Misma arch, más throughput |
+
+**Configuraciones de spectral_dim recomendadas:**
+
+| Config | spectral_dim | Método | Velocidad | Uso |
+|---|---|---|---|---|
+| Conservador | 16-32 | Payload registers (FP16) | 100% | Prototipado |
+| **Actual** | **64** | **Payload registers (FP16)** | **~95%** | **Producción** |
+| Balanceado | 128-256 | Fat pointer → VRAM | 75-85% | Próxima release |
+| Agresivo | 512-1024 | Wavefront 4x (4 rayos/embedding) | 60-70% | Research |
+| Máximo | 2048 | Wavefront 8x + CUDA | 50-60% | Training offline |
+
+**Truco "Wavefront":** Dividir spectral_dim=2048 en 8 wavefronts de 256D.
+Cada wavefront = 1 rayo. 8 rayos procesan 2048D en paralelo.
 
 **Roadmap fotónico:**
-1. AHORA: spectral_dim=64 en GPU (RT Cores 3D + color simulado)
-2. PRÓXIMO: spectral_dim=256-2048 en CUDA cores (sin RT, pure compute)
-3. FUTURO: spectral_dim=2048 en chip fotónico (WDM nativo, O(1))
+1. AHORA: spectral_dim=64 en GPU (RT Cores 3D + color FP16 en registers)
+2. v1.5: spectral_dim=256 con fat pointer (híbrido RT+VRAM)
+3. v2.0: spectral_dim=1024 con wavefront 4x
+4. FUTURO: spectral_dim=2048 en chip fotónico (WDM nativo, O(1))
 
 **Referencia:** Investigación actual (2025-2026):
 - LightGen (generative AI fotónico): 100x vs A100, 3W
 - ACCEL (analog photonic chip): 3600x vs A100, 4.4nJ/frame
 - Q.ANT NPU: 50x vs GPU, 30x eficiencia energética
 - SDRC (Spectral Dimension Reservoir Computing): 56 nodos → state-of-the-art
+- MIT (2022): Frequency-multiplexed ONN via WDM + microring resonators
 
 ---
 *Para contexto completo de cada decision y fallo: LEARNINGS.md*
