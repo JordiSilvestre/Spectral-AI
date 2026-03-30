@@ -847,10 +847,15 @@ def train_bvh_distillation(
             olmoe_layer, n_samples=n_val, device=device, dtype=dtype
         )
 
+    # Performance: num_workers for async prefetch, pin_memory for faster CPU→GPU
+    n_workers = 2 if device == "cuda" else 0
+    pin = (device == "cuda")
     train_loader = DataLoader(train_ds, batch_size=batch_size, shuffle=True,
-                              num_workers=0, pin_memory=False)
+                              num_workers=n_workers, pin_memory=pin,
+                              persistent_workers=(n_workers > 0))
     val_loader = DataLoader(val_ds, batch_size=batch_size, shuffle=False,
-                            num_workers=0, pin_memory=False)
+                            num_workers=n_workers, pin_memory=pin,
+                            persistent_workers=(n_workers > 0))
 
     # Router stays FP32 — BF16 autocast handles mixed precision safely
     # (Direct BF16 causes dtype mismatches with gumbel_softmax)
@@ -925,6 +930,13 @@ def train_bvh_distillation(
               f"{'Top8%':>7} {'Top1%':>7} {'Temp':>6} {'LR':>10}")
         print("-" * 99)
 
+    # AMP: mixed precision for ~2-3x speedup on CUDA (BF16 preferred, FP16 fallback)
+    use_amp = (device == "cuda")
+    amp_dtype = torch.bfloat16 if (use_amp and torch.cuda.is_bf16_supported()) else torch.float16
+    scaler = torch.amp.GradScaler("cuda", enabled=(use_amp and amp_dtype == torch.float16))
+    if use_amp:
+        print(f"  [Perf] AMP enabled: {amp_dtype}, GradScaler: {amp_dtype == torch.float16}")
+
     global_step = 0
     for epoch in range(epochs):
         router.train()
@@ -938,40 +950,39 @@ def train_bvh_distillation(
         n_batches = 0
 
         for hidden, gate_logits_batch, topk_ids, top1_labels in train_loader:
-            hidden = hidden.to(device)
-            gate_logits_batch = gate_logits_batch.to(device)
-            top1_labels = top1_labels.to(device)
+            hidden = hidden.to(device, non_blocking=True)
+            gate_logits_batch = gate_logits_batch.to(device, non_blocking=True)
+            top1_labels = top1_labels.to(device, non_blocking=True)
 
-            # Ensure FP32 for stable training
+            # Ensure FP32 base (AMP autocast handles mixed precision)
             hidden = hidden.float()
             gate_logits_batch = gate_logits_batch.float()
 
-            # Router forward
-            expert_probs, expert_ids = router(hidden)
+            with torch.amp.autocast("cuda", enabled=use_amp, dtype=amp_dtype):
+                # Router forward
+                expert_probs, expert_ids = router(hidden)
 
-            # Get raw logits for distillation (before softmax/gumbel)
-            # Re-run to get logits — use the expert_head output directly
-            T = router.temperature.item()
-            h = router.input_proj(hidden)
-            p1, f1, _ = router.level1(h, T)
-            p2, f2, _ = router.level2(f1, T)
-            p3, f3, _ = router.level3(f2, T)
-            combined = torch.cat([f3, p1, p2, p3], dim=-1)
-            student_logits = router.expert_head(combined)
-            # Apply spectral modulation if enabled (same as in router.forward)
-            if spectral_mode and hasattr(router, 'spectral_encoder'):
-                sc = router.spectral_encoder(h)  # (B, spectral_dim)
-                ri = router.prismatic_refraction(sc.unsqueeze(1)).squeeze(1)
-                student_logits = student_logits + router.spectral_gate(ri)
-            # Apply RMSNorm if spectral mode (same as in router.forward)
-            if spectral_mode and hasattr(router, 'post_routing_norm'):
-                student_logits = router.post_routing_norm(student_logits)
+                # Get raw logits for distillation (before softmax/gumbel)
+                T = router.temperature.item()
+                h = router.input_proj(hidden)
+                p1, f1, _ = router.level1(h, T)
+                p2, f2, _ = router.level2(f1, T)
+                p3, f3, _ = router.level3(f2, T)
+                combined = torch.cat([f3, p1, p2, p3], dim=-1)
+                student_logits = router.expert_head(combined)
+                # Apply spectral modulation if enabled
+                if spectral_mode and hasattr(router, 'spectral_encoder'):
+                    sc = router.spectral_encoder(h)
+                    ri = router.prismatic_refraction(sc.unsqueeze(1)).squeeze(1)
+                    student_logits = student_logits + router.spectral_gate(ri)
+                # Apply RMSNorm if spectral mode
+                if spectral_mode and hasattr(router, 'post_routing_norm'):
+                    student_logits = router.post_routing_norm(student_logits)
 
-            # Cast logits back to FP32 for stable loss computation
+            # Loss computation in FP32 for numerical stability
             student_logits = student_logits.float()
             gate_logits_batch = gate_logits_batch.float()
 
-            # Distillation loss
             l_distill = distillation_loss(
                 student_logits, gate_logits_batch, top1_labels,
                 temperature=distill_temp, alpha_soft=0.7,
@@ -981,10 +992,12 @@ def train_bvh_distillation(
 
             loss = l_distill + weight_balance * l_balance + weight_entropy * l_entropy
 
-            optimizer.zero_grad()
-            loss.backward()
+            optimizer.zero_grad(set_to_none=True)
+            scaler.scale(loss).backward()
+            scaler.unscale_(optimizer)
             torch.nn.utils.clip_grad_norm_(router.parameters(), 1.0)
-            optimizer.step()
+            scaler.step(optimizer)
+            scaler.update()
             scheduler.step()
 
             # Spectral Techniques: beta annealing + D_cont clamp (MEJORAS.md 3.7)
@@ -1027,10 +1040,11 @@ def train_bvh_distillation(
 
         with torch.no_grad():
             for hidden, gate_logits_batch, topk_ids, top1_labels in val_loader:
-                hidden = hidden.to(device)
-                topk_ids = topk_ids.to(device)
+                hidden = hidden.to(device, non_blocking=True)
+                topk_ids = topk_ids.to(device, non_blocking=True)
 
-                expert_probs, expert_ids = router(hidden)
+                with torch.amp.autocast("cuda", enabled=use_amp, dtype=amp_dtype):
+                    expert_probs, expert_ids = router(hidden)
                 tk_acc, t1_acc = compute_topk_accuracy(expert_probs, topk_ids)
                 val_topk_acc += tk_acc
                 val_top1_acc += t1_acc
@@ -1204,8 +1218,9 @@ def main():
     parser.add_argument("--epochs", type=int, default=30)
     parser.add_argument("--n-train", type=int, default=500_000)
     parser.add_argument("--n-val", type=int, default=10_000)
-    parser.add_argument("--batch-size", type=int, default=512)
-    parser.add_argument("--lr", type=float, default=1e-3)
+    parser.add_argument("--batch-size", type=int, default=2048)
+    parser.add_argument("--lr", type=float, default=2e-3,
+                        help="Learning rate (auto-scaled for batch 2048)")
     parser.add_argument("--device", type=str, default="cuda")
     parser.add_argument("--save-dir", type=str, default="checkpoints/olmoe_distill")
     parser.add_argument("--benchmark", action="store_true",
