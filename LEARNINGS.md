@@ -4,6 +4,24 @@
 
 ---
 
+### [2026-03-29] [BUILD] C++ OptiX pipeline compiles successfully
+
+**Contexto:** First successful full build of the C++ pipeline on Windows (MSVC 19.50 + CUDA 13.2 + OptiX 9.1).
+
+**Fix aplicado:** `nvcc --ptx` cannot compile for multiple GPU architectures simultaneously. Changed from `-gencode=arch=compute_89,code=compute_89 -gencode=arch=compute_120,code=compute_120` to `-arch=compute_89`. OptiX JIT-compiles the PTX to the actual GPU at runtime, so a single virtual architecture is sufficient.
+
+**Artefactos generados:**
+- 6 PTX shaders: ray_generation, closest_hit, miss, ray_attention, optix_router_raygen, optix_router_hitgroup
+- `spectral_core.lib` (token_geometry + semantic_bvh)
+- `spectral_optix.lib` (OptiX host pipeline, 1052 lines)
+- `spectral_rt_router.lib` (RT Core router, 706 lines)
+- `inception_runner.exe` (loads PTX, builds BVH, runs RT routing)
+- `rt_router_benchmark.exe` (RT Core latency benchmarks)
+
+**RT Cores status:** Ahora tenemos los binarios compilados. El siguiente paso es ejecutar `rt_router_benchmark.exe` para medir latencia real de RT Cores vs CUDA fallback, y `inception_runner.exe` para validar el pipeline OptiX completo.
+
+---
+
 ### [2026-03-29] [DECISIÓN] Integrated spectral/colored rays into CUDA kernels
 
 **Contexto:** The spectral ray architecture (Idea 3: Prismatic Refraction) was fully designed in `include/spectral_ray.h` but disconnected from the actual CUDA/OptiX kernels which only used monochrome SemanticRay.
