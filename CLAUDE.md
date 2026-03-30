@@ -29,38 +29,53 @@ En lugar de matrices, mapeamos tokens como **polígonos en un espacio 3D** estru
 spectral-ai/
 ├── CLAUDE.md               ← Este archivo (contexto para agentes)
 ├── LEARNINGS.md            ← Registro de decisiones, fallos y aprendizajes
+├── STATUS.md               ← Estado real: inventario, accuracy, roadmap
 ├── README.md               ← Descripción del proyecto
 │
 ├── include/                ← Headers C++ públicos
 │   ├── token_geometry.h    ← Struct TokenNode: token → objeto geométrico BVH
 │   ├── semantic_bvh.h      ← Gestión del árbol BVH semántico
 │   ├── optical_attention.h ← Interfaz del mecanismo de atención óptica
-│   └── spectral_model.h   ← Modelo completo (pipeline de inferencia)
+│   ├── spectral_ray.h      ← Codificación espectral: PrismaticRay, Snell
+│   ├── alpha_bsh.h          ← Esferas semánticas + MatrixBlocks
+│   └── spectral_resonance.h ← Resonancia Fourier (v4 research)
 │
 ├── src/                    ← Implementaciones C++
 │   ├── token_geometry.cpp  ← Proyección embedding → espacio 3D
 │   ├── semantic_bvh.cpp    ← Construcción y actualización del BVH
-│   └── spectral_model.cpp ← Pipeline principal
+│   └── alpha_bsh.cpp        ← Orchestración AlphaBSH Phase A/B
 │
 ├── cuda/                   ← Kernels CUDA/OptiX
 │   ├── ray_attention.cu    ← Kernel principal: ray_traced_attention_kernel
-│   ├── ray_generation.cu   ← Generación de rayos desde el prompt
-│   ├── closest_hit.cu      ← Programa OptiX: ClosestHit (token relevante)
-│   ├── any_hit.cu          ← Programa OptiX: AnyHit (attention decay)
-│   └── miss.cu             ← Programa OptiX: Miss (token irrelevante)
+│   ├── ray_generation.cu   ← Generación de rayos + spectral color
+│   ├── closest_hit.cu      ← Programa OptiX: ClosestHit + Ley de Snell
+│   ├── miss.cu             ← Programa OptiX: Miss (token irrelevante)
+│   ├── spectral_kernels.cu  ← Kernels OptiX raygen 4-level IAS
+│   └── v5/                  ← Kernels CUDA producción
+│       ├── bvh_router_kernel.cu   ← Router fusionado 3-nivel (105x speedup)
+│       ├── bvh_torch_ext.cu       ← PyTorch extension zero-copy
+│       └── ternary_torch_ext.cu   ← Expert ternario POPCOUNT
 │
-├── python/                 ← Bindings Python para prototipado rápido
-│   ├── tokenizer.py        ← Tokenizador simple (BPE o word-level)
-│   ├── embedding_bridge.py ← Carga embeddings y los proyecta al espacio 3D
-│   └── inference.py        ← Script de inferencia de alto nivel
+├── python/                 ← Pipeline Python (training + inference)
+│   ├── olmoe_bvh_distill.py       ← Training BVH Router (EnhancedBVHRouter)
+│   ├── olmoe_e2e_eval.py          ← Evaluación PPL end-to-end
+│   ├── calibrate_router.py        ← Calibración linear/affine
+│   ├── spectral_techniques.py     ← 6 técnicas: SmoothBVHHit, RMSNorm, DualLR...
+│   ├── bvh_router.py              ← BVHRouter diferenciable (Gumbel-Softmax)
+│   ├── bvh_router_bridge.py       ← Hybrid: PyTorch ↔ CUDA kernel auto-select
+│   ├── orchestrator.py            ← Pipeline v5.0: Tokens → Router → Experts
+│   └── spectral_bridge.py         ← Python ↔ C++ bridge (tokenize → 3D → binary)
 │
 ├── tests/                  ← Tests unitarios y de integración
-│   ├── test_bvh.cpp        ← Tests del árbol BVH
-│   ├── test_attention.cu   ← Tests del kernel de atención óptica
+│   ├── test_spectral_techniques.py ← 37 tests CPU (todas pasando)
 │   └── benchmark.cu        ← Benchmarks vs Transformer estándar
 │
-├── CMakeLists.txt          ← Sistema de build (CMake + CUDA)
-└── optix_pipeline.json     ← Configuración del pipeline OptiX
+├── scripts/                ← Scripts de automatización
+│   ├── train_remaining_layers.sh  ← Retrain capas débiles con --lyra
+│   └── verify_all.sh              ← Verificación one-command
+│
+├── CMakeLists.txt          ← Sistema de build (CMake + CUDA + OptiX)
+└── .gitattributes          ← Force LF para .sh (WSL compat)
 ```
 
 ---
@@ -231,12 +246,14 @@ L_inter = Σ ||pos(c) - proj_{Si∩Sj}(pos(c))||²      ← polisémicos en inte
 | Fase | Estado | Descripción |
 |---|---|---|
 | Arquitectura conceptual | ✅ Completa | Diseño matemático validado |
-| Estructura de headers | 🔄 En progreso | `token_geometry.h`, `semantic_bvh.h` |
-| Kernel CUDA principal | 🔄 En progreso | `ray_traced_attention_kernel` |
-| Pipeline OptiX | ⏳ Pendiente | Compilación de programas de shader |
-| Python bridge | ⏳ Pendiente | Para prototipado rápido sin recompilar |
-| Benchmarks | ⏳ Pendiente | Comparativa vs attention estándar |
-| Entrenamiento | 🔴 Futuro | Requiere diferenciabilidad del BVH |
+| CUDA kernels v5 | ✅ Operativos | 105x speedup routing, POPCOUNT ternary |
+| BVH Router distillation | ✅ 16/16 capas | top-8: 80-93% por capa |
+| Spectral Techniques | ✅ 6 técnicas | SmoothBVHHit, RMSNorm, DualLR, etc. |
+| PPL actual (16/16 BVH) | 🔄 ~8.27 | Baseline OLMoE: 6.11. Objetivo: <7.0 |
+| Lyra en capas débiles | 🔄 En progreso | L1 con Lyra OK, L3/L5/L11 pendientes |
+| Pipeline OptiX RT Cores | ⏳ Pendiente | PTX no funcional en sm_89 |
+| Demo end-to-end | ⏳ Pendiente | Qwen 51.9 tok/s validado, falta integrar |
+| Patentes | ⏳ 3 redactadas | Filing USPTO pendiente ($1,050) |
 
 ---
 

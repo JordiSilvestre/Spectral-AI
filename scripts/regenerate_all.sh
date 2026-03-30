@@ -35,7 +35,7 @@ for L in $LAYERS; do
         echo "  Layer $L: already exists, skipping"
     else
         echo "  Layer $L: extracting..."
-        python python/extract_real_hiddens.py \
+        python3 python/extract_real_hiddens.py \
             --model-dir "$MODEL_DIR" \
             --layer "$L" \
             --output "$OUTPUT"
@@ -64,7 +64,7 @@ for L in $LAYERS; do
         echo "  Layer $L: checkpoint exists, skipping"
     else
         echo "  Layer $L: training..."
-        python python/olmoe_bvh_distill.py \
+        python3 python/olmoe_bvh_distill.py \
             --layer "$L" \
             --real-data "data/real_hiddens_layer${L}.pt" \
             --epochs 50 \
@@ -90,7 +90,7 @@ for L in $LAYERS; do
     fi
 
     echo "  Layer $L: calibrating..."
-    python python/calibrate_router.py \
+    python3 python/calibrate_router.py \
         --mode linear \
         --epochs 100 \
         --real-data "data/real_hiddens_layer${L}.pt" \
@@ -107,7 +107,7 @@ echo ""
 echo ">>> STEP 4: Verifying single-layer PPL (should be ~6.16)"
 echo ""
 
-python python/olmoe_e2e_eval.py \
+python3 python/olmoe_e2e_eval.py \
     --model-dir "$MODEL_DIR" \
     --router-checkpoint checkpoints/olmoe_distill/bvh_router_best.pt \
     --max-tokens 50000
@@ -117,7 +117,7 @@ echo ""
 echo ">>> STEP 5: Verifying 5-layer PPL (should be ~6.40)"
 echo ""
 
-python python/olmoe_e2e_eval.py \
+python3 python/olmoe_e2e_eval.py \
     --model-dir "$MODEL_DIR" \
     --multi-layer "0:checkpoints/olmoe_distill_layer0/bvh_router_best.pt,4:checkpoints/olmoe_distill_layer4/bvh_router_best.pt,8:checkpoints/olmoe_distill/bvh_router_best.pt,12:checkpoints/olmoe_distill_layer12/bvh_router_best.pt,15:checkpoints/olmoe_distill_layer15/bvh_router_best.pt" \
     --max-tokens 50000
