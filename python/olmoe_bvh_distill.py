@@ -47,6 +47,7 @@ from spectral_techniques import (
     get_ste_beta, set_ste_beta,
 )
 from inception_attention import SpectralEncoder, PrismaticRefraction
+from rt_training_bridge import get_rt_bridge, StraightThroughRT
 
 
 # ─────────────────────────────────────────────────────────────────
@@ -298,7 +299,17 @@ class HierarchicalLevel(nn.Module):
             distances = torch.sqrt(d_sq + 1e-8)  # (B, K)
             radii = self.log_radii.exp()  # (K,)
             energy = torch.ones(x.shape[0], device=x.device)  # (B,)
-            geo_signal = self.smooth_hit(distances, radii, energy)  # (B, K)
+            soft_signal = self.smooth_hit(distances, radii, energy)  # (B, K)
+
+            # Hybrid RT+CUDA: RT Cores do hard forward, SmoothBVHHit provides gradients
+            # StraightThroughRT: forward uses hard (accurate), backward uses soft (differentiable)
+            rt_bridge = get_rt_bridge(x.device.type)
+            if rt_bridge.available and self.training:
+                geo_signal = rt_bridge.forward_with_rt(
+                    pos_3d, self.centers, radii, soft_signal
+                )
+            else:
+                geo_signal = soft_signal
         else:
             geo_signal = -d_sq / (2.0 * temperature ** 2 + 1e-8)  # (B, K)
 
@@ -346,6 +357,7 @@ class EnhancedBVHRouter(nn.Module):
         feature_dim: int = 128,
         temperature_init: float = 1.0,
         spectral_mode: bool = False,
+        spectral_dim: int = 64,
     ):
         super().__init__()
         self.n_level1 = n_level1
@@ -390,13 +402,14 @@ class EnhancedBVHRouter(nn.Module):
         # PrismaticRefraction: color → per-expert refractive index (polysemy routing)
         self.spectral_enabled = spectral_mode  # spectral encoder requires spectral_mode for differentiability
         if self.spectral_enabled:
-            self.spectral_dim = 64  # richer color = better polysemy resolution
-            # Spectral encoder: 256→64 (post input_proj, not raw 2048)
-            # 64-dim color captures fine-grained context (code vs music vs physics)
+            self.spectral_dim = spectral_dim
+            # Spectral encoder: 256→spectral_dim (post input_proj, not raw 2048)
+            # Higher dim = finer polysemy resolution (code vs music vs physics)
+            encoder_hidden = max(128, spectral_dim)  # scale hidden layer with dim
             self.spectral_encoder = nn.Sequential(
-                nn.Linear(256, 128),
+                nn.Linear(256, encoder_hidden),
                 nn.GELU(),
-                nn.Linear(128, self.spectral_dim),
+                nn.Linear(encoder_hidden, self.spectral_dim),
                 nn.Tanh(),
             )
             self.prismatic_refraction = PrismaticRefraction(
@@ -1234,6 +1247,9 @@ def main():
     parser.add_argument("--spectral", action="store_true",
                         help="Enable Spectral Techniques: SmoothBVHHit + RMSNorm + "
                              "DualLR + BetaScheduler for differentiable BVH training")
+    parser.add_argument("--spectral-dim", type=int, default=64,
+                        help="Spectral color dimensions (16/64/128/256). "
+                             "Higher = better polysemy resolution, minimal cost")
     args = parser.parse_args()
 
     print("=" * 60)
@@ -1262,7 +1278,7 @@ def main():
         n_params = sum(p.numel() for p in router.parameters())
         print(f"  MLP params: {n_params:,}")
     else:
-        spectral_str = " + Spectral" if args.spectral else ""
+        spectral_str = f" + Spectral (dim={args.spectral_dim})" if args.spectral else ""
         print(f"\n[Step 2] Creating Enhanced BVH Router (4x4x4 = 64 experts){spectral_str}...")
         router = EnhancedBVHRouter(
             input_dim=2048,
@@ -1272,6 +1288,7 @@ def main():
             feature_dim=128,
             temperature_init=1.0,
             spectral_mode=args.spectral,
+            spectral_dim=args.spectral_dim,
         )
 
         # Step 2b: Sparse Upcycling — initialize router from gate weights

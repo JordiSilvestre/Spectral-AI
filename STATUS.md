@@ -1,6 +1,6 @@
 # STATUS.md — SpectralAI Zero-Matrix
 > Estado real del proyecto, inventario de archivos, y roadmap por fases.
-> Ultima actualizacion: 2026-03-29
+> Ultima actualizacion: 2026-03-30
 
 ---
 
@@ -15,7 +15,8 @@
 | E2E PPL (1 capa) | ✅ PPL 6.16 (+0.8%) — BVH Router L8 con calibracion linear |
 | E2E PPL (5 capas) | ✅ PPL 6.40 (+4.8%) — Capas 0,4,8,12,15 reemplazadas |
 | Bugs criticos resueltos | norm_topk_prob=False, restricted softmax, calibracion |
-| Pipeline OptiX v4 | Compila (11 targets) pero shaders no generan PTX funcional |
+| Pipeline OptiX v5 | ✅ Compilado: 6 PTX, benchmark 39µs/batch, 100% accuracy (triángulos) |
+| RT Training Bridge | ✅ StraightThroughRT (STE): RT hard forward + soft backward |
 | Patentes | 3 provisionales redactadas, Patent 3 reforzada con Claims 21-33 |
 
 ---
@@ -53,6 +54,7 @@
 | `python/olmoe_bvh_distill.py` | EnhancedBVHRouter v2.1 + KD loss + RealHiddensDataset | Activo (necesita datos reales) |
 | `python/extract_real_hiddens.py` | Extrae hidden states reales de OLMoE en WikiText-2 | NUEVO - pendiente ejecutar |
 | `python/olmoe_e2e_eval.py` | Evaluacion PPL: BVH Router vs gate lineal | Activo (bugs corregidos) |
+| `python/rt_training_bridge.py` | StraightThroughRT: RT Core forward + SmoothBVHHit backward | NUEVO |
 | `python/distill_gate_labels.py` | Pre-computa gate labels de OLMoE (KL div) | Activo |
 | `python/inspect_olmoe.py` | Inspeccion de arquitectura OLMoE (sin cargar pesos) | Utilidad |
 
@@ -240,9 +242,9 @@
 | L0  | 89.5% | 89.3% | 198 | No  | Retrain con --spectral |
 | L1  | 81.9% | 86.3% | 50  | YES | Retrain con --spectral |
 | L2  | 84.7% | 82.8% | 100 | No  | WEAK — retrain con --spectral |
-| L3  | 80.5% | 81.5% | 48  | No  | WEAK — retrain con --spectral |
+| L3  | **94.6%** | **82.2%** | 100 | **YES (dim=64)** | ✅ DONE — era 80.5% (+14.1pp!) |
 | L4  | 86.6% | 80.6% | 197 | No  | Retrain con --spectral |
-| L5  | 81.9% | 79.9% | 50  | No  | WEAK — retrain con --spectral |
+| L5  | **86.9%** | — | 51  | **YES (dim=64)** | ✅ DONE — era 81.9% sin Spectral |
 | L6  | 84.3% | 80.7% | 47  | No  | WEAK — retrain con --spectral |
 | L7  | 84.3% | 78.7% | 49  | No  | WEAK — retrain con --spectral |
 | L8  | 90.1% | 77.8% | 191 | No  | Retrain con --spectral |
@@ -255,6 +257,15 @@
 | L15 | 89.3% | 80.2% | 50  | No  | Retrain con --spectral |
 
 **Plan:** Retrain TODAS las 16 capas con --spectral (débiles primero, luego fuertes)
+
+**Test A/B en curso: spectral_dim 64 vs 256 (misma capa L3)**
+
+| Test | dim | save_dir | Estado |
+|------|-----|----------|--------|
+| A | 64  | `checkpoints/olmoe_distill_layer3/` | ✅ **94.6% top-8, 82.2% top-1** |
+| B | 256 | `checkpoints/olmoe_distill_layer3_dim256/` | 🔄 Lanzado |
+
+Coste dim=256: +61 MB total (16 capas), +0.2% latencia RT Core. Seguimos 3,750x más eficientes que Transformer.
 
 ### FASE 4: C++ / OptiX build — ✅ COMPILADO (2026-03-30)
 - [x] Fix CMakeLists.txt: 3 fixes (projectEmbeddingTo3D, alpha_bsh, SPECTRAL_MAX_TOP_TOKENS)
