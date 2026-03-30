@@ -4,6 +4,32 @@
 
 ---
 
+### [2026-03-30] [RESEARCH] Arquitectura SpectralAI = puente a computación fotónica
+
+**Insight clave:** La arquitectura de rayos espectrales (color vector + Snell) es un simulador electrónico de lo que chips fotónicos harán nativamente:
+- `spectral_color[N]` = WDM (Wavelength-Division Multiplexing) — cada dim = frecuencia λ
+- Ley de Snell = refracción óptica real
+- BVH traversal = interferencia óptica (pero 3D limitado vs 2048D fotónico)
+
+**Decisión:** Subir `spectral_dim` de 16 → 64 para mayor resolución temática. Claim de patente P3 actualizada para cubrir compatibilidad con hardware fotónico futuro.
+
+**Benchmark triángulos vs AABB (RT Cores):**
+- AABB: 41.7µs, 0% accuracy (cajas se solapan)
+- Triángulos (octaedros): 43.0µs, **100% accuracy** (fronteras precisas)
+- Solo 3% más lento, dramáticamente más preciso → triángulos es el camino
+
+---
+
+### [2026-03-30] [PERF] Optimizaciones de training: AMP + batch 2048 + local disk
+
+- AMP (BF16 autocast + GradScaler): ~2x speedup en forward/backward
+- Batch 512 → 2048: 4x menos pasos/epoch
+- LR 1e-3 → 2e-3 (linear scaling)
+- pin_memory + num_workers=2: prefetch asíncrono
+- Datos copiados a /tmp (disco local SSD): elimina bottleneck I/O de mount WSL
+
+---
+
 ### [2026-03-29] [BUILD] C++ OptiX pipeline compiles successfully
 
 **Contexto:** First successful full build of the C++ pipeline on Windows (MSVC 19.50 + CUDA 13.2 + OptiX 9.1).

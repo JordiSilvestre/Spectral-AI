@@ -821,6 +821,39 @@ print(f'Activos: {stats[\"n_active\"]}, Sparsity: {stats[\"sparsity\"]:.2f}')
 | Paper NeurIPS/ICML 2027 | FASE 10 |
 | App Store de expertos (.lbe format) | FASE 11 |
 
+### Prioridad 5 — Photonic Computing Bridge (largo plazo)
+
+La arquitectura SpectralAI está diseñada como puente hacia computación fotónica:
+
+| Concepto SpectralAI | Equivalente Fotónico | Estado |
+|---|---|---|
+| `spectral_color[64]` | Wavelength-Division Multiplexing (WDM) | Simulado en GPU |
+| Ley de Snell (refracción) | Refracción óptica real en chip | Simulado en CUDA |
+| RT Core 3D traversal | Interferencia óptica masiva (2048D) | Hardware futuro |
+| PrismaticRefraction | Prisma óptico real (dispersión) | Hardware futuro |
+| BVH O(N log N) | O(1) paralelo en fotónica | Hardware futuro |
+
+**Claim para patente P3 (Spectral Routing):**
+> "The spectral color vector is designed to map directly to wavelength-division
+> multiplexing (WDM) on photonic hardware, where each dimension of the color
+> corresponds to a physical optical frequency. The Snell-based refraction
+> routing computes the same function as physical light refraction through
+> prismatic media, enabling direct hardware acceleration when photonic
+> processors become available. The architecture serves as an electronic
+> simulation of photonic attention that is forward-compatible with optical
+> computing platforms (LightGen, ACCEL, Q.ANT NPU)."
+
+**Roadmap fotónico:**
+1. AHORA: spectral_dim=64 en GPU (RT Cores 3D + color simulado)
+2. PRÓXIMO: spectral_dim=256-2048 en CUDA cores (sin RT, pure compute)
+3. FUTURO: spectral_dim=2048 en chip fotónico (WDM nativo, O(1))
+
+**Referencia:** Investigación actual (2025-2026):
+- LightGen (generative AI fotónico): 100x vs A100, 3W
+- ACCEL (analog photonic chip): 3600x vs A100, 4.4nJ/frame
+- Q.ANT NPU: 50x vs GPU, 30x eficiencia energética
+- SDRC (Spectral Dimension Reservoir Computing): 56 nodos → state-of-the-art
+
 ---
 *Para contexto completo de cada decision y fallo: LEARNINGS.md*
 *Para arquitectura detallada: CLAUDE.md*
