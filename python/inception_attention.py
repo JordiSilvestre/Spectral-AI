@@ -20,7 +20,7 @@ import math
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from typing import Optional, Tuple
+from typing import Callable, Optional, Tuple
 
 
 # ─────────────────────────────────────────────────────────────────
@@ -191,6 +191,221 @@ class PrismaticRefraction(nn.Module):
         returns:        (B, S, n_spheres)    — índice de refracción por esfera
         """
         return torch.sigmoid(self.W_dispersion(spectral_color))
+
+
+# ─────────────────────────────────────────────────────────────────
+# 3b. Chromatic Aberration — Multi-Band Spectral Decomposition
+#     Patent P3 Claims 21-25
+# ─────────────────────────────────────────────────────────────────
+
+class ChromaticAberration(nn.Module):
+    """
+    Multi-band spectral decomposition: the color vector is split into B
+    frequency bands, each refracted independently through PrismaticRefraction.
+    The B routing decisions are combined via learned band weights.
+
+    Physical analogy: different wavelengths of light refract at different
+    angles through a prism — each band captures a different aspect of context
+    (topic, tone, formality, temporal reference).
+
+    Patent P3 Claims 21-25.
+    """
+
+    def __init__(self, n_spheres: int, spectral_dim: int, n_bands: int = 4):
+        super().__init__()
+        assert spectral_dim % n_bands == 0, (
+            f"spectral_dim ({spectral_dim}) must be divisible by n_bands ({n_bands})"
+        )
+        self.n_bands = n_bands
+        self.band_size = spectral_dim // n_bands
+        self.n_spheres = n_spheres
+
+        # One PrismaticRefraction per band (independent W_dispersion)
+        self.band_refractions = nn.ModuleList([
+            PrismaticRefraction(n_spheres=n_spheres, spectral_dim=self.band_size)
+            for _ in range(n_bands)
+        ])
+
+        # Learned band weights for combining routing decisions
+        self.band_weights = nn.Parameter(torch.ones(n_bands) / n_bands)
+
+    def forward(self, spectral_color: torch.Tensor) -> torch.Tensor:
+        """
+        spectral_color: (B, S, spectral_dim) — full color vector
+        returns:        (B, S, n_spheres)    — combined refractive indices
+        """
+        # Decompose color into B bands
+        bands = spectral_color.chunk(self.n_bands, dim=-1)  # list of (B, S, band_size)
+
+        # Refract each band independently
+        band_indices = [
+            refr(band) for refr, band in zip(self.band_refractions, bands)
+        ]  # list of (B, S, n_spheres)
+
+        # Combine with learned weights (softmax for proper weighting)
+        weights = F.softmax(self.band_weights, dim=0)  # (n_bands,)
+
+        # Weighted sum of per-band refractive indices
+        combined = torch.zeros_like(band_indices[0])
+        for w, idx in zip(weights, band_indices):
+            combined = combined + w * idx
+
+        return combined
+
+
+# ─────────────────────────────────────────────────────────────────
+# 3c. Total Internal Reflection — Hard Routing Boundary
+#     Patent P3 Claims 26-29
+# ─────────────────────────────────────────────────────────────────
+
+class TotalInternalReflection(nn.Module):
+    """
+    When context is completely mismatched with a sphere's specialty,
+    the ray is reflected (not refracted) — routed to a different region.
+
+    Physical analogy: sin(theta_i) > n2/n1 → total internal reflection.
+    Semantic: word "scale" in music context → TIR away from math expert.
+
+    Uses Straight-Through Estimator for differentiability:
+    forward = hard TIR decision, backward = soft gradient.
+
+    Patent P3 Claims 26-29.
+    """
+
+    SNELL_EPSILON: float = 0.01
+
+    def __init__(self, n_spheres: int):
+        super().__init__()
+        self.n_spheres = n_spheres
+        # Learned base refractive index per sphere
+        self.n_base = nn.Parameter(torch.ones(n_spheres) * 1.5)
+
+    def forward(
+        self,
+        refractive_indices: torch.Tensor,
+        membership: torch.Tensor,
+        cos_incidence: torch.Tensor,
+    ) -> Tuple[torch.Tensor, torch.Tensor]:
+        """
+        refractive_indices: (B, S, n_spheres) — n from PrismaticRefraction
+        membership:         (B, S, n_spheres) — soft sphere membership
+        cos_incidence:      (B, S, n_spheres) — cosine of incidence angle
+
+        returns:
+            adjusted_membership: (B, S, n_spheres) — with TIR zeroed out
+            tir_mask:            (B, S, n_spheres) — True where TIR occurred
+        """
+        # n_ratio = n_in / n_out ≈ 1 / refractive_indices (entering sphere)
+        n_ratio = 1.0 / (refractive_indices + 1e-8)
+
+        # Snell discriminant: 1 - n_ratio² * (1 - cos_i²)
+        sin_sq = 1.0 - cos_incidence ** 2
+        discriminant = 1.0 - n_ratio ** 2 * sin_sq
+
+        # TIR occurs when discriminant < -epsilon
+        tir_mask = discriminant < -self.SNELL_EPSILON  # (B, S, n_spheres)
+
+        # Soft discriminant for gradients (sigmoid around boundary)
+        soft_tir = torch.sigmoid(-discriminant / self.SNELL_EPSILON * 10.0)
+
+        # Hard TIR: zero out membership where TIR occurs
+        hard_mask = (~tir_mask).float()
+
+        # Straight-Through Estimator: forward=hard, backward=soft
+        adjusted_membership = membership * (hard_mask - soft_tir.detach() + soft_tir)
+
+        # Renormalize membership (redistribute from TIR'd spheres)
+        total = adjusted_membership.sum(dim=-1, keepdim=True).clamp(min=1e-8)
+        adjusted_membership = adjusted_membership / total
+
+        return adjusted_membership, tir_mask
+
+
+# ─────────────────────────────────────────────────────────────────
+# 3d. Phase-Coherent Multi-Ray Interference
+#     Patent P3 Claims 30-33
+# ─────────────────────────────────────────────────────────────────
+
+class PhaseCoherentInterference(nn.Module):
+    """
+    Multiple rays with slightly different spectral colors interfere at
+    target spheres. Constructive interference strengthens routing,
+    destructive interference weakens it.
+
+    Physical analogy: superposition of waves. When rays arrive in phase,
+    amplitudes add (constructive). Out of phase, they cancel (destructive).
+
+    Patent P3 Claims 30-33.
+    """
+
+    def __init__(self, spectral_dim: int, n_rays: int = 4):
+        super().__init__()
+        self.n_rays = n_rays
+        self.spectral_dim = spectral_dim
+
+        # Learned perturbation directions per ray
+        self.epsilon = nn.Parameter(
+            torch.randn(n_rays, spectral_dim) * 0.01
+        )
+
+        # Learned amplitude scaling per ray
+        self.amplitude = nn.Parameter(torch.ones(n_rays))
+
+    def forward(
+        self,
+        spectral_color: torch.Tensor,
+        refraction_fn: Callable[[torch.Tensor], torch.Tensor],
+    ) -> torch.Tensor:
+        """
+        spectral_color: (B, S, spectral_dim) — base color vector
+        refraction_fn:  callable that takes (B, S, spectral_dim) → (B, S, n_spheres)
+                        (PrismaticRefraction or ChromaticAberration)
+
+        returns:        (B, S, n_spheres) — interference-modulated routing weights
+        """
+        # Phase offsets: evenly spaced around 2π
+        phases = torch.linspace(
+            0, 2 * math.pi * (1 - 1 / self.n_rays),
+            self.n_rays,
+            device=spectral_color.device,
+        )  # (R,)
+
+        amplitudes = F.softplus(self.amplitude)  # (R,) positive
+
+        # Accumulate complex interference per sphere
+        # Using real/imag decomposition (no complex tensors for CUDA compat)
+        real_sum = None
+        imag_sum = None
+
+        for r in range(self.n_rays):
+            # Perturbed color for this ray
+            perturbed = spectral_color + self.epsilon[r]  # (B, S, spectral_dim)
+
+            # Refract the perturbed ray
+            routing_r = refraction_fn(perturbed)  # (B, S, n_spheres)
+
+            # Phase contribution: A_r * exp(i * phase_r) applied to routing
+            # = A_r * cos(phase_r) * routing  +  i * A_r * sin(phase_r) * routing
+            a_r = amplitudes[r]
+            cos_phase = torch.cos(phases[r])
+            sin_phase = torch.sin(phases[r])
+
+            contribution_real = a_r * cos_phase * routing_r
+            contribution_imag = a_r * sin_phase * routing_r
+
+            if real_sum is None:
+                real_sum = contribution_real
+                imag_sum = contribution_imag
+            else:
+                real_sum = real_sum + contribution_real
+                imag_sum = imag_sum + contribution_imag
+
+        # Intensity = |complex_sum|² = real² + imag²
+        intensity = real_sum ** 2 + imag_sum ** 2  # (B, S, n_spheres)
+
+        # Normalize to valid probability distribution
+        total = intensity.sum(dim=-1, keepdim=True).clamp(min=1e-8)
+        return intensity / total
 
 
 # ─────────────────────────────────────────────────────────────────
