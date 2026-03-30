@@ -223,43 +223,44 @@
 - [x] **Linear 64→64 calibracion (4160 params) → PPL 6.16 (+0.8%), cosine 0.97**
 - [x] `calibrate_router.py` soporta ambos modos
 
-### FASE 3: Multi-layer replacement — 🔄 EN PROGRESO (16/16 entrenadas, Lyra parcial)
+### FASE 3: Multi-layer replacement — 🔄 EN PROGRESO (Spectral Techniques)
 - [x] Extraer hidden states TODAS las 16 capas (data/real_hiddens_layer*.pt)
 - [x] Entrenar BVH router todas las 16 capas
-- [x] L1 reentrenada con --lyra: 79.3% → 81.9% top-8 (+2.6pp), beta=10.0
-- [x] PPL actual (16/16 sin Lyra completo): ~8.27
-- [ ] Retrain capas débiles con --lyra (script: scripts/train_remaining_layers.sh)
-- [ ] Calibrar todas las 16 capas post-Lyra
-- [ ] Eval PPL 16/16 post-Lyra (objetivo: 8.27 → ~7.5)
+- [x] L1 reentrenada con --spectral: 79.3% → 81.9% top-8 (+2.6pp), beta=10.0
+- [x] L11 reentrenada con --spectral: 81.8% → 93.3% top-8 (+11.5pp!)
+- [x] PPL actual (16/16 sin Spectral completo): ~8.27
+- [ ] Retrain TODAS las capas con --spectral (script: scripts/train_remaining_layers.sh)
+- [ ] Calibrar todas las 16 capas post-Spectral
+- [ ] Eval PPL 16/16 post-Spectral (objetivo: 8.27 → ~7.0)
 
-**Per-layer accuracy (estado 2026-03-29):**
+**Per-layer accuracy (estado 2026-03-30):**
 
-| Capa | Top-8 | Top-1 | Epochs | Lyra | Estado |
-|------|-------|-------|--------|------|--------|
-| L0  | 89.5% | 89.3% | 198 | No  | OK |
-| L1  | 81.9% | 86.3% | 50  | YES | OK (Lyra!) |
-| L2  | 84.7% | 82.8% | 100 | No  | Borderline |
-| L3  | 80.5% | 81.5% | 48  | No  | WEAK — retrain con Lyra |
-| L4  | 86.6% | 80.6% | 197 | No  | OK |
-| L5  | 81.9% | 79.9% | 50  | No  | WEAK — retrain con Lyra |
-| L6  | 84.3% | 80.7% | 47  | No  | WEAK — retrain con Lyra |
-| L7  | 84.3% | 78.7% | 49  | No  | WEAK — retrain con Lyra |
-| L8  | 90.1% | 77.8% | 191 | No  | OK |
-| L9  | 88.3% | 77.9% | 49  | No  | OK |
-| L10 | 89.3% | 80.8% | 50  | No  | OK |
-| L11 | 81.8% | 78.4% | 16  | No  | CRITICO — solo 16ep, retrain |
-| L12 | 88.8% | 77.4% | 47  | No  | OK |
-| L13 | 92.4% | 77.9% | 200 | No  | OK |
-| L14 | 93.4% | 78.6% | 188 | No  | OK |
-| L15 | 89.3% | 80.2% | 50  | No  | OK |
+| Capa | Top-8 | Top-1 | Epochs | Spectral | Estado |
+|------|-------|-------|--------|----------|--------|
+| L0  | 89.5% | 89.3% | 198 | No  | Retrain con --spectral |
+| L1  | 81.9% | 86.3% | 50  | YES | Retrain con --spectral |
+| L2  | 84.7% | 82.8% | 100 | No  | WEAK — retrain con --spectral |
+| L3  | 80.5% | 81.5% | 48  | No  | WEAK — retrain con --spectral |
+| L4  | 86.6% | 80.6% | 197 | No  | Retrain con --spectral |
+| L5  | 81.9% | 79.9% | 50  | No  | WEAK — retrain con --spectral |
+| L6  | 84.3% | 80.7% | 47  | No  | WEAK — retrain con --spectral |
+| L7  | 84.3% | 78.7% | 49  | No  | WEAK — retrain con --spectral |
+| L8  | 90.1% | 77.8% | 191 | No  | Retrain con --spectral |
+| L9  | 88.3% | 77.9% | 49  | No  | Retrain con --spectral |
+| L10 | 89.3% | 80.8% | 50  | No  | Retrain con --spectral |
+| L11 | **93.3%** | **79.5%** | 100 | **YES** | **DONE** (+11.5pp!) |
+| L12 | 88.8% | 77.4% | 47  | No  | Retrain con --spectral |
+| L13 | 92.4% | 77.9% | 200 | No  | Retrain con --spectral |
+| L14 | 93.4% | 78.6% | 188 | No  | Retrain con --spectral |
+| L15 | 89.3% | 80.2% | 50  | No  | Retrain con --spectral |
 
-**Prioridad de reentrenamiento con --lyra:**
-L11 (solo 16ep!) > L3 (más débil) > L5 > L6 > L7 > L2
+**Plan:** Retrain TODAS las 16 capas con --spectral (débiles primero, luego fuertes)
 
-### FASE 4: C++ / OptiX build (independiente de Python)
-- [ ] Fix CMakeLists.txt: resolver linker errors (alpha_bsh extern, ODR violations)
-- [ ] Compilar PTX para sm_89 Y sm_120
-- [ ] Validar pipeline OptiX v4 con shaders reales
+### FASE 4: C++ / OptiX build — ✅ COMPILADO (2026-03-30)
+- [x] Fix CMakeLists.txt: 3 fixes (projectEmbeddingTo3D, alpha_bsh, SPECTRAL_MAX_TOP_TOKENS)
+- [x] Fix PTX: single -arch=compute_89 (--ptx no soporta multi-gencode)
+- [x] Compilar PTX para compute_89 (6 shaders)
+- [x] RT Core benchmark: 39.24 µs/batch, 6.52M queries/s
 - [ ] Conectar optix_host.cpp con el BVH Router entrenado
 
 ### FASE 5: Demo end-to-end

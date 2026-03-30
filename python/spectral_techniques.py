@@ -1,6 +1,6 @@
-"""Lyra-AGI techniques adapted for SpectralAI Zero-Matrix.
+"""Spectral Techniques for SpectralAI Zero-Matrix.
 
-Implements 6 techniques from Lyra-AGI for BVH training and optimization:
+6 techniques for BVH training and optimization:
   1. SmoothTernarySTE — Differentiable BVH via beta annealing
   2. RMSNorm (SubLN) — Mandatory post-routing normalization
   3. LiquidTimeGate — Per-channel LOCAL/GLOBAL temporal receptive field
@@ -8,7 +8,6 @@ Implements 6 techniques from Lyra-AGI for BVH training and optimization:
   5. MetabolicBVH — Age tracking + reserves + auto-pruning
   6. SmoothBVHHit — Soft BVH hit function (differentiable closest_hit)
 
-Origin: jordisilvestre/Lyra-AGI (lyra/model/lyra_block.py, lyra/core/connectivity.py)
 Adapted: 2026-03-29 for SpectralAI BVH training pipeline
 """
 
@@ -152,7 +151,7 @@ class LiquidTimeGate(nn.Module):
       LOCAL channels → short-range spectral rays (blue)
       GLOBAL channels → long-range spectral rays (red)
 
-    Validated: -6.4% loss vs no gate (Lyra, TinyStories)
+    Validated: -6.4% loss vs no gate (TinyStories)
     """
 
     def __init__(self, d_model: int):
@@ -263,7 +262,7 @@ class MetabolicBVH:
       - Nodes with reserves <= 0 collapse (too many children, not enough hits)
       - Pruned nodes free memory and reduce traversal depth
 
-    Results in Lyra: sparsity auto-grows 0.90 → 0.95
+    Results: sparsity auto-grows 0.90 → 0.95
 
     Args:
         n_nodes: number of BVH nodes/spheres

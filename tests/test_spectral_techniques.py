@@ -1,4 +1,4 @@
-"""Tests for Lyra-AGI techniques adapted for SpectralAI.
+"""Tests for Spectral Techniques (SpectralAI).
 
 All tests run on CPU — no GPU required.
 Run: python -m pytest tests/test_spectral_techniques.py -v
