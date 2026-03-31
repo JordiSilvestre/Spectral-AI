@@ -272,6 +272,8 @@ class BVHGateWrapper(nn.Module):
         self._layer_scale = None
         # DeltaPredictor: set externally during calibration
         self._delta_predictor = None
+        # Rank template: fixed weight distribution by rank position
+        self._rank_template = None
 
         if calibration_mode == "affine" and calibration_state is not None:
             self.register_buffer('cal_scale', calibration_state["scale"])
@@ -411,6 +413,27 @@ class BVHGateWrapper(nn.Module):
                     device=logits.device)
             # Broadcast target [k] → [batch, k]
             top_k_weights = target.unsqueeze(0).expand(
+                top_k_index.shape[0], -1).float()
+            router_probs = torch.zeros(logits.shape[0], logits.shape[1],
+                                       dtype=torch.float, device=logits.device)
+            router_probs.scatter_(1, top_k_index, top_k_weights)
+
+        elif self.weight_mode == "rank_template":
+            # RANK TEMPLATE: BVH only provides ranking (top-k order).
+            # Weights come from a fixed template, ignoring BVH logit magnitudes.
+            # Steeper than gate_dist — more weight on top-1.
+            _, top_k_index = torch.topk(logits, self.top_k, dim=-1)
+            if self._rank_template is not None:
+                template = self._rank_template.to(logits.device)
+            else:
+                # Default steep template (measured from typical OLMoE gate)
+                template = torch.tensor(
+                    [0.312, 0.148, 0.112, 0.089, 0.071, 0.058, 0.047, 0.038],
+                    device=logits.device)
+            # Normalize to target sum
+            target_sum = self.topk_scale if self.topk_scale else 0.43
+            template = template / template.sum() * target_sum
+            top_k_weights = template.unsqueeze(0).expand(
                 top_k_index.shape[0], -1).float()
             router_probs = torch.zeros(logits.shape[0], logits.shape[1],
                                        dtype=torch.float, device=logits.device)
@@ -962,6 +985,9 @@ def main():
     parser.add_argument("--n-rays", type=int, default=1,
                         help="Number of rays per token (multi-ray ensemble). "
                              "3 = average 3 perturbed queries. Default: 1 (standard).")
+    parser.add_argument("--rank-template", type=str, default=None,
+                        help="Comma-separated weight template for rank_template mode. "
+                             "E.g. '0.312,0.148,0.112,0.089,0.071,0.058,0.047,0.038'")
     parser.add_argument("--delta-steps", type=int, default=200,
                         help="Number of calibration steps for DeltaPredictor (default: 200)")
     parser.add_argument("--delta-lr", type=float, default=0.01,
@@ -972,7 +998,7 @@ def main():
                              "Adjusts each layer proportionally to its actual gate sum.")
     parser.add_argument("--weight-mode", type=str, default="softmax",
                         choices=["softmax", "relu_norm", "relu_log", "relu_cbrt",
-                                 "topk_softmax", "uniform", "gate_dist"],
+                                 "topk_softmax", "uniform", "gate_dist", "rank_template"],
                         help="How to compute routing weights from BVH logits. "
                              "relu_norm: ReLU + L1 norm (recommended for pure mode). "
                              "topk_softmax: softmax over top-k only. "
@@ -1095,6 +1121,10 @@ def main():
                         wrapper._gate_target_dist = per_layer_dist[li]
                     elif gate_target_dist is not None:
                         wrapper._gate_target_dist = gate_target_dist
+                # rank_template: inject custom template if provided
+                if args.weight_mode == "rank_template" and getattr(args, 'rank_template', None):
+                    vals = [float(x) for x in args.rank_template.split(",")]
+                    wrapper._rank_template = torch.tensor(vals)
                 # per-layer scale: inject measured sum as scale for relu_norm
                 if getattr(args, 'per_layer_scale', False) and per_layer_sum is not None:
                     if li in per_layer_sum:
