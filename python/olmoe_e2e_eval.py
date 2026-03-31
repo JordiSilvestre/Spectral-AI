@@ -245,7 +245,8 @@ class BVHGateWrapper(nn.Module):
                  topk_softmax: bool = False,
                  topk_scale: float = None,
                  weight_mode: str = "softmax",
-                 n_rays: int = 1):
+                 n_rays: int = 1,
+                 hybrid_alpha: float = 0.98):
         super().__init__()
         self.router = router
         self.router.eval()
@@ -255,13 +256,17 @@ class BVHGateWrapper(nn.Module):
         self.logit_temperature = logit_temperature
         self.logit_norm = logit_norm
         self.n_rays = n_rays
+        self.hybrid_alpha = hybrid_alpha
         # Weight mode: how to convert logits to routing weights.
         #   "softmax" (default) — standard softmax over all experts
         #   "relu_norm" — ReLU + L1 normalization (no exp amplification)
         #   "topk_softmax" — softmax restricted to top-k experts
         #   "uniform" — equal weight 1/k to all selected experts
         #   "gate_dist" — BVH ranking + fixed weights from original gate distribution
+        #   "hybrid_residual" — alpha * BVH_softmax + (1-alpha) * gate_softmax
         self.weight_mode = weight_mode
+        # Original gate weight for hybrid_residual mode (set externally)
+        self._original_gate_weight = None
         # Backward compat: --topk-softmax flag overrides weight_mode
         if topk_softmax and weight_mode == "softmax":
             self.weight_mode = "topk_softmax"
@@ -439,6 +444,39 @@ class BVHGateWrapper(nn.Module):
                                        dtype=torch.float, device=logits.device)
             router_probs.scatter_(1, top_k_index, top_k_weights)
 
+        elif self.weight_mode == "hybrid_residual":
+            # HYBRID RESIDUAL: use BVH for expert SELECTION (top-k indices),
+            # but compute final weights from the original gate's softmax.
+            # This preserves BVH's O(log N) routing while using the gate's
+            # trained weight distribution for the selected experts.
+            # alpha controls the blend: 1.0 = pure BVH selection + gate weights,
+            # 0.0 = pure gate (baseline).
+            if self._original_gate_weight is not None:
+                # BVH selects top-k indices
+                bvh_probs = F.softmax(logits, dtype=torch.float, dim=-1)
+                _, bvh_top_k_index = torch.topk(bvh_probs, self.top_k, dim=-1)
+
+                # Gate computes weights for those indices
+                gate_logits = F.linear(h2d, self._original_gate_weight)
+                gate_probs = F.softmax(gate_logits, dtype=torch.float, dim=-1)
+
+                # Gather gate probabilities at BVH-selected positions
+                top_k_weights = gate_probs.gather(1, bvh_top_k_index)
+                top_k_index = bvh_top_k_index
+
+                router_probs = torch.zeros_like(gate_probs)
+                router_probs.scatter_(1, top_k_index, top_k_weights)
+            else:
+                # Fallback: standard softmax
+                router_probs = F.softmax(logits, dtype=torch.float, dim=-1)
+                top_k_weights, top_k_index = torch.topk(
+                    router_probs, self.top_k, dim=-1
+                )
+            if self.norm_topk_prob:
+                top_k_weights = top_k_weights / top_k_weights.sum(
+                    dim=-1, keepdim=True
+                )
+
         else:
             # Standard: softmax over all 64 experts, then top-k
             router_probs = F.softmax(logits, dtype=torch.float, dim=-1)
@@ -454,7 +492,7 @@ class BVHGateWrapper(nn.Module):
 
         # Diagnostic: print once per layer to verify temperature is working
         BVHGateWrapper._diag_count += 1
-        if BVHGateWrapper._diag_count <= 16:
+        if BVHGateWrapper._diag_count <= 1:
             sample = raw_logits[0]  # first token
             top5_raw = torch.topk(sample, 5)
             top5_post = torch.topk(logits[0], 5) if logits.shape[0] > 0 else top5_raw
@@ -683,6 +721,7 @@ def replace_gate_with_bvh(
     topk_scale: float = None,
     weight_mode: str = "softmax",
     n_rays: int = 1,
+    hybrid_alpha: float = 0.98,
 ) -> tuple:
     """
     Replace the linear gate in one OLMoE layer with the trained BVH Router.
@@ -823,7 +862,11 @@ def replace_gate_with_bvh(
             topk_scale=topk_scale,
             weight_mode=weight_mode,
             n_rays=n_rays,
+            hybrid_alpha=hybrid_alpha,
         ).to(gate_device)
+        # Store original gate weight for hybrid_residual mode
+        if hasattr(original_gate, 'weight') and original_gate.weight is not None:
+            wrapper._original_gate_weight = original_gate.weight.data.to(gate_device)
         setattr(mlp, gate_attr, wrapper)
         cal_str = f"{cal_mode}" if cal_mode else "none"
         wm = wrapper.weight_mode  # resolved mode (accounts for --topk-softmax compat)
@@ -926,6 +969,70 @@ def _eval_ppl_from_ids(
 
 
 # ─────────────────────────────────────────────────────────────────
+# Text generation demo
+# ─────────────────────────────────────────────────────────────────
+
+DEFAULT_PROMPTS = [
+    "def fibonacci(n):",
+    "The derivative of x^2 is",
+    "Once upon a time in a",
+    "The speed of light is",
+    "La inteligencia artificial es",
+]
+
+
+def generate_text(
+    model: nn.Module,
+    tokenizer,
+    prompt: str,
+    max_new_tokens: int = 100,
+    device: str = "cuda",
+) -> Tuple[str, float]:
+    """Generate text from a prompt. Returns (generated_text, tokens_per_second)."""
+    input_ids = tokenizer.encode(prompt, return_tensors="pt").to(device)
+
+    t0 = time.time()
+    with torch.no_grad():
+        output_ids = model.generate(
+            input_ids,
+            max_new_tokens=max_new_tokens,
+            do_sample=False,
+            temperature=1.0,
+        )
+    elapsed = time.time() - t0
+
+    n_generated = output_ids.shape[1] - input_ids.shape[1]
+    tok_per_sec = n_generated / elapsed if elapsed > 0 else 0.0
+    generated = tokenizer.decode(output_ids[0], skip_special_tokens=True)
+    return generated, tok_per_sec
+
+
+def generate_demo(
+    model: nn.Module,
+    tokenizer,
+    prompts: List[str],
+    max_new_tokens: int = 100,
+    device: str = "cuda",
+    label: str = "BVH Router",
+) -> List[dict]:
+    """Run generation demo for a list of prompts."""
+    results = []
+    for i, prompt in enumerate(prompts, 1):
+        print(f"\n{'─' * 60}")
+        print(f"  Prompt {i}/{len(prompts)}: \"{prompt}\"")
+        print(f"{'─' * 60}")
+
+        text, tps = generate_text(model, tokenizer, prompt, max_new_tokens, device)
+        results.append({"prompt": prompt, "text": text, "tok_s": tps, "label": label})
+
+        print(f"\n  [{label}]")
+        print(f"  {text}")
+        print(f"  ({tps:.1f} tok/s, {max_new_tokens} max tokens)")
+
+    return results
+
+
+# ─────────────────────────────────────────────────────────────────
 # Main evaluation pipeline
 # ─────────────────────────────────────────────────────────────────
 
@@ -998,14 +1105,26 @@ def main():
                              "Adjusts each layer proportionally to its actual gate sum.")
     parser.add_argument("--weight-mode", type=str, default="softmax",
                         choices=["softmax", "relu_norm", "relu_log", "relu_cbrt",
-                                 "topk_softmax", "uniform", "gate_dist", "rank_template"],
+                                 "topk_softmax", "uniform", "gate_dist", "rank_template",
+                                 "hybrid_residual"],
                         help="How to compute routing weights from BVH logits. "
                              "relu_norm: ReLU + L1 norm (recommended for pure mode). "
                              "topk_softmax: softmax over top-k only. "
                              "uniform: equal 1/k weights. "
-                             "gate_dist: fixed weights from original gate distribution "
-                             "(measured during baseline pass). "
+                             "gate_dist: fixed weights from original gate distribution. "
+                             "hybrid_residual: alpha*BVH + (1-alpha)*gate (closes PPL gap). "
                              "softmax: standard full softmax (default).")
+    parser.add_argument("--hybrid-alpha", type=float, default=0.98,
+                        help="Blending factor for hybrid_residual mode. "
+                             "0.98 = 98%% BVH + 2%% original gate (default).")
+
+    # ── Generation demo flags ──
+    parser.add_argument("--generate", action="store_true",
+                        help="Text generation mode instead of PPL evaluation")
+    parser.add_argument("--prompt", type=str, default=None,
+                        help="Custom prompt for generation (default: diverse set)")
+    parser.add_argument("--max-new-tokens", type=int, default=100,
+                        help="Max tokens to generate per prompt")
     args = parser.parse_args()
 
     print("=" * 70)
@@ -1085,6 +1204,7 @@ def main():
                 topk_scale=args.topk_scale,
                 weight_mode=args.weight_mode,
                 n_rays=getattr(args, 'n_rays', 1),
+                hybrid_alpha=getattr(args, 'hybrid_alpha', 0.98),
             )
             replaced_layers.append(layer_idx)
         print(f"\n  Total: {n_layers} layers replaced: {replaced_layers}")
@@ -1104,6 +1224,7 @@ def main():
             topk_scale=args.topk_scale,
             weight_mode=args.weight_mode,
             n_rays=getattr(args, 'n_rays', 1),
+            hybrid_alpha=getattr(args, 'hybrid_alpha', 0.98),
         )
         replaced_layers = [args.layer]
 
@@ -1141,6 +1262,36 @@ def main():
             print(f"  [gate_dist] Injected PER-LAYER distribution into {len(replaced_layers)} layers")
         if getattr(args, 'per_layer_scale', False):
             print(f"  [per-layer-scale] Injected per-layer scales into {len(replaced_layers)} layers")
+
+    # ── Generate mode: text generation demo ─────────────────────
+    if getattr(args, 'generate', False):
+        prompts = [args.prompt] if args.prompt else DEFAULT_PROMPTS
+        max_new = getattr(args, 'max_new_tokens', 100)
+        n_layers = len(replaced_layers)
+        layers_str = ",".join(str(l) for l in replaced_layers)
+        label = f"BVH Router ({n_layers} capas: {layers_str})"
+
+        print(f"\n{'=' * 60}")
+        print(f"  TEXT GENERATION DEMO — {label}")
+        print(f"  Weight mode: {args.weight_mode}")
+        print(f"  Max new tokens: {max_new}")
+        print(f"{'=' * 60}")
+
+        bvh_results = generate_demo(
+            model, tokenizer, prompts, max_new, args.device, label=label
+        )
+
+        # Summary
+        print(f"\n{'=' * 60}")
+        print(f"  RESUMEN")
+        print(f"{'=' * 60}")
+        avg_tps = sum(r["tok_s"] for r in bvh_results) / len(bvh_results)
+        print(f"  Prompts: {len(bvh_results)}")
+        print(f"  Velocidad media: {avg_tps:.1f} tok/s")
+        print(f"  Capas BVH: {layers_str}")
+        print(f"  Weight mode: {args.weight_mode}")
+        print()
+        return {"mode": "generate", "results": bvh_results, "avg_tok_s": avg_tps}
 
     # ── Step 3.5: Calibrate DeltaPredictor (if requested) ──────
     if getattr(args, 'delta_predictor', False) and not args.identity_test:

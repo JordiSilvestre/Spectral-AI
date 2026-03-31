@@ -35,8 +35,8 @@ else
     exit 1
 fi
 
-MODEL_DIR="${MODEL_DIR:-/mnt/j/Proyectos/models/olmoe-1b-7b}"
-EPOCHS="${EPOCHS:-100}"
+MODEL_DIR="${MODEL_DIR:-allenai/OLMoE-1B-7B-0924}"
+EPOCHS="${EPOCHS:-200}"
 DEVICE="${DEVICE:-cuda}"
 FORCE_RETRAIN="${FORCE_RETRAIN:-true}"   # Force retrain even if spectral checkpoint exists (to use new topk_matching_loss)
 DATA_SRC="data"
@@ -196,9 +196,19 @@ for L in 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15; do
     MULTI_LAYER="${MULTI_LAYER}${L}:${CKPT}"
 done
 
+echo "--- PPL: PURE mode (BVH does everything) ---"
 $PY python/olmoe_e2e_eval.py \
     --model-dir "$MODEL_DIR" \
     --multi-layer "$MULTI_LAYER" \
+    --weight-mode softmax \
+    --max-tokens 50000
+
+echo ""
+echo "--- PPL: HYBRID RESIDUAL mode (BVH selects, gate weights) ---"
+$PY python/olmoe_e2e_eval.py \
+    --model-dir "$MODEL_DIR" \
+    --multi-layer "$MULTI_LAYER" \
+    --weight-mode hybrid_residual \
     --max-tokens 50000
 
 # ── Cleanup ─────────────────────────────────────────────────
@@ -208,7 +218,7 @@ rm -rf "$DATA_LOCAL"
 
 echo ""
 echo "============================================================"
-echo "  ALL PHASES COMPLETE"
-echo "  Spectral Techniques en todas las capas"
-echo "  PPL esperado: 8.27 -> ~6.5-7.0 (con topk_matching_loss)"
+echo "  ALL PHASES COMPLETE — FASE F"
+echo "  Retrained 16/16 layers: 200 epochs + spectral + topk_loss"
+echo "  Evaluated BOTH pure and hybrid_residual modes"
 echo "============================================================"

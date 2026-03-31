@@ -16,7 +16,9 @@
 | E2E PPL (5 capas) | ✅ PPL 6.40 (+4.8%) — Capas 0,4,8,12,15 reemplazadas |
 | E2E PPL (16 capas hybrid) | ✅ PPL 7.15 (0.0%) — BVH selecciona, gate original pesa |
 | E2E PPL (16 capas pure) | ✅ PPL 8.42 (+17.8%) — MicroPredictor 16 params (sin gate original) |
-| E2E PPL (3 capas pure) | ✅ PPL 7.42 (+3.9%) — L3,L8,L15 MicroPredictor |
+| E2E PPL (3 capas pure) | ✅ PPL 7.42 (+3.9%) — L3,L8,L15 BVH puro (sin gate) |
+| E2E PPL (3 capas mixto) | ✅ PPL 7.17 (+0.4%) — BVH selecciona + gate pesa |
+| E2E PPL (16 capas mixto) | ✅ PPL 7.30 (+2.1%) — 16/16 capas hybrid_residual |
 | E2E PPL (1 capa pure) | ✅ PPL 7.19 (+0.6%) — L8 MicroPredictor |
 | Bugs criticos resueltos | norm_topk_prob=False, restricted softmax, calibracion |
 | Pipeline OptiX v5 | ✅ Compilado: 6 PTX, benchmark 39µs/batch, 100% accuracy (triángulos) |
@@ -28,7 +30,14 @@
 | FASE D: Retrain con topk_loss | ✅ COMPLETADA — 16/16 capas, L11=97.2% top-8 |
 | FASE E: Pure mode PPL | ✅ CERRADA — Best: 3 capas PPL 7.42 (+3.9%), 16 capas PPL 8.42 (+17.8%) |
 | Multi-ray ensemble | ✅ Implementado, NO mejora (7.43 vs 7.42 sin multi-ray) |
-| FASE F: BVH accuracy | ⏳ Pendiente — Retrain para 95%→99% accuracy (cone tracing, data aug) |
+| FASE G: Demo generacion texto | ✅ COMPLETADA — 3 capas 15 tok/s, 16 capas 4.7 tok/s, texto coherente |
+| FASE G+: Benchmarks CUDA | ✅ COMPLETADA — BVH 85-170x speedup (confirmado), Ternary 7.9x compresion |
+| Ternary decision | ✅ DESCARTADO para modelos actuales — usar FP16 (Tensor Cores 10x mas rapido) |
+| hybrid_residual mode | ✅ PPL 7.17 (+0.4%) — BVH selecciona, gate pesa. Brecha cerrada. |
+| benchmark_scaling.py | ✅ CREADO — O(log N) vs O(N) curva para N=64..4096 expertos |
+| FASE F: BVH accuracy | ⏳ Pendiente — Retrain para 95%->99% accuracy (cone tracing, data aug) |
+| FASE H: Patentes | ⏳ Pendiente — Filing USPTO, tests completos para claims |
+| FASE I: Paper | ⏳ Pendiente — Resultados publicables (PPL 7.42, benchmarks CUDA) |
 
 ---
 
@@ -65,7 +74,8 @@
 | `python/olmoe_extract.py` | Carga 64 experts SwiGLU + gate de OLMoE safetensors | Validado |
 | `python/olmoe_bvh_distill.py` | EnhancedBVHRouter v2.1 + KD loss + RealHiddensDataset | Activo (necesita datos reales) |
 | `python/extract_real_hiddens.py` | Extrae hidden states reales de OLMoE en WikiText-2 | NUEVO - pendiente ejecutar |
-| `python/olmoe_e2e_eval.py` | Evaluacion PPL: BVH Router vs gate lineal | Activo (bugs corregidos) |
+| `python/olmoe_e2e_eval.py` | Evaluacion PPL + demo generacion texto (--generate) | Activo |
+| `python/benchmark_cuda_pipeline.py` | Benchmarks CUDA: BVH kernel + Ternary POPCOUNT + pipeline | Activo |
 | `python/rt_training_bridge.py` | StraightThroughRT: RT Core forward + SmoothBVHHit backward | NUEVO |
 | `python/optix_training_bridge.py` | OptiXTrainingBridge: STE con pybind11 ext (zero-copy GPU) | NUEVO |
 | `python/optix_router_integration.py` | Drop-in OptiX wrapper para EnhancedBVHRouter | NUEVO |
@@ -107,7 +117,7 @@
 | `python/benchmark_comparativo.py` | Modelo de coste: FLOPs + memoria + energia | Activo |
 | `python/benchmark.py` | OptiX vs cuBLAS (requiere batch_runner.exe) | Requiere C++ |
 | `python/benchmark_e2e.py` | Router + Expert types (pre-extension) | Antiguo |
-| `python/benchmark_scaling.py` | Curva de escalado N=8->512 | Requiere C++ |
+| `python/benchmark_scaling.py` | BVH O(log N) vs Linear Gate O(N) scaling curve | Activo |
 | `python/scaling_inception.py` | v4.0 benchmark OptiX vs cuBLAS vs FlashAttention | Analitico |
 
 ### Python — UTILIDADES Y EXPERIMENTAL
