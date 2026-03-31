@@ -165,9 +165,9 @@ for L in 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15; do
         continue
     fi
 
-    echo "  Layer $L: calibrating (linear, 100 epochs)..."
+    echo "  Layer $L: calibrating (topk_preserving, 100 epochs)..."
     $PY python/calibrate_router.py \
-        --mode linear \
+        --mode topk_preserving \
         --epochs 100 \
         --real-data "${DATA_LOCAL}/real_hiddens_layer${L}.pt" \
         --router-checkpoint "$CKPT" \

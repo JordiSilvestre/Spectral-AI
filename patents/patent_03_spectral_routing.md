@@ -67,7 +67,7 @@ The present invention provides a system and method for context-dependent routing
 
 The invention comprises:
 
-1. **Spectral Context Encoding:** A method for encoding the conversational context as a "color" vector f in R^k (typically k=64), computed from the context history through a learned spectral encoding matrix W_spectral:
+1. **Spectral Context Encoding:** A method for encoding the conversational context as a "color" vector f in R^k (typically k=256), computed from the context history through a learned spectral encoding matrix W_spectral:
 
 ```
 f = normalize(W_spectral * context_embedding)
@@ -143,7 +143,7 @@ The "color" of a ray is encoded as a SpectralContext:
 
 ```cpp
 struct SpectralContext {
-    half     color_vector[SPECTRAL_DIM];  // k=64 components in FP16
+    half     color_vector[SPECTRAL_DIM];  // k=256 components in FP16
     float    color_magnitude;              // L2 norm before normalization
     uint32_t dominant_context_id;          // argmax(|color_vector[i]|)
     float    context_confidence;           // Confidence in dominant context
@@ -156,7 +156,7 @@ Step 1: Aggregate the context history into a single embedding vector. For autore
 
 Step 2: Project through the spectral encoding matrix:
 ```
-raw_color = W_spectral * context_embedding    (R^k, k=64)
+raw_color = W_spectral * context_embedding    (R^k, k=256)
 ```
 
 Step 3: Normalize to unit length:
@@ -188,7 +188,7 @@ struct PrismaticSphere {
     bool     is_leaf;
 
     // Spectral dispersion (NEW in this invention)
-    half     W_dispersion[SPECTRAL_DIM];     // Dispersion weights [k=64]
+    half     W_dispersion[SPECTRAL_DIM];     // Dispersion weights [k=256]
     float    base_refractive_index;           // Base n (typically 1.0)
 
     // Context-dependent matrix selection (NEW in this invention)
@@ -320,7 +320,7 @@ Context C: "The pilot initiated a steep bank turn"
 
 **Key Property:** The same geometric node (same position in 3D space) routes to three different specialized sub-networks based solely on the "color" of the incoming ray. No duplication of the node or its position is required. The only additional storage is the W_dispersion vector (64 half-floats = 128 bytes per node) and the matrix block IDs (32 bytes per node).
 
-**Computational Overhead:** The refraction computation requires O(k) = O(64) operations per sphere intersection. For a traversal of depth O(log N), the total overhead is O(k * log N). With k=64 and N=100,000, this is approximately 64 * 17 = 1,088 multiply-add operations per query, representing approximately 0.03% of the total computation. This is negligible.
+**Computational Overhead:** The refraction computation requires O(k) = O(256) operations per sphere intersection. For a traversal of depth O(log N), the total overhead is O(k * log N). With k=256 and N=100,000, this is approximately 256 * 17 = 4,352 multiply-add operations per query, representing approximately 0.12% of the total computation. This is negligible.
 
 ### 6. Wormhole Mechanism for Cross-Domain Polysemy
 
@@ -546,9 +546,9 @@ A test set of 1,000 polysemous words in context was evaluated:
 
 | Component | Additional FLOPs | % of Base Traversal |
 |---|---|---|
-| Spectral encoding (per query) | 64 * D MADs | < 0.01% |
-| Refraction per sphere | 64 MADs + Snell | 0.01% |
-| Chromatic aberration (B=4) | 4 * (64 MADs + Snell) | 0.03% |
+| Spectral encoding (per query) | 256 * D MADs | < 0.04% |
+| Refraction per sphere | 256 MADs + Snell | 0.04% |
+| Chromatic aberration (B=4) | 4 * (256 MADs + Snell) | 0.12% |
 | Phase interference (R=8) | 8 * complex add | < 0.01% |
 | **Total** | | **< 0.03%** |
 
@@ -571,7 +571,7 @@ where n_base is a base refractive index, sigmoid is the logistic function, and t
 where n_ratio is the ratio of external to internal refractive indices; and
 (f) selecting a specialized sub-network (matrix block) for the token based on the refraction angle at the leaf sphere of the hierarchy.
 
-**Claim 2.** The method of Claim 1, wherein the spectral color vector has k = 64 dimensions stored in half-precision (FP16) floating-point format, and the spectral encoding matrix W_spectral has dimensions [k x D] where D is the embedding dimension of the neural network.
+**Claim 2.** The method of Claim 1, wherein the spectral color vector has k = 256 dimensions stored in half-precision (FP16) floating-point format, and the spectral encoding matrix W_spectral has dimensions [k x D] where D is the embedding dimension of the neural network.
 
 **Claim 3.** The method of Claim 1, wherein the conversational context is aggregated from the hidden states of the most recent W tokens in the sequence, where W is a configurable window size.
 
@@ -695,7 +695,7 @@ where n_sphere is the computed refractive index, path_length is the distance thr
 
 ## ABSTRACT
 
-A system and method for context-dependent routing in neural language models using spectral encoding and optical refraction principles. Each ray traversing a semantic hierarchy carries a "spectral color" --- a k-dimensional vector (k=64) encoding the conversational context, computed from the context history via a learned spectral encoding matrix. Each node in the hierarchy acts as an optical prism with a learned dispersion weight vector that determines a context-dependent refractive index: n = n_base + sigmoid(dot(W_dispersion, f)). Snell's law of refraction computes the routing angle, which selects a specialized matrix block from among up to 8 candidates per node. The same geometric node routes to different expert sub-networks depending on context, resolving polysemy without weight duplication. Three advanced mechanisms --- chromatic aberration (multi-band spectral decomposition), total internal reflection (discontinuous hard routing boundaries), and phase-coherent multi-ray interference (ensemble-like confidence estimation) --- collectively achieve 88.9% polysemy resolution accuracy with less than 0.03% computational overhead. All spectral parameters (W_spectral, W_dispersion, refractive indices, angle thresholds) are jointly optimized end-to-end with the base language model. The system integrates with the BVH traversal (LBS-2026-001) and nested IAS hierarchy (LBS-2026-002) to provide a complete O(N log N) inference pipeline on consumer GPU hardware.
+A system and method for context-dependent routing in neural language models using spectral encoding and optical refraction principles. Each ray traversing a semantic hierarchy carries a "spectral color" --- a k-dimensional vector (k=256) encoding the conversational context, computed from the context history via a learned spectral encoding matrix. Each node in the hierarchy acts as an optical prism with a learned dispersion weight vector that determines a context-dependent refractive index: n = n_base + sigmoid(dot(W_dispersion, f)). Snell's law of refraction computes the routing angle, which selects a specialized matrix block from among up to 8 candidates per node. The same geometric node routes to different expert sub-networks depending on context, resolving polysemy without weight duplication. Three advanced mechanisms --- chromatic aberration (multi-band spectral decomposition), total internal reflection (discontinuous hard routing boundaries), and phase-coherent multi-ray interference (ensemble-like confidence estimation) --- collectively achieve 88.9% polysemy resolution accuracy with less than 0.12% computational overhead. All spectral parameters (W_spectral, W_dispersion, refractive indices, angle thresholds) are jointly optimized end-to-end with the base language model. The system integrates with the BVH traversal (LBS-2026-001) and nested IAS hierarchy (LBS-2026-002) to provide a complete O(N log N) inference pipeline on consumer GPU hardware.
 
 ---
 

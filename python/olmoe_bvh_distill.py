@@ -358,6 +358,7 @@ class EnhancedBVHRouter(nn.Module):
         temperature_init: float = 1.0,
         spectral_mode: bool = False,
         spectral_dim: int = 64,
+        encoder_hidden: int = None,
     ):
         super().__init__()
         self.n_level1 = n_level1
@@ -405,7 +406,7 @@ class EnhancedBVHRouter(nn.Module):
             self.spectral_dim = spectral_dim
             # Spectral encoder: 256→spectral_dim (post input_proj, not raw 2048)
             # Higher dim = finer polysemy resolution (code vs music vs physics)
-            encoder_hidden = max(128, spectral_dim)  # scale hidden layer with dim
+            encoder_hidden = encoder_hidden or max(128, spectral_dim)
             self.spectral_encoder = nn.Sequential(
                 nn.Linear(256, encoder_hidden),
                 nn.GELU(),
@@ -424,9 +425,34 @@ class EnhancedBVHRouter(nn.Module):
         # Expert usage tracking
         self.register_buffer('expert_counts', torch.zeros(self.n_experts))
 
-    def forward(self, x: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
+    def _forward_from_h(self, h: torch.Tensor, T: float) -> torch.Tensor:
+        """Forward pass from projected h (256-dim) to logits (64-dim)."""
+        # Level 1: domains
+        p1, f1, pos1 = self.level1(h, T)
+        # Level 2: subdomains
+        p2, f2, pos2 = self.level2(f1, T)
+        # Level 3: concepts
+        p3, f3, pos3 = self.level3(f2, T)
+        # Combine
+        combined = torch.cat([f3, p1, p2, p3], dim=-1)
+        logits = self.expert_head(combined)
+
+        # Spectral modulation
+        if self.spectral_enabled:
+            spectral_color = self.spectral_encoder(h)
+            refraction_idx = self.prismatic_refraction(spectral_color.unsqueeze(1)).squeeze(1)
+            spectral_bias = self.spectral_gate(refraction_idx)
+            logits = logits + spectral_bias
+
+        if self.spectral_mode:
+            logits = self.post_routing_norm(logits)
+
+        return logits
+
+    def forward(self, x: torch.Tensor, n_rays: int = 1) -> Tuple[torch.Tensor, torch.Tensor]:
         """
         x: (B, 2048) — hidden states
+        n_rays: number of rays to cast per token (ensemble). 1 = standard, 3+ = multi-ray.
 
         Returns:
             expert_probs: (B, 64) — probability over 64 experts
@@ -437,34 +463,17 @@ class EnhancedBVHRouter(nn.Module):
         # Input projection
         h = self.input_proj(x)  # (B, 256)
 
-        # Level 1: domains
-        p1, f1, pos1 = self.level1(h, T)  # p1: (B, 4), f1: (B, 128)
-
-        # Level 2: subdomains (conditioned on level 1 features)
-        p2, f2, pos2 = self.level2(f1, T)  # p2: (B, 4), f2: (B, 128)
-
-        # Level 3: concepts (conditioned on level 2 features)
-        p3, f3, pos3 = self.level3(f2, T)  # p3: (B, 4), f3: (B, 128)
-
-        # Combine all routing info for final expert selection
-        combined = torch.cat([f3, p1, p2, p3], dim=-1)  # (B, 128+4+4+4)
-        logits = self.expert_head(combined)  # (B, 64)
-
-        # Spectral: modulate expert logits based on context "color"
-        # Different contexts (code vs music vs physics) refract differently
-        # through the same expert spheres, resolving polysemy (MEJORAS.md Sec 1)
-        if self.spectral_enabled:
-            # Encode 256-dim projected features → 16-dim spectral color
-            spectral_color = self.spectral_encoder(h)  # (B, spectral_dim)
-            refraction_idx = self.prismatic_refraction(spectral_color.unsqueeze(1))  # (B,1,64)
-            refraction_idx = refraction_idx.squeeze(1)  # (B, 64) refractive indices
-            # Modulate: higher refractive index → stronger influence on that expert
-            spectral_bias = self.spectral_gate(refraction_idx)  # (B, 64)
-            logits = logits + spectral_bias
-
-        # Spectral Techniques: RMSNorm post-routing to prevent scale collapse
-        if self.spectral_mode:
-            logits = self.post_routing_norm(logits)
+        if n_rays > 1 and not self.training:
+            # Multi-ray ensemble: perturb h slightly, average logits
+            # Noise scale relative to h's magnitude (~1% perturbation)
+            noise_scale = 0.01 * h.detach().norm(dim=-1, keepdim=True)
+            all_logits = [self._forward_from_h(h, T)]
+            for _ in range(n_rays - 1):
+                h_noisy = h + noise_scale * torch.randn_like(h)
+                all_logits.append(self._forward_from_h(h_noisy, T))
+            logits = torch.stack(all_logits).mean(dim=0)
+        else:
+            logits = self._forward_from_h(h, T)
 
         self._last_logits = logits
 
@@ -1106,6 +1115,7 @@ def train_bvh_distillation(
                     "n_level3": router.n_level3,
                     "feature_dim": router.feature_dim,
                     "spectral_mode": spectral_mode,
+                    "spectral_dim": getattr(router, 'spectral_dim', 64),
                 },
             }, ckpt_path)
             print(f"  -> NEW BEST (top-8: {val_topk_acc*100:.1f}%, top-1: {val_top1_acc*100:.1f}%)")

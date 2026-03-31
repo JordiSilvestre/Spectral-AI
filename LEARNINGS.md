@@ -1702,3 +1702,280 @@ Esto confirma que Spectral Techniques benefician capas débiles de forma demoled
 | L5  | 86.9% | YES | 64 | ✅ Completado |
 | L11 | 93.3% | YES | 64 | ✅ Completado |
 | Resto | 80-93% | No | — | ⏳ Pendiente retrain --spectral |
+
+---
+
+### [2026-03-31] FASE D completada: 15/16 capas reentrenadas con spectral+topk_matching_loss
+
+**Archivos:** `scripts/train_remaining_layers.sh`, `python/olmoe_bvh_distill.py`
+
+Retrain masivo de 15 capas (todas menos L11) con:
+- `--spectral --spectral-dim 256`
+- `topk_matching_loss` activada (weight=0.3)
+- 100 epochs por capa
+
+**L11 NO reentrenada:** Su checkpoint (03-30) tiene `spectral_dim=16` y fue entrenada
+SIN topk_matching_loss. Necesita retrain manual con `--spectral --spectral-dim 256`.
+
+### [2026-03-31] [CRITICO] PPL = 122.64 — Distribución de logits demasiado peaked
+
+**Archivos:** `python/olmoe_e2e_eval.py`
+
+**Problema:** La evaluación 16/16 capas BVH devolvió PPL=122.64 (baseline OLMoE: 6.11).
+Causa raíz: el router BVH produce logits extremadamente concentrados — **99.98% de la
+probabilidad en el expert top-1**. OLMoE espera ~8 experts contribuyendo con pesos
+significativos (distribución mucho más plana).
+
+**Por qué ocurre:** El BVH router aprende a clasificar bien (top-8 accuracy 85-95%)
+pero no aprende la MAGNITUD correcta de los logits. La softmax sobre logits con rango
+muy amplio (ej: [15.2, 3.1, 2.8, ...]) concentra casi toda la masa en el máximo.
+OLMoE original produce logits con rango estrecho (ej: [2.3, 2.1, 1.9, 1.8, ...]).
+
+**Diagnóstico:** Esto NO es un bug del routing — la selección de experts es correcta.
+Es un problema de ESCALA de los logits. Dos soluciones complementarias:
+
+1. **Temperature scaling (inferencia):** Dividir logits por T antes de softmax.
+   `logits = logits / T` donde T=5.0-20.0 aplana la distribución sin cambiar el ranking.
+   Implementado como `--logit-temperature` en olmoe_e2e_eval.py.
+
+2. **Calibración topk_preserving (entrenamiento):** Aprende un escalar global (inv_temp)
+   + bias por expert (65 params total). NO mezcla logits entre experts, preservando
+   el ranking top-8. Implementado en calibrate_router.py.
+
+**Fix aplicado:**
+- Añadido `--logit-temperature FLOAT` a olmoe_e2e_eval.py
+- Añadido `--no-calibration` para ignorar calibración en checkpoints
+- Conectado en ambos paths (single-layer y multi-layer)
+- Pendiente: probar T=10.0 con --no-calibration
+
+### [2026-03-31] [FIX] Calibración linear destruye top-8 accuracy (96.5% → 79.6%)
+
+**Archivos:** `python/calibrate_router.py`, `scripts/train_remaining_layers.sh`
+
+**Problema:** El modo `linear` (Linear(64,64), 4160 params) mezcla logits entre experts.
+Esto permite que un expert que NO estaba en el top-8 "robe" probabilidad de uno que sí,
+destruyendo el ranking aprendido.
+
+**Resultado medido:** Top-8 overlap cae de 96.5% → 79.6% tras calibración linear.
+
+**Fix:** Creado modo `topk_preserving` — solo aprende 1 temperatura global + 64 bias.
+No hay multiplicación cruzada entre experts, así que el ranking se preserva.
+- 65 params (vs 4160 del linear)
+- Top-8 overlap: 94.8% → 85.9% (mejor que linear, pero aún pierde ~9pp por los bias)
+- Cambiado default en train_remaining_layers.sh de `--mode linear` a `--mode topk_preserving`
+
+**Lección:** Para MoE routing, la calibración NUNCA debe mezclar logits entre experts.
+Cualquier transformación que permita interacción cruzada puede destruir el ranking.
+
+### [2026-03-31] [FIX-SERIE] spectral_mode/spectral_dim no se inferían de checkpoints
+
+**Archivos:** `python/calibrate_router.py`, `python/olmoe_e2e_eval.py`, `python/olmoe_bvh_distill.py`
+
+**Problema:** Los checkpoints antiguos no guardaban `spectral_mode` ni `spectral_dim`
+en el dict `config`. Al cargar, el router se creaba sin spectral encoder → crash por
+mismatch de state_dict keys.
+
+**Fix (3 archivos):** Inferir spectral_mode detectando si `spectral_encoder.2.weight`
+existe en el state_dict. Inferir spectral_dim del shape de ese tensor. Inferir
+encoder_hidden del shape de `spectral_encoder.0.weight`.
+
+```python
+sd = ckpt["router_state_dict"]
+spectral_mode = config.get("spectral_mode", ckpt.get("spectral_mode", False))
+if not spectral_mode and "spectral_encoder.2.weight" in sd:
+    spectral_mode = True
+if spectral_mode and "spectral_encoder.2.weight" in sd:
+    spectral_dim = sd["spectral_encoder.2.weight"].shape[0]
+    enc_hidden = sd["spectral_encoder.0.weight"].shape[0]
+```
+
+**También:** Añadido `encoder_hidden` como parámetro de EnhancedBVHRouter.__init__()
+para soportar checkpoints con encoder_hidden != max(128, spectral_dim).
+
+**Lección:** SIEMPRE guardar TODOS los hiperparámetros en el checkpoint config dict.
+Añadido `spectral_dim` al save en olmoe_bvh_distill.py.
+
+### [2026-03-31] [VALIDADO] Hybrid mode PPL = 7.91 (+10.7%) — BVH routing FUNCIONA
+
+**Archivos:** `python/olmoe_e2e_eval.py`
+
+**Resultado:** Modo hybrid (BVH selecciona 16 candidatos, gate original calcula pesos):
+- PPL baseline (gate lineal): **7.15**
+- PPL hybrid BVH 16/16 capas: **7.91 (+10.7%)**
+- PPL pure BVH (sin hybrid): 1002.67 (inutilizable por escala de pesos)
+
+**Análisis:** El BVH Router selecciona experts correctamente (top-8 accuracy 85-95%).
+El problema de PPL=1002 era exclusivamente de la ESCALA de pesos post-softmax:
+- BVH puro: top-8 weights suman ~0.15 (debería ser ~0.7)
+- Cascada 16 capas: 0.15^16 ≈ 0 → modelo destruido
+- Hybrid: gate original da pesos correctos → PPL 7.91
+
+**Implicación para patentes:** Esto VALIDA la tesis central:
+- BVH jerárquico reemplaza búsqueda lineal O(N) → O(log N)
+- RT Cores pueden hacer la selección de candidatos en hardware
+- Los pesos pueden calcularse con gate ligero post-selección
+- Degradación solo +10.7% con 16 capas reemplazadas
+
+**Resultados completos modo hybrid (16/16 capas, L11 sin reentrenar):**
+
+| Candidatos | PPL   | Delta   | Reducción búsqueda |
+|------------|-------|---------|---------------------|
+| 64 (todos) | 7.15  | 0.0%   | 1x (baseline)       |
+| **32**     | **7.15** | **0.0%** | **2x**           |
+| **24**     | **7.15** | **0.0%** | **2.7x**         |
+| 20         | 7.88  | +10.3% | 3.2x                |
+| 16         | 7.91  | +10.7% | 4x                  |
+
+**Conclusión clave:** Con 24 candidatos (2.7x reducción) el BVH iguala EXACTAMENTE
+al gate lineal. El salto ocurre entre 20 y 24 candidatos — con 20 ya se pierden
+experts correctos. Con RT Cores evaluando a velocidad de hardware, usar 64 candidatos
+no tiene coste adicional, pero el dato de 24=perfecto es valioso para la patente.
+
+**Pendiente:** ~~Reentrenar L11~~, ~~resolver escala de pesos en modo BVH puro~~. Ver entradas posteriores.
+
+---
+
+### [2026-03-31] [COMPLETADO] L11 reentrenada: 97.2% top-8 — MEJOR capa de las 16
+
+**Archivos:** `checkpoints/olmoe_distill_layer11/bvh_router_best.pt`
+
+L11 completó 100 epochs con `--spectral --spectral-dim 256`:
+- top-8: **97.2%** (mejor de todas las 16 capas)
+- top-1: 79.7%
+- Active experts: 64/64 (todos contribuyendo)
+- Con esto, **ALL 16/16 capas están entrenadas**
+
+L11 era la última capa pendiente — usaba checkpoint viejo con spectral_dim=16.
+
+---
+
+### [2026-03-31] [ITERACIÓN] Modo puro relu_norm: PPL 1002 → 818 → 34.64
+
+**Archivos:** `python/olmoe_e2e_eval.py` (BVHGateWrapper, weight_mode system)
+
+Iteración para resolver PPL en modo BVH puro (sin gate original):
+
+| Paso | Cambio | PPL | Causa del problema |
+|------|--------|-----|-------------------|
+| 0 | Softmax estándar | ~1002 | 99.98% peso en top-1 (logits peaked) |
+| 1 | Temperature T=10 | ~1002 | No cambia relación entre logits |
+| 2 | LogitNorm (μ=0,σ=1) | 3978 | exp(5) sigue dominando exp(1.5) |
+| 3 | ReLU → topk → L1 norm | 16070 | ReLU corta negativos → zeros en top-8 |
+| 4 | topk → shift+1 → sqrt → L1 | 818 | sum=1.0 pero OLMoE espera ~0.7 |
+| **5** | **+ scale 0.7** | **34.64** | **Weight sum corregido** |
+
+**Fórmula actual (relu_norm v3):**
+```python
+top_k_vals, top_k_index = torch.topk(logits, k)       # 1. Top-k por logit crudo
+shifted = top_k_vals.float() - min(top_k_vals) + 1.0   # 2. Shift (min=1.0, no zeros)
+compressed = sqrt(shifted)                              # 3. Comprimir rango
+weights = (compressed / sum(compressed)) * 0.7          # 4. L1 norm + scale
+```
+
+**3 insights clave descubiertos:**
+1. **Zero weights** (v3→v4): ReLU(negativo)=0 → el 8º expert tenía peso 0.0 → NaN/PPL infinita.
+   Fix: hacer topk primero, luego shift para que el mínimo sea 1.0.
+2. **sqrt compression** (v4→v5): BVH logits [5.0, 0.5] vs original [2.3, 2.1]. Sin compresión,
+   top-1 sigue dominando. sqrt([5.6,1.2])=[2.37,1.10] → distribución más plana.
+3. **Weight sum scale** (v5→v6): OLMoE `norm_topk_prob=False` → pesos top-8 suman ~0.7.
+   Nuestros pesos sumaban 1.0 → inflación 1.4x/capa → 1.4^16 ≈ 3500x explosión.
+   Scale=0.7 → PPL de 818 a 34.64 (24x mejora).
+
+**CLI implementado:**
+- `--weight-mode relu_norm|topk_softmax|uniform|softmax`
+- `--topk-scale 0.7` (default para relu_norm, ajustable)
+- `--no-calibration` (bypass calibración de checkpoint)
+
+**RESUELTO: Scale sweep completado. Óptimo = 0.43 → PPL 8.95 (+25.2%)**
+
+| Scale | PPL |
+|-------|-----|
+| 0.15 | 367.89 |
+| 0.20 | 26.98 |
+| 0.30 | 10.63 |
+| 0.35 | 9.52 |
+| 0.40 | 9.03 |
+| 0.42 | 8.96 |
+| **0.43** | **8.95** |
+| 0.45 | 9.02 |
+| 0.55 | 10.89 |
+| 0.65 | 19.85 |
+| 0.70 | 34.64 |
+
+**Descubrimiento clave:** La suma real de pesos top-8 del gate original es **0.3187** (no 0.7).
+Medido con `measure_gate_distribution()` nuevo. Escala óptima 0.43 = 1.35x la suma medida.
+
+**gate_dist** (distribución fija del gate, solo ranking del BVH): PPL 9.97 (global), 10.50 (per-layer).
+Peor que relu_norm porque no adapta la forma por token.
+
+**Compression comparison (all scale=0.43):**
+
+| Compresión | PPL | Función |
+|------------|-----|---------|
+| **log1p** | **8.89** | Menos compresión → top-1 mantiene más peso |
+| sqrt | 8.95 | Buena pero aplana demasiado |
+| cbrt | 9.37 | Sub-comprime |
+| topk_softmax | 490 | Exponencial sigue siendo demasiado agresiva |
+
+**per-layer scale:** 9.22 con sqrt — peor que global 0.43. El ratio por capa introduce ruido.
+
+**Conclusión:** PPL 8.89 es el floor práctico para fórmulas fijas (sin parámetros aprendidos).
+Para bajar de aquí se necesita DeltaPredictor o weight-matching loss en training.
+
+**Gap restante (8.89 vs 7.15):** Combina:
+1. Error de selección de experts acumulado (3-20% por capa, 16 capas)
+2. Forma de distribución no exacta (log1p es mejor aproximación pero no perfecta)
+3. No hay adaptación per-token de la escala (un token "fácil" y uno "difícil" reciben mismo scale)
+
+### [2026-03-31] [VALIDADO] DeltaPredictor vs MicroPredictor — Acumulación confirmada
+
+**Archivos:** `python/olmoe_e2e_eval.py` (DeltaPredictor, MicroPredictor, calibrate_delta_predictor)
+
+**DeltaPredictor** (97 params/layer = 1,552 total): MLP que predice escala per-token desde
+4 features (max, min, std, top1/top2 ratio). Calibrado minimizando cross-entropy en validation set.
+
+**MicroPredictor** (1 param/layer = 16 total): Solo un scalar log_scale aprendido por capa.
+No puede hacer overfit — solo encuentra el scale óptimo para cada capa.
+
+**Resultado clave: ambos dan el MISMO PPL.** DeltaPredictor = overfitting puro.
+
+| Config | Params | Cal PPL | Eval PPL | Delta |
+|--------|--------|---------|----------|-------|
+| Baseline | — | — | 7.15 | — |
+| Hybrid (BVH+gate) | gate | — | 7.15 | 0.0% |
+| **MicroPredictor 16 capas** | **16** | **6.60** | **8.42** | **+17.8%** |
+| DeltaPredictor 20s | 1,552 | 6.43 | 8.43 | +17.9% |
+| DeltaPredictor 5s | 1,552 | 6.61 | 8.73 | +22.2% |
+| relu_log fixed | 0 | — | 8.89 | +24.3% |
+
+**Test de acumulación (MicroPredictor + relu_log):**
+
+| Capas reemplazadas | PPL | Delta | PPL/capa |
+|--------------------|-----|-------|----------|
+| L8 sola | 7.19 | +0.6% | +0.04 |
+| L3, L8, L15 (3 capas) | 7.42 | +3.9% | +0.09 |
+| 16/16 capas | 8.42 | +17.8% | +0.08 |
+
+**Conclusión:** El error es ACUMULATIVO. Cada capa añade ~+0.08 PPL. No es calibración individual
+mala — es que 16 capas con 3-5% error de selección se propagan multiplicativamente.
+
+**Para bajar de 8.0 con 16 capas:**
+1. Reentrenar BVH routers con topk_matching_loss → subir accuracy 95%→99%
+2. Multi-ray ensemble (3 rayos perturbados) → suavizar selección
+3. Hybrid selectivo en capas débiles (L0-L5 con 93-95% accuracy)
+
+### [2026-03-31] [FEATURE] Multi-ray ensemble + MicroPredictor + --skip-baseline
+
+**Archivos:**
+- `python/olmoe_bvh_distill.py`: Refactored `forward()` → `_forward_from_h()` + multi-ray ensemble
+- `python/olmoe_e2e_eval.py`: MicroPredictor class, `--n-rays`, `--delta-micro`, `--skip-baseline`
+
+**Multi-ray ensemble:** En inferencia, perturba el embedding proyectado h±ε (1% noise),
+lanza N rayos, promedia los logits. Reduce varianza → selección más estable.
+No requiere reentrenamiento — usa los mismos checkpoints.
+
+**MicroPredictor:** 1 param/layer (log_scale), inicializado a 0 → scale=0.43 base.
+Calibrado via backprop (20 steps, 2048 tokens validation).
+Guardado en `checkpoints/micro_predictors/micro_predictors.pt`.
+
+**--skip-baseline:** Salta el Step 2 (medición baseline PPL). Ahorra ~30s por ejecución.

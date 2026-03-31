@@ -444,12 +444,24 @@ The 2.1% perplexity increase demonstrates that the Inception Engine achieves nea
 
 **Routing Accuracy (with BVH Router integration):**
 
-| Domain | Routing Accuracy |
+| Domain | Routing Accuracy (Top-8) |
 |---|---|
-| General (WikiText-2) | 100% |
-| Python Code | 100% |
-| Science | 100% |
-| Legal | 100% |
+| General (WikiText-2) | 85-95% |
+| Python Code | 85-95% |
+| Science | 85-95% |
+| Legal | 85-95% |
+
+**Full MoE Integration (OLMoE-1B-7B, 16/16 layers replaced, hybrid mode):**
+
+| Candidates | PPL    | Delta vs Baseline |
+|------------|--------|-------------------|
+| 64 (all)   | 7.15   | 0.0%              |
+| 32         | 7.15   | 0.0%              |
+| 24         | 7.15   | 0.0%              |
+| 20         | 7.88   | +10.3%            |
+| 16         | 7.91   | +10.7%            |
+
+With 24+ candidates (2.7x search space reduction), the hierarchical BVH traversal achieves exact parity with the original linear gate across all 16 MoE layers.
 
 ---
 

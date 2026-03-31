@@ -78,6 +78,18 @@ def calibrate(
         def apply_cal(logits):
             return cal_layer(logits)
 
+    elif mode == "topk_preserving":
+        # Only learns a global temperature scalar + per-expert bias.
+        # Does NOT mix logits between experts → preserves top-8 ranking.
+        # 65 params total (1 temperature + 64 bias).
+        inv_temp = nn.Parameter(torch.ones(1, device=device))
+        bias = nn.Parameter(torch.zeros(n_experts, device=device))
+        params = [inv_temp, bias]
+        n_params = 1 + n_experts
+
+        def apply_cal(logits):
+            return logits * inv_temp + bias
+
     else:
         raise ValueError(f"Unknown mode: {mode}")
 
@@ -127,6 +139,8 @@ def calibrate(
             best_loss = avg_loss
             if mode == "affine":
                 best_state = {"scale": scale.data.clone(), "bias": bias.data.clone()}
+            elif mode == "topk_preserving":
+                best_state = {"inv_temp": inv_temp.data.clone(), "bias": bias.data.clone()}
             else:
                 best_state = {k: v.clone() for k, v in cal_layer.state_dict().items()}
 
@@ -144,8 +158,9 @@ def apply_calibration(bvh_logits: torch.Tensor, cal_data: dict,
                       device: str = "cuda") -> torch.Tensor:
     """Apply saved calibration to BVH logits."""
     state = cal_data["state"]
-    if cal_data["mode"] == "affine":
-        return bvh_logits * state["scale"].to(device) + state["bias"].to(device)
+    if cal_data["mode"] in ("affine", "topk_preserving"):
+        scale = state.get("scale", state.get("inv_temp", torch.ones(1)))
+        return bvh_logits * scale.to(device) + state["bias"].to(device)
     else:
         layer = nn.Linear(bvh_logits.shape[-1], bvh_logits.shape[-1])
         layer.load_state_dict({k: v.to(device) for k, v in state.items()})
@@ -222,9 +237,10 @@ def main():
                         default="checkpoints/olmoe_distill/bvh_router_best.pt")
     parser.add_argument("--real-data", type=str,
                         default="data/real_hiddens_layer8.pt")
-    parser.add_argument("--mode", type=str, default="linear",
-                        choices=["affine", "linear"],
-                        help="affine: scale+bias (128 params), linear: 64x64 (4160 params)")
+    parser.add_argument("--mode", type=str, default="topk_preserving",
+                        choices=["affine", "linear", "topk_preserving"],
+                        help="affine: scale+bias (128 params), linear: 64x64 (4160 params), "
+                             "topk_preserving: global temp+bias (65 params, preserves top-8 ranking)")
     parser.add_argument("--epochs", type=int, default=100)
     parser.add_argument("--lr", type=float, default=0.005)
     parser.add_argument("--batch-size", type=int, default=1024)
@@ -244,12 +260,29 @@ def main():
     except Exception:
         ckpt = torch.load(args.router_checkpoint, map_location="cpu", weights_only=False)
     config = ckpt["config"]
+    # Infer spectral_dim from checkpoint weights if not in config
+    sd = ckpt["router_state_dict"]
+    spectral_mode = config.get("spectral_mode", ckpt.get("spectral_mode", False))
+    se_out_key = "spectral_encoder.2.weight"
+    se_in_key = "spectral_encoder.0.weight"
+    if not spectral_mode and se_out_key in sd:
+        spectral_mode = True
+    spectral_dim = config.get("spectral_dim", 64)
+    enc_hidden = None
+    if spectral_mode and se_out_key in sd:
+        spectral_dim = sd[se_out_key].shape[0]
+        enc_hidden = sd[se_in_key].shape[0]
+        print(f"  Inferred spectral_dim={spectral_dim}, encoder_hidden={enc_hidden}")
+
     router = EnhancedBVHRouter(
         input_dim=config["input_dim"],
         n_level1=config["n_level1"],
         n_level2=config["n_level2"],
         n_level3=config["n_level3"],
         feature_dim=config["feature_dim"],
+        spectral_mode=spectral_mode,
+        spectral_dim=spectral_dim,
+        encoder_hidden=enc_hidden,
     )
     router.load_state_dict(ckpt["router_state_dict"])
     print(f"  top-8={ckpt.get('topk_accuracy', 0)*100:.1f}%, "

@@ -392,10 +392,12 @@ A prototype implementation was constructed and validated on the following hardwa
 - Token generation rate measures the native HuggingFace `model.generate()` throughput as the baseline. The BVH routing overhead (22 us) is negligible relative to the per-token forward pass (~20 ms), so the system matches baseline speed.
 - Routing speedup is measured as PyTorch `BVHRouter.forward()` vs `bvh_router_ext.route()` CUDA kernel, both on GPU.
 
-The BVH router was validated against the OLMoE-1B-7B model (7 billion parameters, 64 experts), achieving:
-- Top-8 expert selection accuracy: 91.7% (layer 8)
-- End-to-end perplexity: 6.16 (vs baseline 6.11, a delta of +0.8%)
-- Linear degradation of approximately 1% per replaced layer when scaling to multiple layers.
+The BVH router was validated against the OLMoE-1B-7B model (7 billion parameters, 64 experts, 16 MoE layers), achieving:
+- Top-8 expert selection accuracy: 85-95% across all 16 layers (with Spectral Techniques)
+- **Full 16/16 layer replacement (hybrid mode, 24+ candidates):** PPL 7.15 vs baseline 7.15 — **0.0% degradation**
+- Full 16/16 layer replacement (hybrid mode, 16 candidates): PPL 7.91 vs baseline 7.15 — +10.7% degradation
+- Single-layer perplexity (layer 8): 6.16 (vs baseline 6.11, a delta of +0.8%)
+- The hybrid mode uses BVH for O(log N) candidate pre-selection, then the original gate weight matrix computes exact routing weights via softmax. With 24+ candidates out of 64 experts (2.7x search reduction), zero quality loss is achieved.
 
 **Reproduction:** Run `scripts/patent_benchmark.py` and `python/benchmark_e2e_final.py` from the project root.
 

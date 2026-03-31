@@ -1,6 +1,6 @@
 # STATUS.md — SpectralAI Zero-Matrix
 > Estado real del proyecto, inventario de archivos, y roadmap por fases.
-> Ultima actualizacion: 2026-03-30
+> Ultima actualizacion: 2026-03-31
 
 ---
 
@@ -11,9 +11,13 @@
 | Concepto matematico | Validado (O(N log N) vs O(N^2)) |
 | CUDA kernels v5 | Operativos (105x speedup routing, POPCOUNT ternary) |
 | Demo killer (Qwen 0.5B) | ✅ 33 tok/s, 6/6 prompts, ternary experts |
-| BVH Router distillation | ✅ 91.7% top-8 (L8), datos reales, calibracion linear |
+| BVH Router distillation | ✅ 16/16 capas, 80-97.2% top-8 (L11 best: 97.2%) |
 | E2E PPL (1 capa) | ✅ PPL 6.16 (+0.8%) — BVH Router L8 con calibracion linear |
 | E2E PPL (5 capas) | ✅ PPL 6.40 (+4.8%) — Capas 0,4,8,12,15 reemplazadas |
+| E2E PPL (16 capas hybrid) | ✅ PPL 7.15 (0.0%) — BVH selecciona, gate original pesa |
+| E2E PPL (16 capas pure) | ✅ PPL 8.42 (+17.8%) — MicroPredictor 16 params (sin gate original) |
+| E2E PPL (3 capas pure) | ✅ PPL 7.42 (+3.9%) — L3,L8,L15 MicroPredictor |
+| E2E PPL (1 capa pure) | ✅ PPL 7.19 (+0.6%) — L8 MicroPredictor |
 | Bugs criticos resueltos | norm_topk_prob=False, restricted softmax, calibracion |
 | Pipeline OptiX v5 | ✅ Compilado: 6 PTX, benchmark 39µs/batch, 100% accuracy (triángulos) |
 | RT Training Bridge | ✅ StraightThroughRT (STE): RT hard forward + soft backward |
@@ -21,7 +25,9 @@
 | Inception v4.0 opt | ✅ PPL 185.4 — gap 1.75% vs GPT-2 (objetivo <=2.1% CUMPLIDO) |
 | Patent claims certificados | ✅ 9/10 cumplidos, 3 superados (C4, C5, C9) |
 | Patentes | 3 provisionales redactadas, Patent 3 reforzada con Claims 21-33 |
-| FASE D: Retrain con topk_loss | 🔄 EN CURSO — 16 capas con topk_matching_loss |
+| FASE D: Retrain con topk_loss | ✅ COMPLETADA — 16/16 capas, L11=97.2% top-8 |
+| FASE E: Pure mode PPL | ✅ PPL 8.42 (+17.8%) — MicroPredictor (16 params). Error es acumulativo ~+0.08/capa |
+| Multi-ray ensemble | 🔄 Implementado, pendiente test con --n-rays 3 |
 
 ---
 
