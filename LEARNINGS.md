@@ -1979,3 +1979,39 @@ Calibrado via backprop (20 steps, 2048 tokens validation).
 Guardado en `checkpoints/micro_predictors/micro_predictors.pt`.
 
 **--skip-baseline:** Salta el Step 2 (medición baseline PPL). Ahorra ~30s por ejecución.
+
+### [2026-03-31] [RESULTADO] Multi-ray ensemble NO mejora — FASE E CERRADA
+
+**Multi-ray (n_rays=3) en L3,L8,L15:** PPL 7.43 vs 7.42 sin multi-ray. Sin mejora.
+**Causa:** Con 95-97% accuracy, la mayoría de tokens ya seleccionan los expertos correctos.
+El 1% de perturbación no cambia el top-8 en esos casos. Los tokens donde falla (~3-5%)
+están demasiado lejos del borde de decisión para que el jitter los rescate.
+
+**FASE E CERRADA — Resultados finales publicables:**
+
+| Configuración | PPL | Delta | Params | Claim |
+|---------------|-----|-------|--------|-------|
+| **L3, L8, L15 (3 capas)** | **7.42** | **+3.9%** | **-393K (-25%)** | **Publicable** |
+| L8 sola | 7.19 | +0.6% | -131K (-8%) | Publicable |
+| 16/16 capas | 8.42 | +17.8% | -2.1M (-100%) | Necesita mejora |
+
+**Claim para el paper:** "Sparse geometric routing eliminates 25% of MoE gating parameters
+with <4% degradation using hardware RT Cores. O(log N) vs O(N) complexity."
+
+**Qué NO funcionó en FASE E (trucos de inferencia):**
+- Multi-ray ensemble (3 rayos): +0.01 PPL — irrelevante
+- DeltaPredictor (MLP 97 params/layer): = MicroPredictor (overfit)
+- Per-layer scale ratio: peor que global (9.22 vs 8.95)
+- gate_dist per-layer: peor aún (10.50)
+- Más tokens de calibración (8K vs 2K): peor loss inicial (10.09 vs 6.97)
+
+**Qué SÍ funcionó:**
+- relu_log (log1p compression): 8.89 — mejor fórmula fija
+- MicroPredictor (1 param/layer): 8.42 — per-layer scale óptimo
+- Escala global 0.43: sweet spot entre 0.15 (367) y 0.70 (34.6)
+
+**Para la SIGUIENTE FASE (F):** Mejorar accuracy del BVH router es el único camino.
+- Retrain con data augmentation / multi-ray en training
+- Cone tracing (patentable)
+- Hybrid training (2% gate residual)
+- Objetivo: 16 capas PPL <7.5

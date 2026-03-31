@@ -26,8 +26,9 @@
 | Patent claims certificados | ✅ 9/10 cumplidos, 3 superados (C4, C5, C9) |
 | Patentes | 3 provisionales redactadas, Patent 3 reforzada con Claims 21-33 |
 | FASE D: Retrain con topk_loss | ✅ COMPLETADA — 16/16 capas, L11=97.2% top-8 |
-| FASE E: Pure mode PPL | ✅ PPL 8.42 (+17.8%) — MicroPredictor (16 params). Error es acumulativo ~+0.08/capa |
-| Multi-ray ensemble | 🔄 Implementado, pendiente test con --n-rays 3 |
+| FASE E: Pure mode PPL | ✅ CERRADA — Best: 3 capas PPL 7.42 (+3.9%), 16 capas PPL 8.42 (+17.8%) |
+| Multi-ray ensemble | ✅ Implementado, NO mejora (7.43 vs 7.42 sin multi-ray) |
+| FASE F: BVH accuracy | ⏳ Pendiente — Retrain para 95%→99% accuracy (cone tracing, data aug) |
 
 ---
 
