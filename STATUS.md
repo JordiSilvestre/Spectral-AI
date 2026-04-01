@@ -46,6 +46,98 @@
 
 ---
 
+## RESUMEN EJECUTIVO (2026-04-01)
+
+### Que tenemos HOY
+
+SpectralAI reemplaza el gate lineal de modelos MoE con un router BVH geometrico O(log N).
+Probado en OLMoE-1B-7B (64 expertos, 16 capas).
+
+**Resultados clave:**
+```
+ROUTING SPEED (CUDA kernel, RTX 5070 Ti):
+  BVH Router:   10.4 us/batch (batch=256) → 24.7M tok/s
+  Gate lineal: ~927 us/batch (PyTorch)    → 94x mas lento
+  Speedup:      85-170x segun batch size
+
+PPL (Perplexity — menor = mejor):
+  Baseline OLMoE (gate original):     7.15
+  Modo PURO 3 capas (render_eq):      7.33  (+2.5%)  ← SIN gate original
+  Modo PURO 6 capas (render_eq):      7.51  (+5.0%)
+  Modo MIXTO 3 capas (hybrid):        7.17  (+0.4%)  ← USA gate original
+  Modo MIXTO 16 capas (hybrid):       7.30  (+2.1%)
+  Modo PURO 16 capas (render_eq):     9.17  (+28%)   ← degradado por L1
+
+ACCURACY por capa (top-8 overlap con gate original):
+  Promedio FASE F (6 capas, 200ep):   96.1%
+  Promedio FASE D (10 capas, 100ep):  96.5%
+  Peor capa: L1 = 93.4%  ← cuello de botella
+  Mejor capa: L15 = 97.6%
+```
+
+### Descubrimiento del dia: Cross-disciplinary weight modes
+
+Se probaron 11 modos de asignar pesos inspirados en otros campos:
+- **render_eq** (Ec. renderizado 3D): `weight = sqrt(logit) * 1/sqrt(dist_BVH)` → **7.33**
+- **gravity** (Economia/ALiBi): `logit - alpha*log(dist)` → **7.33**
+- **ray_march** (Volumetric rendering): `logit * exp(-dist)` → **7.33**
+- Tres metodos convergen en 7.33 → posible suelo para 3 capas a 96% accuracy
+
+**Insight principal:** La geometria del BVH contiene informacion util para pesos.
+Combinar logits + distancia geometrica baja PPL de 7.42 a 7.33 en modo puro.
+
+### Mapa de capas (accuracy top-8)
+
+```
+L0  [##########----] 95.4%  FASE F     L8  [##########----] 95.9%  FASE D
+L1  [########------] 93.4%  DEBIL !!   L9  [###########---] 96.8%  FASE D OK
+L2  [##########----] 96.1%  FASE F     L10 [###########---] 97.2%  FASE D OK
+L3  [##########----] 96.2%  FASE F     L11 [###########---] 97.2%  FASE D OK
+L4  [##########----] 95.1%  FASE D     L12 [###########---] 97.4%  FASE D OK
+L5  [##########----] 96.1%  FASE F     L13 [###########---] 97.0%  FASE D OK
+L6  [##########----] 96.4%  FASE F     L14 [###########---] 97.5%  FASE D OK
+L7  [##########----] 96.6%  FASE F     L15 [############--] 97.6%  FASE D OK
+```
+
+### Que falta — PROXIMO PASO
+
+**1. Reentrenar L1 (PRIORIDAD ALTA)**
+- L1 es 93.4% — la unica capa < 95%. Cuello de botella para 16 capas.
+- Comando: `python3 olmoe_bvh_distill.py --layer 1 --epochs 200 --spectral --topk-weight 0.3`
+- Estimado: ~35 min. Objetivo: subir a 96%+
+- Opcional: L4 (95.1%) y L8 (95.9%)
+
+**2. Re-evaluar 16 capas con render_eq (tras retrain L1)**
+- Prediccion: si L1 sube a 96%, PPL 16 capas deberia bajar de 9.17 a ~8.0-8.5
+- Con todas las capas al 96%+, proyeccion: ~7.7 puro
+
+**3. Completar retrofit_bvh.py**
+- Testear con OLMoE real y un modelo denso pequeno
+- Bloqueado por GPU (necesita que no haya training corriendo)
+
+**4. FASE H: Patentes**
+- 3 provisionales ya redactadas
+- Falta: tests completos para todos los claims, filing USPTO ($1,050)
+- Los 11 weight modes son patentables (cross-disciplinary routing)
+
+**5. FASE I: Paper**
+- Resultados ya publicables:
+  - Modo puro: PPL +2.5% (3 capas render_eq)
+  - Modo mixto: PPL +0.4% (3 capas hybrid)
+  - Routing: 85-170x speedup
+  - Scaling: O(log N) demostrado
+  - Cross-disciplinary: 11 modos, 3 convergen
+- Falta: completar 16 capas para tabla completa
+
+### Decisiones tomadas
+
+- **Ternary POPCOUNT**: DESCARTADO para datacenter (0.1x vs FP16). Future work para edge.
+- **FP16 expertos**: Estandar. La ventaja es el ROUTING BVH, no la cuantizacion.
+- **Weight mode recomendado**: render_eq (puro) o hybrid_residual (mixto)
+- **FASE F 200 epochs**: NO necesaria para L9-L15 (ya estaban bien con 100ep FASE D)
+
+---
+
 ## INVENTARIO COMPLETO DE ARCHIVOS
 
 ### Python — CORE ACTIVO (usados en el pipeline actual)
