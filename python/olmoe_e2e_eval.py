@@ -554,6 +554,215 @@ class BVHGateWrapper(nn.Module):
                                        dtype=torch.float, device=logits.device)
             router_probs.scatter_(1, top_k_index, top_k_weights)
 
+        elif self.weight_mode == "render_eq":
+            # RENDERING EQUATION (from computer graphics)
+            # color = light × material × geometry — three independent signals.
+            # Here: weight = logit_strength × geometric_proximity.
+            # Experts with high logits AND close in BVH space get more weight.
+            # Adaptive per-token (like relu_norm) but informed by geometry.
+            top_k_vals, top_k_index = torch.topk(logits, self.top_k, dim=-1)
+            top_k_f32 = top_k_vals.float()
+            # Shift logits to positive range
+            shifted = top_k_f32 - top_k_f32.min(dim=-1, keepdim=True).values + 1.0
+            logit_signal = torch.sqrt(shifted)  # compress like relu_norm
+
+            geo_dist = getattr(self.router, '_last_geometric_distances', None)
+            if geo_dist is not None:
+                geo_dist = geo_dist.to(logits.device)
+                top_k_dist = geo_dist.gather(1, top_k_index)
+                # Geometric proximity: 1/sqrt(d) — softer than 1/d
+                geo_signal = 1.0 / (torch.sqrt(top_k_dist) + 1e-6)
+                # Normalize geo_signal to mean=1 so it modulates without changing scale
+                geo_signal = geo_signal / (geo_signal.mean(dim=-1, keepdim=True) + 1e-8)
+                # Combine: logit shape × geometry modulation
+                combined = logit_signal * geo_signal
+            else:
+                combined = logit_signal
+
+            top_k_weights = combined / combined.sum(dim=-1, keepdim=True)
+            weight_scale = self.topk_scale if self.topk_scale else 0.43
+            top_k_weights = top_k_weights * weight_scale
+            router_probs = torch.zeros(logits.shape[0], logits.shape[1],
+                                       dtype=torch.float, device=logits.device)
+            router_probs.scatter_(1, top_k_index, top_k_weights)
+
+        elif self.weight_mode == "ray_march":
+            # RAY MARCHING ATTENUATION (from volumetric rendering)
+            # In fog/smoke rendering: intensity = base × exp(-σ × distance)
+            # Exponential decay is physically correct for light absorption.
+            # Softer than 1/sqrt(d), avoids the sharp falloff of 1/d.
+            top_k_vals, top_k_index = torch.topk(logits, self.top_k, dim=-1)
+            top_k_f32 = top_k_vals.float()
+            shifted = top_k_f32 - top_k_f32.min(dim=-1, keepdim=True).values + 1.0
+            logit_signal = torch.sqrt(shifted)
+
+            geo_dist = getattr(self.router, '_last_geometric_distances', None)
+            if geo_dist is not None:
+                geo_dist = geo_dist.to(logits.device)
+                top_k_dist = geo_dist.gather(1, top_k_index)
+                # Normalize distances per token to [0, ~3] range for exp
+                d_mean = top_k_dist.mean(dim=-1, keepdim=True) + 1e-8
+                d_norm = top_k_dist / d_mean
+                # Exponential attenuation: exp(-σ × d), σ=0.5
+                sigma = 0.5
+                attenuation = torch.exp(-sigma * d_norm)
+                combined = logit_signal * attenuation
+            else:
+                combined = logit_signal
+
+            top_k_weights = combined / combined.sum(dim=-1, keepdim=True)
+            weight_scale = self.topk_scale if self.topk_scale else 0.43
+            top_k_weights = top_k_weights * weight_scale
+            router_probs = torch.zeros(logits.shape[0], logits.shape[1],
+                                       dtype=torch.float, device=logits.device)
+            router_probs.scatter_(1, top_k_index, top_k_weights)
+
+        elif self.weight_mode == "bm25":
+            # BM25 SATURATION (from information retrieval / search engines)
+            # In Google/BM25, term frequency saturates: tf/(tf+k).
+            # Prevents any single expert from monopolizing the weight.
+            # Mathematically guarantees flat-ish head distribution.
+            _, top_k_index = torch.topk(logits, self.top_k, dim=-1)
+            geo_dist = getattr(self.router, '_last_geometric_distances', None)
+
+            # Logit signal with saturation: relu(x) / (relu(x) + K)
+            top_k_logits = logits.gather(1, top_k_index).float()
+            shifted = top_k_logits - top_k_logits.min(dim=-1, keepdim=True).values
+            material = torch.relu(shifted)
+            K_sat = 1.0  # saturation constant — higher = flatter
+            saturated = material / (material + K_sat)
+
+            if geo_dist is not None:
+                geo_dist = geo_dist.to(logits.device)
+                top_k_dist = geo_dist.gather(1, top_k_index)
+                geometry = 1.0 / (torch.sqrt(top_k_dist) + 1e-6)
+                geometry = geometry / (geometry.mean(dim=-1, keepdim=True) + 1e-8)
+                combined = saturated * geometry
+            else:
+                combined = saturated
+
+            top_k_weights = combined / (combined.sum(dim=-1, keepdim=True) + 1e-8)
+            weight_scale = self.topk_scale if self.topk_scale else 0.43
+            top_k_weights = top_k_weights * weight_scale
+            router_probs = torch.zeros(logits.shape[0], logits.shape[1],
+                                       dtype=torch.float, device=logits.device)
+            router_probs.scatter_(1, top_k_index, top_k_weights)
+
+        elif self.weight_mode == "gravity":
+            # GRAVITY MODEL / ALiBi (from economics + NLP)
+            # Trade flow ∝ (Mass_A × Mass_B) / Distance^β
+            # In log space: log(weight) = logit - α·log(distance)
+            # This is how ALiBi (used in MPT, BLOOM) injects spatial bias
+            # without altering softmax temperature. Mathematically clean:
+            # log(A × B) = log(A) + log(B)
+            top_k_vals, top_k_index = torch.topk(logits, self.top_k, dim=-1)
+            geo_dist = getattr(self.router, '_last_geometric_distances', None)
+
+            if geo_dist is not None:
+                geo_dist = geo_dist.to(logits.device)
+                top_k_dist = geo_dist.gather(1, top_k_index)
+                alpha_grav = 0.3  # spatial penalty strength
+                combined_logits = top_k_vals.float() - alpha_grav * torch.log(top_k_dist + 1e-6)
+            else:
+                combined_logits = top_k_vals.float()
+
+            # Softmax in log-combined space — temperature preserved
+            shifted = combined_logits - combined_logits.min(dim=-1, keepdim=True).values + 1.0
+            compressed = torch.sqrt(shifted)
+            top_k_weights = compressed / compressed.sum(dim=-1, keepdim=True)
+            weight_scale = self.topk_scale if self.topk_scale else 0.43
+            top_k_weights = top_k_weights * weight_scale
+            router_probs = torch.zeros(logits.shape[0], logits.shape[1],
+                                       dtype=torch.float, device=logits.device)
+            router_probs.scatter_(1, top_k_index, top_k_weights)
+
+        elif self.weight_mode == "spectral_weight":
+            # SPECTRAL REFRACTION WEIGHTS (from our own optics architecture)
+            # The PrismaticRefraction module computes how each expert "refracts"
+            # the query's spectral color. High refraction = expert resonates
+            # with this token's semantic frequency. This IS the physically
+            # motivated weight signal — already trained, per-token adaptive.
+            # Three signals combined: logits × geometry × spectral resonance.
+            top_k_vals, top_k_index = torch.topk(logits, self.top_k, dim=-1)
+            top_k_f32 = top_k_vals.float()
+            shifted = top_k_f32 - top_k_f32.min(dim=-1, keepdim=True).values + 1.0
+            logit_signal = torch.sqrt(shifted)
+
+            # Spectral refraction: higher = more resonance with this token
+            spectral_ref = getattr(self.router, '_last_spectral_refraction', None)
+            if spectral_ref is not None:
+                spectral_ref = spectral_ref.to(logits.device)
+                top_k_spectral = spectral_ref.gather(1, top_k_index)
+                # Refraction is sigmoid output [0,1] — center at 0.5, scale
+                spectral_signal = top_k_spectral / (top_k_spectral.mean(dim=-1, keepdim=True) + 1e-8)
+            else:
+                spectral_signal = 1.0
+
+            # Geometric proximity
+            geo_dist = getattr(self.router, '_last_geometric_distances', None)
+            if geo_dist is not None:
+                geo_dist = geo_dist.to(logits.device)
+                top_k_dist = geo_dist.gather(1, top_k_index)
+                geo_signal = 1.0 / (torch.sqrt(top_k_dist) + 1e-6)
+                geo_signal = geo_signal / (geo_signal.mean(dim=-1, keepdim=True) + 1e-8)
+            else:
+                geo_signal = 1.0
+
+            # Rendering equation: Light × Material × Geometry
+            # logit = "light intensity", spectral = "material color", geo = "geometry term"
+            combined = logit_signal * spectral_signal * geo_signal
+            top_k_weights = combined / (combined.sum(dim=-1, keepdim=True) + 1e-8)
+            weight_scale = self.topk_scale if self.topk_scale else 0.43
+            top_k_weights = top_k_weights * weight_scale
+            router_probs = torch.zeros(logits.shape[0], logits.shape[1],
+                                       dtype=torch.float, device=logits.device)
+            router_probs.scatter_(1, top_k_index, top_k_weights)
+
+        elif self.weight_mode == "importance":
+            # IMPORTANCE SAMPLING (from Monte Carlo physics)
+            # Standard softmax gives probabilities, then reweight by
+            # geometric importance: closer samples matter more.
+            # w = softmax(logits) × (1/dist), renormalized.
+            top_k_vals, top_k_index = torch.topk(logits, self.top_k, dim=-1)
+            top_k_probs = F.softmax(top_k_vals.float(), dim=-1)
+
+            geo_dist = getattr(self.router, '_last_geometric_distances', None)
+            if geo_dist is not None:
+                geo_dist = geo_dist.to(logits.device)
+                top_k_dist = geo_dist.gather(1, top_k_index)
+                importance = 1.0 / (top_k_dist + 0.1)
+                combined = top_k_probs * importance
+                top_k_weights = combined / combined.sum(dim=-1, keepdim=True)
+            else:
+                top_k_weights = top_k_probs
+
+            weight_scale = self.topk_scale if self.topk_scale else 0.43
+            top_k_weights = top_k_weights * weight_scale
+            router_probs = torch.zeros(logits.shape[0], logits.shape[1],
+                                       dtype=torch.float, device=logits.device)
+            router_probs.scatter_(1, top_k_index, top_k_weights)
+
+        elif self.weight_mode == "zipf":
+            # ZIPF'S LAW (from linguistics / information theory)
+            # Universal power law: weight = 1 / rank^s, where s ≈ 1.
+            # Observed in word frequencies, city sizes, earthquakes, neural networks.
+            # Key insight: the original gate's weight distribution IS zipfian.
+            # Gate measured: [0.312, 0.148, 0.112, 0.089, 0.071, 0.058, 0.047, 0.038]
+            # Zipf s=1:     [0.341, 0.171, 0.114, 0.085, 0.068, 0.057, 0.049, 0.043]
+            # Pure mode: only uses BVH ranking, no gate needed.
+            _, top_k_index = torch.topk(logits, self.top_k, dim=-1)
+            ranks = torch.arange(1, self.top_k + 1, dtype=torch.float,
+                                 device=logits.device)
+            zipf_s = self._zipf_s if hasattr(self, '_zipf_s') else 1.0
+            zipf_weights = 1.0 / (ranks ** zipf_s)
+            zipf_weights = zipf_weights / zipf_weights.sum()
+            weight_scale = self.topk_scale if self.topk_scale else 0.43
+            top_k_weights = zipf_weights.unsqueeze(0).expand(
+                top_k_index.shape[0], -1) * weight_scale
+            router_probs = torch.zeros(logits.shape[0], logits.shape[1],
+                                       dtype=torch.float, device=logits.device)
+            router_probs.scatter_(1, top_k_index, top_k_weights)
+
         else:
             # Standard: softmax over all 64 experts, then top-k
             router_probs = F.softmax(logits, dtype=torch.float, dim=-1)
@@ -1183,7 +1392,9 @@ def main():
     parser.add_argument("--weight-mode", type=str, default="softmax",
                         choices=["softmax", "relu_norm", "relu_log", "relu_cbrt",
                                  "topk_softmax", "uniform", "gate_dist", "rank_template",
-                                 "hybrid_residual", "geometric", "lambert", "resonance"],
+                                 "hybrid_residual", "geometric", "lambert", "resonance",
+                                 "zipf", "render_eq", "ray_march", "importance",
+                                 "bm25", "gravity", "spectral_weight"],
                         help="How to compute routing weights from BVH logits. "
                              "relu_norm: ReLU + L1 norm (recommended for pure mode). "
                              "topk_softmax: softmax over top-k only. "
@@ -1193,6 +1404,13 @@ def main():
                              "geometric: inverse distance weighting from BVH 3D space. "
                              "lambert: cosine law weights from BVH geometry. "
                              "resonance: Lorentzian curve weights (harmonic resonance). "
+                             "zipf: Zipf's law weights 1/rank^s (from linguistics). "
+                             "render_eq: logit × geometry (from CG rendering equation). "
+                             "ray_march: logit × exp(-dist) (volumetric attenuation). "
+                             "importance: softmax(logit) × 1/dist (Monte Carlo). "
+                             "bm25: saturated logit × geometry (search engine anti-monopoly). "
+                             "gravity: logit - α·log(dist) (economic gravity / ALiBi). "
+                             "spectral_weight: logit × spectral_refraction × geometry (full rendering eq). "
                              "softmax: standard full softmax (default).")
     parser.add_argument("--hybrid-alpha", type=float, default=0.98,
                         help="Blending factor for hybrid_residual mode. "

@@ -461,6 +461,8 @@ class EnhancedBVHRouter(nn.Module):
         if self.spectral_enabled:
             spectral_color = self.spectral_encoder(h)
             refraction_idx = self.prismatic_refraction(spectral_color.unsqueeze(1)).squeeze(1)
+            # Store raw refraction index for spectral weight modes
+            self._last_spectral_refraction = refraction_idx  # (B, 64)
             spectral_bias = self.spectral_gate(refraction_idx)
             logits = logits + spectral_bias
 

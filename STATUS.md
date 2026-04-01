@@ -1,6 +1,6 @@
 # STATUS.md — SpectralAI Zero-Matrix
 > Estado real del proyecto, inventario de archivos, y roadmap por fases.
-> Ultima actualizacion: 2026-03-31
+> Ultima actualizacion: 2026-04-01
 
 ---
 
@@ -36,9 +36,11 @@
 | hybrid_residual mode | ✅ PPL 7.17 (+0.4%) — BVH selecciona, gate pesa. Brecha cerrada. |
 | benchmark_scaling.py | ✅ CREADO — O(log N) vs O(N) curva para N=64..4096 expertos |
 | retrofit_bvh.py | ✅ CREADO — Universal: MoE (replace gate) + Dense (sparsity dinamica) |
-| FASE F: BVH accuracy | 🔄 EN CURSO — Retrain 16 capas con 200 epochs + topk_loss |
+| FASE F: BVH accuracy | 🔄 PARCIAL — 6 capas reentrenadas (L0,2,3,5,6,7) 96-96.7% top-8 |
+| Cross-disciplinary weights | ✅ 11 modos probados. render_eq PPL 7.33 (+2.5%) NUEVO RECORD puro |
+| E2E PPL (3 capas render_eq) | ✅ PPL 7.33 (+2.5%) — logit × geometry, puro sin gate |
 | FASE H: Patentes | ⏳ Pendiente — Filing USPTO, tests completos para claims |
-| FASE I: Paper | ⏳ Pendiente — Resultados publicables (PPL 7.42, benchmarks CUDA) |
+| FASE I: Paper | ⏳ Pendiente — Resultados publicables (PPL 7.33 puro, 7.17 hybrid) |
 
 ---
 

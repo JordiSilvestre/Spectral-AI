@@ -4,6 +4,48 @@
 
 ---
 
+### [2026-04-01] Cross-disciplinary weight modes: render_eq baja PPL puro de 7.42 a 7.33
+
+**Archivos:** `python/olmoe_e2e_eval.py`, `python/olmoe_bvh_distill.py`
+
+**Problema:** Modo puro PPL 7.42 (+3.9%). Los pesos BVH (softmax sobre logits) no reproducen
+la distribucion del gate original. La seleccion es correcta (96%), pero los pesos no.
+
+**Experimento sistematico:** 11 weight modes inspirados en otros campos:
+
+```
+| Modo             | PPL  | Delta  | Origen                    | Senales         |
+|------------------|------|--------|---------------------------|-----------------|
+| hybrid_residual  | 7.17 | +0.4%  | — (usa gate original)     | BVH + gate      |
+| render_eq        | 7.33 | +2.5%  | Ecuacion de renderizado   | logit × 1/√dist |
+| ray_march        | 7.33 | +2.5%  | Volumetric rendering      | logit × exp(-d) |
+| gravity          | 7.33 | +2.5%  | Economia / ALiBi          | logit - α·log(d)|
+| spectral_weight  | 7.36 | +2.9%  | Optica prismatica propia  | logit × spec × d|
+| relu_norm (sqrt) | 7.42 | +3.9%  | Baseline puro anterior    | solo logit      |
+| geometric        | 7.48 | +4.6%  | Gravedad / IDW            | solo distancia  |
+| bm25             | 7.70 | +7.7%  | Search engines / BM25     | saturacion + d  |
+| zipf             | 7.81 | +9.2%  | Linguistica / Zipf        | solo ranking    |
+| lambert          | 8.71 | +21.8% | Optica / coseno           | dist normaliz   |
+| importance       | 25.2 | +252%  | Monte Carlo               | softmax × 1/d   |
+| resonance        | 28.0 | +291%  | Acustica / Lorentziana    | logit peaked    |
+```
+
+**Insights clave:**
+1. **Mas plano = mejor.** Ratio top1/top8 optimo ~2.5x. Uniforme (1x) y peaked (>8x) fallan.
+2. **Per-token adaptativo >> fijo.** relu_norm y render_eq adaptan por token. zipf/rank no.
+3. **Geometria + logits > cada uno solo.** render_eq (7.33) < relu_norm (7.42) < geometric (7.48).
+4. **3 metodos convergen en 7.33** — posible suelo para 3 capas a 96% accuracy.
+5. **Spectral adds noise** (7.36 vs 7.33) — la refraccion prismatica no ayuda en weights.
+6. **3 capas puro (7.33) ≈ 16 capas hybrid (7.30)** — resultado notable.
+
+**Implementacion:** `_last_geometric_distances` en EnhancedBVHRouter expone distancias 3D
+del BVH tree (composite d1+d2+d3 por los 3 niveles) para uso en weight modes.
+
+**Para paper:** render_eq/gravity como modo puro recomendado. La narrativa es:
+"La ecuacion de renderizado aplicada a routing de expertos MoE"
+
+---
+
 ### [2026-03-31] Decision: Ternary POPCOUNT descartado para modelos actuales — usar FP16
 
 **Archivos:** `python/benchmark_cuda_pipeline.py`, `cuda/v5/ternary_torch_ext.cu`
@@ -101,7 +143,8 @@ emerge con N>>64 expertos. Para el paper necesitamos demostrar el scaling.
 | Expert storage           | Ternary 2-bit  | 7.9x compresion  | Solo beneficio almacenamiento |
 | PPL (baseline OLMoE)     | Gate original   | 7.15             | 16/16 capas originales        |
 | PPL (1 capa BVH, L8)     | BVH + calibr   | 6.16 (+0.8%)     | Mejor single-layer            |
-| PPL (3 capas BVH)        | Pure BVH       | 7.42 (+3.9%)     | L3, L8, L15                   |
+| PPL (3 capas BVH)        | Pure BVH       | 7.42 (+3.9%)     | L3, L8, L15 (relu_norm)       |
+| PPL (3 capas render_eq)  | Pure BVH       | 7.33 (+2.5%)     | L3, L6, L7 (logit × geometry) |
 | PPL (16 capas BVH)       | Pure BVH       | 8.42 (+17.8%)    | Todas las capas               |
 | PPL (3 capas, hybrid)    | BVH+gate_wt    | 7.17 (+0.4%)     | hybrid_residual mode          |
 | PPL (16 capas, hybrid)   | BVH+gate_wt    | 7.30 (+2.1%)     | 16/16 capas hybrid_residual   |
