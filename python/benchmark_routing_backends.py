@@ -310,10 +310,19 @@ def run_full_benchmark(
     # ── 4. OptiX RT Cores ───────────────────────────────────
     # Check if PTX files exist
     build_dir = Path(__file__).parent.parent / "build"
-    ptx_raygen = build_dir / "ptx" / "optix_router_raygen.ptx"
-    ptx_hitgroup = build_dir / "ptx" / "optix_router_hitgroup.ptx"
+    # Prefer OptiX IR (.optixir) over PTX (.ptx) — C++ host auto-detects format
+    ptx_dir = build_dir / "ptx"
+    ptx_raygen = ptx_dir / "optix_router_raygen.ptx"
+    ptx_hitgroup = ptx_dir / "optix_router_hitgroup.ptx"
+    ir_raygen = ptx_dir / "optix_router_raygen.optixir"
+    ir_hitgroup = ptx_dir / "optix_router_hitgroup.optixir"
 
-    if ptx_raygen.exists() and ptx_hitgroup.exists():
+    shaders_available = (
+        (ir_raygen.exists() and ir_hitgroup.exists()) or
+        (ptx_raygen.exists() and ptx_hitgroup.exists())
+    )
+
+    if shaders_available:
         print("\n[4/4] OptiX RT Cores (PTX available, benchmark via C++ executable)...")
         print("  Run: build/Release/rt_router_benchmark.exe build/ 256 200")
         print("  [TODO] Integrate ctypes bridge for in-process benchmark")

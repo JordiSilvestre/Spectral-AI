@@ -15,6 +15,7 @@
  */
 
 #include <optix.h>
+#include <cstdint>
 
 // ============================================================================
 // Intersection Program (REQUIRED for CUSTOM_PRIMITIVES / AABBs)

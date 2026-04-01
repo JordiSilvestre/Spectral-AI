@@ -284,6 +284,16 @@ class BVHGateWrapper(nn.Module):
         self._expert_perm = None
         # OptiX RT Core bridge: set externally for hardware-accelerated routing
         self._optix_bridge = None
+        # Selectivity data: per-expert selectivity from expert_deep_analysis.json
+        # Set externally as dict {expert_id_str: selectivity_float}
+        self._expert_selectivity = None
+        self._layer_idx_for_sel = None  # which layer this wrapper serves
+        # Confidence-Gated Routing: adaptive hybrid per token per layer.
+        # When BVH confidence is high -> use BVH (pure, O(log N)).
+        # When confidence is low -> fallback to original gate (safe).
+        # Eliminates accuracy compounding: only uncertain tokens use gate.
+        self._confidence_threshold = None  # None = disabled, float = threshold
+        self._confidence_stats = {"bvh_tokens": 0, "gate_tokens": 0}  # usage tracking
 
         if calibration_mode == "affine" and calibration_state is not None:
             self.register_buffer('cal_scale', calibration_state["scale"])
@@ -377,6 +387,45 @@ class BVHGateWrapper(nn.Module):
             inv_perm = torch.argsort(self._expert_perm)
             logits = logits[:, inv_perm]
 
+        # ── Confidence-Gated Routing ───────────────────────────────────
+        # Per-token adaptive hybrid: BVH when confident, gate when uncertain.
+        # Eliminates accuracy compounding across 16 layers by only using BVH
+        # where it's reliable, and falling back to the original gate otherwise.
+        if (self._confidence_threshold is not None
+                and self._original_gate_weight is not None):
+            # Confidence = how peaked the BVH logits are.
+            # High std = one expert clearly wins = high confidence.
+            # Low std = uniform/uncertain = low confidence -> use gate.
+            top_k_vals, _ = torch.topk(logits, self.top_k, dim=-1)
+            bvh_confidence = top_k_vals.float().std(dim=-1)  # (B,)
+            # Normalize to [0,1] range using sigmoid
+            confidence = torch.sigmoid(bvh_confidence * 3.0 - 1.5)  # (B,)
+
+            # Mask: True = use BVH, False = use gate
+            use_bvh = confidence >= self._confidence_threshold  # (B,)
+            n_bvh = use_bvh.sum().item()
+            n_gate = (~use_bvh).sum().item()
+            self._confidence_stats["bvh_tokens"] += n_bvh
+            self._confidence_stats["gate_tokens"] += n_gate
+
+            if n_gate > 0 and not use_bvh.all():
+                # Compute gate logits for uncertain tokens
+                gate_logits = F.linear(h2d.float(), self._original_gate_weight.float())
+                gate_probs = F.softmax(gate_logits, dtype=torch.float, dim=-1)
+                gate_top_k_weights, gate_top_k_index = torch.topk(
+                    gate_probs, self.top_k, dim=-1)
+                gate_router_probs = torch.zeros_like(gate_probs)
+                gate_router_probs.scatter_(1, gate_top_k_index, gate_top_k_weights)
+
+                # For confident tokens: continue to weight_mode below.
+                # For uncertain tokens: inject gate result directly.
+                # We'll merge after weight_mode computes BVH probs.
+                self._pending_gate_merge = (use_bvh, gate_router_probs)
+            else:
+                self._pending_gate_merge = None
+        else:
+            self._pending_gate_merge = None
+
         # Apply temperature scaling if set (fixes peaked distributions
         # without changing top-8 expert selection order)
         if self.logit_temperature is not None and self.logit_temperature > 0:
@@ -434,6 +483,37 @@ class BVHGateWrapper(nn.Module):
             else:
                 weight_scale = 0.43
             top_k_weights = top_k_weights * weight_scale
+            router_probs = torch.zeros(logits.shape[0], logits.shape[1],
+                                       dtype=torch.float, device=logits.device)
+            router_probs.scatter_(1, top_k_index, top_k_weights)
+
+        elif self.weight_mode == "selectivity_geometric":
+            # SELECTIVITY-MODULATED ROUTING
+            # Add selectivity as a small bias to logits BEFORE top-k selection.
+            # High-selectivity experts (specialists) get a positive bias —
+            # when the BVH is uncertain, prefer the specialist.
+            # Then apply standard relu_norm + sqrt for weight computation.
+            if self._expert_selectivity is not None:
+                sel_all = torch.tensor(
+                    [float(self._expert_selectivity.get(str(i), 0.5))
+                     for i in range(logits.shape[1])],
+                    device=logits.device, dtype=torch.float32
+                )
+                # Normalize selectivity to zero-mean, small scale
+                sel_norm = (sel_all - sel_all.mean()) / (sel_all.std() + 1e-8)
+                # Small additive bias: 0.1 * normalized selectivity
+                logits = logits + 0.1 * sel_norm.unsqueeze(0)
+
+            # Standard relu_norm + sqrt pipeline (proven winner)
+            top_k_vals, top_k_index = torch.topk(logits, self.top_k, dim=-1)
+            top_k_f32 = top_k_vals.float()
+            shifted = top_k_f32 - top_k_f32.min(dim=-1, keepdim=True).values + 1.0
+            compressed = torch.sqrt(shifted)
+            top_k_weights = compressed / compressed.sum(dim=-1, keepdim=True)
+
+            weight_scale = self.topk_scale if self.topk_scale is not None else 0.43
+            top_k_weights = top_k_weights * weight_scale
+
             router_probs = torch.zeros(logits.shape[0], logits.shape[1],
                                        dtype=torch.float, device=logits.device)
             router_probs.scatter_(1, top_k_index, top_k_weights)
@@ -857,17 +937,36 @@ class BVHGateWrapper(nn.Module):
                     dim=-1, keepdim=True
                 )
 
+        # ── Confidence-Gated Merge ─────────────────────────────────────
+        # Merge BVH and gate results: confident tokens keep BVH weights,
+        # uncertain tokens get overwritten with gate weights.
+        if self._pending_gate_merge is not None:
+            use_bvh, gate_router_probs = self._pending_gate_merge
+            self._pending_gate_merge = None
+            # Expand mask for broadcasting: (B,) -> (B, 1)
+            use_bvh_mask = use_bvh.unsqueeze(1).float()
+            # Merge: BVH where confident, gate where not
+            router_probs = router_probs * use_bvh_mask + gate_router_probs * (1.0 - use_bvh_mask)
+            # Recompute top_k from merged probs
+            top_k_weights, top_k_index = torch.topk(router_probs, self.top_k, dim=-1)
+
         # Diagnostic: print once per layer to verify temperature is working
         BVHGateWrapper._diag_count += 1
         if BVHGateWrapper._diag_count <= 1:
             sample = raw_logits[0]  # first token
             top5_raw = torch.topk(sample, 5)
             top5_post = torch.topk(logits[0], 5) if logits.shape[0] > 0 else top5_raw
+            conf_str = ""
+            if self._confidence_threshold is not None:
+                stats = self._confidence_stats
+                total = stats["bvh_tokens"] + stats["gate_tokens"]
+                bvh_pct = stats["bvh_tokens"] / max(total, 1) * 100
+                conf_str = f" conf_gate={bvh_pct:.0f}%BVH/{100-bvh_pct:.0f}%gate"
             print(f"  [DIAG] call#{BVHGateWrapper._diag_count} "
                   f"cal={self.calibration_mode} temp={self.logit_temperature} "
                   f"raw_top5={top5_raw.values.tolist()[:5]} "
                   f"post_temp_top5={top5_post.values.tolist()[:5]} "
-                  f"top8_weights={top_k_weights[0].tolist()}")
+                  f"top8_weights={top_k_weights[0].tolist()}{conf_str}")
 
         return router_probs, top_k_weights.to(hidden_states.dtype), top_k_index
 
@@ -1090,6 +1189,8 @@ def replace_gate_with_bvh(
     n_rays: int = 1,
     hybrid_alpha: float = 0.98,
     use_optix: bool = False,
+    selectivity_data: dict = None,
+    confidence_threshold: float = None,
 ) -> tuple:
     """
     Replace the linear gate in one OLMoE layer with the trained BVH Router.
@@ -1242,6 +1343,23 @@ def replace_gate_with_bvh(
             wrapper._expert_perm = perm_tensor
             print(f"  Expert permutation loaded for layer {layer_idx} "
                   f"(first 8: {perm_tensor[:8].tolist()})")
+        # Load selectivity data for selectivity_geometric mode
+        if selectivity_data is not None:
+            layer_key = str(layer_idx)
+            if "per_layer_selectivity" in selectivity_data:
+                layer_sel = selectivity_data["per_layer_selectivity"].get(layer_key, {})
+                if layer_sel:
+                    wrapper._expert_selectivity = layer_sel
+                    wrapper._layer_idx_for_sel = layer_idx
+                    vals = [float(v) for v in layer_sel.values()]
+                    print(f"  Selectivity loaded for layer {layer_idx}: "
+                          f"range [{min(vals):.3f}, {max(vals):.3f}] "
+                          f"({max(vals)/min(vals):.1f}x)")
+        # Confidence-Gated Routing: set threshold for adaptive hybrid
+        if confidence_threshold is not None:
+            wrapper._confidence_threshold = confidence_threshold
+            print(f"  Confidence gate enabled: threshold={confidence_threshold:.2f} "
+                  f"(BVH when confident, gate fallback when uncertain)")
         # Initialize OptiX RT Core bridge if requested
         if use_optix:
             try:
@@ -1510,7 +1628,8 @@ def main():
                                  "topk_softmax", "uniform", "gate_dist", "rank_template",
                                  "hybrid_residual", "geometric", "lambert", "resonance",
                                  "zipf", "render_eq", "ray_march", "importance",
-                                 "bm25", "gravity", "spectral_weight", "hierarchical"],
+                                 "bm25", "gravity", "spectral_weight", "hierarchical",
+                                 "selectivity_geometric"],
                         help="How to compute routing weights from BVH logits. "
                              "relu_norm: ReLU + L1 norm (recommended for pure mode). "
                              "topk_softmax: softmax over top-k only. "
@@ -1532,6 +1651,18 @@ def main():
     parser.add_argument("--hybrid-alpha", type=float, default=0.98,
                         help="Blending factor for hybrid_residual mode. "
                              "0.98 = 98%% BVH + 2%% original gate (default).")
+
+    # ── Confidence-Gated Routing ──
+    parser.add_argument("--confidence-gate", type=float, default=None,
+                        help="Confidence threshold [0-1] for adaptive hybrid routing. "
+                             "BVH routes confident tokens (>threshold), gate handles uncertain ones. "
+                             "Eliminates accuracy compounding. Try 0.5-0.7. "
+                             "Requires original gate weight (always stored).")
+
+    # ── Selectivity modulation ──
+    parser.add_argument("--selectivity-file", type=str, default=None,
+                        help="Path to expert_deep_analysis.json for selectivity-modulated "
+                             "weight modes. Required for selectivity_geometric mode.")
 
     # ── OptiX RT Core flags ──
     parser.add_argument("--use-optix", action="store_true",
@@ -1588,6 +1719,23 @@ def main():
     replaced_layers = []
     original_gate = None
 
+    # Load selectivity data if provided (for selectivity_geometric mode)
+    _selectivity_data = None
+    sel_file = getattr(args, 'selectivity_file', None)
+    if sel_file is not None:
+        import json as _json
+        with open(sel_file) as _f:
+            _selectivity_data = _json.load(_f)
+        print(f"  Loaded selectivity data from {sel_file}")
+    elif args.weight_mode == "selectivity_geometric":
+        # Auto-detect: look for expert_deep_analysis.json in current dir
+        _default_sel = "expert_deep_analysis.json"
+        if os.path.exists(_default_sel):
+            import json as _json
+            with open(_default_sel) as _f:
+                _selectivity_data = _json.load(_f)
+            print(f"  Auto-loaded selectivity data from {_default_sel}")
+
     if args.identity_test:
         print(f"\n[Step 3/4] IDENTITY TEST — wrapping original gate weight...")
         mlp, gate_attr = find_gate_module(model, args.layer)
@@ -1625,6 +1773,8 @@ def main():
                 n_rays=getattr(args, 'n_rays', 1),
                 hybrid_alpha=getattr(args, 'hybrid_alpha', 0.98),
                 use_optix=getattr(args, 'use_optix', False),
+                selectivity_data=_selectivity_data,
+                confidence_threshold=getattr(args, 'confidence_gate', None),
             )
             replaced_layers.append(layer_idx)
         print(f"\n  Total: {n_layers} layers replaced: {replaced_layers}")
@@ -1646,6 +1796,8 @@ def main():
             n_rays=getattr(args, 'n_rays', 1),
             hybrid_alpha=getattr(args, 'hybrid_alpha', 0.98),
             use_optix=getattr(args, 'use_optix', False),
+            selectivity_data=_selectivity_data,
+            confidence_threshold=getattr(args, 'confidence_gate', None),
         )
         replaced_layers = [args.layer]
 
@@ -1794,6 +1946,25 @@ def main():
     print(f"  Router params: 1.35M (vs 131K linear gate)")
     print(f"  Router latency: ~10 us/batch (CUDA kernel)")
     print(f"  Routing: O(log N) hierarchical vs O(N) linear scan")
+
+    # Print confidence-gated routing statistics if enabled
+    if getattr(args, 'confidence_gate', None) is not None:
+        # Aggregate stats across all wrapper instances
+        total_bvh = 0
+        total_gate = 0
+        for layer_idx in replaced_layers:
+            mlp, gate_attr = find_gate_module(model, layer_idx)
+            wrapper = getattr(mlp, gate_attr, None)
+            if hasattr(wrapper, '_confidence_stats'):
+                total_bvh += wrapper._confidence_stats["bvh_tokens"]
+                total_gate += wrapper._confidence_stats["gate_tokens"]
+        total = total_bvh + total_gate
+        if total > 0:
+            bvh_pct = total_bvh / total * 100
+            print(f"\n  Confidence-Gated Routing (threshold={args.confidence_gate:.2f}):")
+            print(f"    BVH routing:  {total_bvh:,} tokens ({bvh_pct:.1f}%)")
+            print(f"    Gate fallback: {total_gate:,} tokens ({100-bvh_pct:.1f}%)")
+            print(f"    Effective gate usage: {100-bvh_pct:.1f}% (lower = more O(log N))")
     print()
 
     # ── Restore original gates ─────────────────────────────────

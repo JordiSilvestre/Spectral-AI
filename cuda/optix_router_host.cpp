@@ -109,18 +109,68 @@ static void optixLogCallback(unsigned int level, const char* tag,
 }
 
 // ============================================================================
-// Load PTX from file
+// Load shader input (OptiX IR or PTX)
 // ============================================================================
 
-static std::string loadPTX(const std::string& path) {
-    std::ifstream file(path);
-    if (!file.is_open()) {
-        std::cerr << "[RTRouter] Failed to open PTX: " << path << std::endl;
-        return "";
+/**
+ * Load an OptiX shader from file. Supports two formats:
+ *   - .optixir (binary, native OptiX IR — preferred, faster pipeline creation)
+ *   - .ptx     (text, legacy — fallback)
+ *
+ * optixModuleCreate() auto-detects the format from the input bytes.
+ *
+ * @param base_path  Path WITHOUT extension, e.g. "build/ptx/optix_router_raygen"
+ *                   OR path WITH extension (.ptx or .optixir)
+ * @return Binary content as std::string (works for both text PTX and binary IR)
+ */
+static std::string loadShaderInput(const std::string& base_path) {
+    // Determine candidate paths: prefer .optixir over .ptx
+    std::vector<std::string> candidates;
+
+    if (base_path.size() > 4 &&
+        (base_path.substr(base_path.size() - 4) == ".ptx" ||
+         base_path.substr(base_path.size() - 8) == ".optixir")) {
+        // Explicit extension given — try it first, then the other format
+        candidates.push_back(base_path);
+        if (base_path.substr(base_path.size() - 4) == ".ptx") {
+            std::string ir_path = base_path.substr(0, base_path.size() - 4) + ".optixir";
+            candidates.insert(candidates.begin(), ir_path);  // prefer IR
+        }
+    } else {
+        // No extension — try both
+        candidates.push_back(base_path + ".optixir");
+        candidates.push_back(base_path + ".ptx");
     }
-    std::stringstream ss;
-    ss << file.rdbuf();
-    return ss.str();
+
+    for (const auto& path : candidates) {
+        // Use binary mode for OptiX IR, but works for PTX too
+        std::ifstream file(path, std::ios::binary | std::ios::ate);
+        if (!file.is_open()) continue;
+
+        std::streamsize size = file.tellg();
+        if (size <= 0) continue;
+
+        file.seekg(0, std::ios::beg);
+        std::string content(static_cast<size_t>(size), '\0');
+        if (file.read(&content[0], size)) {
+            bool is_ir = (path.size() >= 8 &&
+                          path.substr(path.size() - 8) == ".optixir");
+            std::cout << "[RTRouter] Loaded " << (is_ir ? "OptiX IR" : "PTX")
+                      << ": " << path << " (" << size << " bytes)" << std::endl;
+            return content;
+        }
+    }
+
+    std::cerr << "[RTRouter] Failed to load shader from: " << base_path << std::endl;
+    for (const auto& c : candidates) {
+        std::cerr << "  tried: " << c << std::endl;
+    }
+    return "";
+}
+
+// Legacy wrapper for backward compatibility
+static std::string loadPTX(const std::string& path) {
+    return loadShaderInput(path);
 }
 
 // ============================================================================
@@ -137,13 +187,16 @@ public:
     RTCoreRouter& operator=(const RTCoreRouter&) = delete;
 
     /**
-     * Initialize OptiX context and compile pipeline from PTX files.
-     * @param ptx_raygen_path  Path to optix_router_raygen.ptx
-     * @param ptx_hitgroup_path Path to optix_router_hitgroup.ptx
+     * Initialize OptiX context and compile pipeline from shader files.
+     * Accepts paths to .optixir (preferred) or .ptx files, or base paths
+     * without extension (auto-detects .optixir first, then .ptx fallback).
+     *
+     * @param shader_raygen_path   Path to raygen shader (.optixir/.ptx or base)
+     * @param shader_hitgroup_path Path to hitgroup shader (.optixir/.ptx or base)
      * @return true on success
      */
-    bool initialize(const std::string& ptx_raygen_path,
-                    const std::string& ptx_hitgroup_path) {
+    bool initialize(const std::string& shader_raygen_path,
+                    const std::string& shader_hitgroup_path) {
         // ── Init CUDA driver API ───────────────────────────────
         CU_CHECK(cuInit(0));
 
@@ -166,10 +219,10 @@ public:
         OPTIX_CHECK(optixDeviceContextCreate(cu_context_, &ctx_options,
                                               &optix_context_));
 
-        // ── Load PTX ───────────────────────────────────────────
-        std::string ptx_raygen = loadPTX(ptx_raygen_path);
-        std::string ptx_hitgroup = loadPTX(ptx_hitgroup_path);
-        if (ptx_raygen.empty() || ptx_hitgroup.empty()) return false;
+        // ── Load shader input (OptiX IR preferred, PTX fallback) ──
+        std::string input_raygen = loadShaderInput(shader_raygen_path);
+        std::string input_hitgroup = loadShaderInput(shader_hitgroup_path);
+        if (input_raygen.empty() || input_hitgroup.empty()) return false;
 
         // ── Module compile options ─────────────────────────────
         OptixModuleCompileOptions module_opts = {};
@@ -186,20 +239,20 @@ public:
         pipeline_compile_opts_.numAttributeValues = 2;  // AABB built-in
         pipeline_compile_opts_.pipelineLaunchParamsVariableName = "params";
 
-        // ── Create modules ─────────────────────────────────────
+        // ── Create modules (auto-detects OptiX IR vs PTX) ──────
         char log[2048];
         size_t log_size;
 
         log_size = sizeof(log);
         OPTIX_CHECK(optixModuleCreate(
             optix_context_, &module_opts, &pipeline_compile_opts_,
-            ptx_raygen.c_str(), ptx_raygen.size(),
+            input_raygen.c_str(), input_raygen.size(),
             log, &log_size, &module_raygen_));
 
         log_size = sizeof(log);
         OPTIX_CHECK(optixModuleCreate(
             optix_context_, &module_opts, &pipeline_compile_opts_,
-            ptx_hitgroup.c_str(), ptx_hitgroup.size(),
+            input_hitgroup.c_str(), input_hitgroup.size(),
             log, &log_size, &module_hitgroup_));
 
         // ── Program groups ─────────────────────────────────────
@@ -860,8 +913,8 @@ private:
  * @param batch_size    Number of queries per batch
  * @param num_warmup    Warmup iterations
  * @param num_iters     Benchmark iterations
- * @param ptx_raygen    Path to raygen PTX
- * @param ptx_hitgroup  Path to hitgroup PTX
+ * @param ptx_raygen    Path to raygen shader (.optixir/.ptx, or base path)
+ * @param ptx_hitgroup  Path to hitgroup shader (.optixir/.ptx, or base path)
  */
 extern "C" bool rtcore_router_benchmark(
     uint32_t num_experts,

@@ -776,3 +776,133 @@ class TestIdentityGateWrapper:
         _, weights, _ = wrapper(h)
         sums = weights.sum(dim=-1)
         torch.testing.assert_close(sums, torch.ones(BATCH), atol=1e-5, rtol=0)
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# 8. Confidence-Gated Routing — adaptive hybrid per token
+# ═══════════════════════════════════════════════════════════════════════════
+
+
+class TestConfidenceGatedRouting:
+    """Tests for the confidence-gated routing mechanism (Claims 34-38)."""
+
+    def _make_wrapper_with_gate(
+        self, small_router: EnhancedBVHRouter, threshold: float
+    ) -> BVHGateWrapper:
+        """Create a wrapper with confidence gate enabled and fake gate weight."""
+        wrapper = BVHGateWrapper(
+            router=small_router,
+            top_k=TOP_K,
+            norm_topk_prob=False,
+            weight_mode="relu_norm",
+        )
+        # Simulate original gate weight (required for fallback)
+        torch.manual_seed(77)
+        wrapper._original_gate_weight = torch.randn(N_EXPERTS, INPUT_DIM)
+        wrapper._confidence_threshold = threshold
+        return wrapper
+
+    def test_disabled_by_default(
+        self, wrapper_no_cal: BVHGateWrapper, hidden_states: torch.Tensor
+    ) -> None:
+        """Confidence gate is disabled when threshold is None."""
+        assert wrapper_no_cal._confidence_threshold is None
+        probs, weights, indices = wrapper_no_cal(hidden_states)
+        assert probs.shape == (BATCH, N_EXPERTS)
+        # Stats should show zeros (disabled)
+        assert wrapper_no_cal._confidence_stats["bvh_tokens"] == 0
+        assert wrapper_no_cal._confidence_stats["gate_tokens"] == 0
+
+    def test_threshold_zero_all_bvh(
+        self, small_router: EnhancedBVHRouter, hidden_states: torch.Tensor
+    ) -> None:
+        """Threshold=0.0 should route all tokens via BVH (confidence always >= 0)."""
+        wrapper = self._make_wrapper_with_gate(small_router, threshold=0.0)
+        probs, weights, indices = wrapper(hidden_states)
+        stats = wrapper._confidence_stats
+        assert stats["bvh_tokens"] > 0
+        assert stats["gate_tokens"] == 0
+
+    def test_threshold_one_all_gate(
+        self, small_router: EnhancedBVHRouter, hidden_states: torch.Tensor
+    ) -> None:
+        """Threshold=1.0 should route all tokens via gate (confidence never >= 1.0 with sigmoid)."""
+        wrapper = self._make_wrapper_with_gate(small_router, threshold=1.0)
+        probs, weights, indices = wrapper(hidden_states)
+        stats = wrapper._confidence_stats
+        # With threshold=1.0, sigmoid can't reach 1.0 so all go to gate
+        assert stats["gate_tokens"] == BATCH
+        assert stats["bvh_tokens"] == 0
+
+    def test_output_shape_correct(
+        self, small_router: EnhancedBVHRouter, hidden_states: torch.Tensor
+    ) -> None:
+        """Output shapes must be correct regardless of threshold."""
+        wrapper = self._make_wrapper_with_gate(small_router, threshold=0.5)
+        probs, weights, indices = wrapper(hidden_states)
+        assert probs.shape == (BATCH, N_EXPERTS)
+        assert weights.shape == (BATCH, TOP_K)
+        assert indices.shape == (BATCH, TOP_K)
+
+    def test_stats_accumulate(
+        self, small_router: EnhancedBVHRouter, hidden_states: torch.Tensor
+    ) -> None:
+        """Stats should accumulate across multiple forward calls."""
+        wrapper = self._make_wrapper_with_gate(small_router, threshold=0.5)
+        wrapper(hidden_states)
+        stats1_total = (
+            wrapper._confidence_stats["bvh_tokens"]
+            + wrapper._confidence_stats["gate_tokens"]
+        )
+        wrapper(hidden_states)
+        stats2_total = (
+            wrapper._confidence_stats["bvh_tokens"]
+            + wrapper._confidence_stats["gate_tokens"]
+        )
+        assert stats2_total == stats1_total + BATCH
+
+    def test_higher_threshold_more_gate(
+        self, small_router: EnhancedBVHRouter
+    ) -> None:
+        """Higher threshold should result in more gate usage (monotonic)."""
+        torch.manual_seed(42)
+        h = torch.randn(64, INPUT_DIM)  # larger batch for statistical power
+
+        wrapper_low = self._make_wrapper_with_gate(small_router, threshold=0.3)
+        wrapper_high = self._make_wrapper_with_gate(small_router, threshold=0.9)
+
+        wrapper_low(h)
+        wrapper_high(h)
+
+        gate_low = wrapper_low._confidence_stats["gate_tokens"]
+        gate_high = wrapper_high._confidence_stats["gate_tokens"]
+        assert gate_high >= gate_low, (
+            f"Higher threshold should use more gate: "
+            f"gate@0.3={gate_low}, gate@0.9={gate_high}"
+        )
+
+    def test_requires_original_gate_weight(
+        self, small_router: EnhancedBVHRouter, hidden_states: torch.Tensor
+    ) -> None:
+        """Without original gate weight, confidence gate should not activate."""
+        wrapper = BVHGateWrapper(
+            router=small_router,
+            top_k=TOP_K,
+            norm_topk_prob=False,
+            weight_mode="relu_norm",
+        )
+        wrapper._confidence_threshold = 0.5
+        # No _original_gate_weight set
+        probs, weights, indices = wrapper(hidden_states)
+        # Should still work (no crash), just no gating
+        assert probs.shape == (BATCH, N_EXPERTS)
+        assert wrapper._confidence_stats["bvh_tokens"] == 0
+        assert wrapper._confidence_stats["gate_tokens"] == 0
+
+    def test_probs_non_negative(
+        self, small_router: EnhancedBVHRouter, hidden_states: torch.Tensor
+    ) -> None:
+        """Merged probs must be non-negative."""
+        wrapper = self._make_wrapper_with_gate(small_router, threshold=0.5)
+        probs, _, _ = wrapper(hidden_states)
+        assert (probs >= 0).all(), "Router probs must be non-negative after merge"

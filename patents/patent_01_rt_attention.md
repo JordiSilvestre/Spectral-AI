@@ -396,8 +396,10 @@ The BVH router was validated against the OLMoE-1B-7B model (7 billion parameters
 - Top-8 expert selection accuracy: 85-95% across all 16 layers (with Spectral Techniques)
 - **Full 16/16 layer replacement (hybrid mode, 24+ candidates):** PPL 7.15 vs baseline 7.15 — **0.0% degradation**
 - Full 16/16 layer replacement (hybrid mode, 16 candidates): PPL 7.91 vs baseline 7.15 — +10.7% degradation
-- Single-layer perplexity (layer 8): 6.16 (vs baseline 6.11, a delta of +0.8%)
+- Single-layer perplexity (layer 8): 7.19 (vs baseline 7.15, a delta of +0.6%)
 - The hybrid mode uses BVH for O(log N) candidate pre-selection, then the original gate weight matrix computes exact routing weights via softmax. With 24+ candidates out of 64 experts (2.7x search reduction), zero quality loss is achieved.
+
+**Note:** All perplexity measurements use WikiText-2 with transformers 5.4.0 (baseline PPL 7.15). Earlier measurements with transformers 4.46.3 (baseline 6.11) produced equivalent deltas.
 
 **Reproduction:** Run `scripts/patent_benchmark.py` and `python/benchmark_e2e_final.py` from the project root.
 
@@ -463,7 +465,7 @@ wherein the RT Cores and CUDA Cores operate concurrently, with the RT Cores perf
 
 **Claim 19.** The system of Claim 17, wherein the BVH stored in GPU memory has a memory footprint of less than 100 MB for a sequence of 100,000 tokens, compared to approximately 307 GB for a conventional KV cache of equivalent sequence length.
 
-**Claim 20.** The system of Claim 17, wherein the attention computation achieves a routing latency of less than 20 microseconds for a batch of 256 tokens, representing at least a 100x speedup over an equivalent PyTorch-based softmax attention computation.
+**Claim 20.** The system of Claim 17, wherein the attention computation achieves a routing latency of less than 20 microseconds for a batch of 256 tokens, representing at least an 85x speedup over an equivalent PyTorch-based softmax attention computation, with measured speedups ranging from 89x to 227x depending on batch size.
 
 **Claim 21.** The method of Claim 1, wherein the method further comprises a two-phase execution: a Phase A using RT Cores for O(log N) BVH traversal to identify the most relevant semantic region, and a Phase B using Tensor Cores for high-precision matrix multiplication within the identified region, with the total complexity being O(N log N) + O(M^2) where M is much smaller than N.
 
@@ -480,11 +482,26 @@ wherein the routing achieves O(log N) complexity where N is the number of expert
 
 **Claim 25.** The method of Claim 23, further comprising a calibration layer that adjusts the distribution of routing weights output by the BVH router to match the distribution of a reference linear gate, the calibration layer being a linear transformation with fewer than 5,000 learnable parameters.
 
+### Confidence-Gated BVH Routing (Claims 26-28)
+
+**Claim 26.** The method of Claim 23, further comprising a confidence-gated routing step wherein:
+(a) for each token at each layer, a confidence score is computed from the standard deviation of the top-k BVH routing logits;
+(b) when the confidence score exceeds a threshold T, the token is routed via BVH traversal in O(log N) time;
+(c) when the confidence score does not exceed the threshold T, the token is routed via a linear gate in O(N) time as fallback;
+whereby the method eliminates accuracy compounding across multiple layers by selectively using exact linear routing for uncertain tokens while maintaining O(log N) efficiency for the majority of tokens.
+
+**Claim 27.** The method of Claim 26, wherein the threshold T is a single scalar parameter shared across all tokens and all layers, adjustable post-deployment without retraining, providing a continuous tradeoff between routing speed (lower T, more BVH usage) and routing accuracy (higher T, more gate fallback).
+
+**Claim 28.** The method of Claim 26, wherein on a 16-layer Mixture of Experts model with 64 experts per layer:
+(a) at threshold T = 0.90, approximately 69% of token-layer routing decisions use O(log N) BVH traversal and 31% use linear gate fallback, achieving +17.1% perplexity increase over the baseline linear gate;
+(b) at threshold T = 0.95, approximately 48% of token-layer routing decisions use BVH traversal, achieving +10.3% perplexity increase;
+(c) the effective computational speedup is proportional to the BVH usage fraction, with the BVH component achieving 85-170x speedup over the linear gate.
+
 ---
 
 ## ABSTRACT
 
-A system and method for computing attention in neural language models that replaces conventional matrix multiplication with hardware-accelerated ray tracing. Token embeddings are projected from high-dimensional space (R^D) into a three-dimensional semantic space preserving cosine similarity. The three-dimensional token representations are organized into a Bounding Volume Hierarchy (BVH). For each query token, rays are emitted into the semantic space and traversed against the BVH using dedicated RT Cores present in modern NVIDIA GPUs. Attention weights are computed at ray-token intersections using an exponential energy decay function analogous to the Beer-Lambert law: w = E_0 * exp(-lambda * d). The method achieves O(N log N) computational complexity versus O(N^2) for standard attention, reduces memory from approximately 307 GB to approximately 50 MB for 100,000-token sequences, and enables inference on consumer-grade GPUs (RTX 4090, RTX 5070 Ti) rather than datacenter hardware. Experimental validation demonstrates 105x routing speedup, 375x VRAM reduction, and less than 1% perplexity degradation when replacing linear gates in a 7-billion-parameter Mixture of Experts model.
+A system and method for computing attention in neural language models that replaces conventional matrix multiplication with hardware-accelerated ray tracing. Token embeddings are projected from high-dimensional space (R^D) into a three-dimensional semantic space preserving cosine similarity. The three-dimensional token representations are organized into a Bounding Volume Hierarchy (BVH). For each query token, rays are emitted into the semantic space and traversed against the BVH using dedicated RT Cores present in modern NVIDIA GPUs. Attention weights are computed at ray-token intersections using an exponential energy decay function analogous to the Beer-Lambert law: w = E_0 * exp(-lambda * d). The method achieves O(N log N) computational complexity versus O(N^2) for standard attention, reduces memory from approximately 307 GB to approximately 50 MB for 100,000-token sequences, and enables inference on consumer-grade GPUs (RTX 4090, RTX 5070 Ti) rather than datacenter hardware. Experimental validation demonstrates 89-227x routing speedup (batch-dependent), 731x VRAM reduction, and less than 1% perplexity degradation when replacing linear gates in a 7-billion-parameter Mixture of Experts model.
 
 ---
 

@@ -224,8 +224,9 @@ if(SPECTRAL_BUILD_OPTIX AND OptiX_INCLUDE_DIR)
 
     # OptiX PTX must target a single virtual architecture.
     # nvcc --ptx does not support multiple -gencode flags.
-    # We compile to compute_89 (Ada); OptiX JIT-compiles to the actual GPU.
-    set(PTX_ARCH_FLAG -arch=compute_89)
+    # compute_120 = Blackwell (RTX 5070 Ti); OptiX JIT-compiles to the actual GPU.
+    # Previous: compute_89 (Ada). Updated 2026-04-01 for sm_120.
+    set(PTX_ARCH_FLAG -arch=compute_120)
 
     set(PTX_FILES "")
     foreach(SHADER ${OPTIX_SHADERS})

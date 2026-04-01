@@ -21,7 +21,7 @@
 | E2E PPL (16 capas mixto) | ✅ PPL 7.30 (+2.1%) — 16/16 capas hybrid_residual |
 | E2E PPL (1 capa pure) | ✅ PPL 7.19 (+0.6%) — L8 MicroPredictor |
 | Bugs criticos resueltos | norm_topk_prob=False, restricted softmax, calibracion |
-| Pipeline OptiX v5 | ✅ Compilado: 6 PTX, benchmark 39µs/batch, 100% accuracy (triángulos) |
+| Pipeline OptiX v5 | ✅ Compilado: 6 PTX + 6 OptiX IR para sm_120 (Blackwell), benchmark 39µs/batch |
 | RT Training Bridge | ✅ StraightThroughRT (STE): RT hard forward + soft backward |
 | OptiX Training Ext | ✅ pybind11 extension + JIT build + test script + integration wrapper |
 | Inception v4.0 opt | ✅ PPL 185.4 — gap 1.75% vs GPT-2 (objetivo <=2.1% CUMPLIDO) |
@@ -40,13 +40,21 @@
 | Cross-disciplinary weights | ✅ 11 modos probados. render_eq PPL 7.33 (+2.5%) NUEVO RECORD puro |
 | Expert Analysis (deep) | ✅ 30 categorias + token-level + co-activacion 16 capas. Expertos = sintacticos, no semanticos |
 | Expert Permutation (L3) | ✅ 86.2% top-8, PPL 7.55 (+5.6%) — permutacion no mejora PPL, mejora traversal RT |
-| Expert Permutation (16 capas) | 🔄 EN PROGRESO — Entrenando 16 capas con --expert-perm + real data |
+| Expert Permutation (16 capas) | ✅ PPL 42.25 (30ep insuficiente). Perm es para RT Cores, no para PPL |
+| Confidence-Gated Routing | ✅ BREAKTHROUGH — PPL 7.88-8.37 con 48-69% BVH puro. Threshold tunable. Claim de patente nuevo |
+| Selectivity-Modulated Routing | ✅ PROBADO: v1 multiplicativo PPL 9.75, v2 aditivo PPL 9.14. No mejora — cuello de botella es accuracy |
+| BVH Radios aprendidos | ✅ ANALIZADO: todos ~1.0 (rango 0.96-1.08). Geometria no se diferencia. MLPs dominan routing |
+| E2E PPL (16 capas FASE D/F) | ✅ Pure=9.11 (+27.4%), Hybrid=7.66 (+7.2%), ConfGate@0.90=8.37 (+17.1%, 69%BVH) |
 | Bugs corregidos (distill) | ✅ distillation_loss NaN, benchmark inv_perm, olmoe_layer=None |
 | E2E PPL (3 capas render_eq) | ✅ PPL 7.33 (+2.5%) — logit × geometry, puro sin gate |
 | E2E PPL (6 capas render_eq) | ✅ PPL 7.51 (+5.0%) — 6 capas FASE F (96%+), ~0.03 PPL/capa |
 | E2E PPL (16 capas render_eq)| PPL 9.17 (+28%) — degradado por L1 (93.4%) y capas FASE D |
-| FASE H: Patentes | ⏳ Pendiente — Filing USPTO, tests completos para claims |
-| FASE I: Paper | ⏳ Pendiente — Resultados publicables (PPL 7.33 puro, 7.17 hybrid) |
+| Patent Claims Tests | ✅ 30/30 pasando — Verifica consistencia datos vs claims en 3 patentes |
+| Patent Audit | ✅ 6 contradicciones corregidas, prior art verificado, reduction to practice OK |
+| FASE H: Patentes | ✅ LISTAS para USPTO filing — 3 provisionales ($350×3 = $1,050) |
+| FASE I: Paper | ✅ ESCRITO — paper/spectral_ai_zero_matrix.md (516 líneas, 9 secciones, 16 refs) |
+| Paper Review | ✅ 10 discrepancias encontradas y corregidas por code-reviewer |
+| Reproducibility Scripts | ✅ integration_test_v2.py: 21/23 tests, 88.9% polysemy (match exacto) |
 
 ---
 
@@ -69,8 +77,10 @@ PPL (Perplexity — menor = mejor):
   Modo PURO 3 capas (render_eq):      7.33  (+2.5%)  ← SIN gate original
   Modo PURO 6 capas (render_eq):      7.51  (+5.0%)
   Modo MIXTO 3 capas (hybrid):        7.17  (+0.4%)  ← USA gate original
-  Modo MIXTO 16 capas (hybrid):       7.30  (+2.1%)
-  Modo PURO 16 capas (render_eq):     9.17  (+28%)   ← degradado por L1
+  ConfGate@0.90 16 capas:             8.37  (+17.1%) ← 69% BVH + 31% gate adaptativo
+  ConfGate@0.95 16 capas:             7.88  (+10.3%) ← 48% BVH + 52% gate adaptativo
+  Modo MIXTO 16 capas (hybrid):       7.66  (+7.2%)  ← BVH preselects + gate re-ranks
+  Modo PURO 16 capas (relu_norm):     9.11  (+27.4%) ← accuracy compounding 0.96^16
 
 ACCURACY por capa (top-8 overlap con gate original):
   Promedio FASE F (6 capas, 200ep):   96.1%
@@ -522,10 +532,15 @@ bash scripts/train_remaining_layers.sh   # FORCE_RETRAIN=true, weight_topk=0.3
 
 ---
 
-### FASE 4: C++ / OptiX build — ✅ COMPILADO (2026-03-30)
+### FASE 4: C++ / OptiX build — ✅ COMPILADO (2026-03-30, actualizado 2026-04-01)
 - [x] Fix CMakeLists.txt: 3 fixes (projectEmbeddingTo3D, alpha_bsh, SPECTRAL_MAX_TOP_TOKENS)
 - [x] Fix PTX: single -arch=compute_89 (--ptx no soporta multi-gencode)
-- [x] Compilar PTX para compute_89 (6 shaders)
+- [x] Compilar PTX para compute_89 (6 shaders) — LEGACY
+- [x] **Recompilar para Blackwell: compute_120 / sm_120 (RTX 5070 Ti)**
+  - 6 OptiX IR (.optixir) — formato binario nativo, 6/6 OK
+  - 6 PTX (.ptx) — formato texto legacy, 6/6 generados (ptxas warnings esperados)
+  - Fix: añadido `#include <cstdint>` a optix_router_{raygen,hitgroup}.cu
+  - Script: `scripts/recompile_ptx_blackwell.sh`
 - [x] RT Core benchmark: 39.24 µs/batch, 6.52M queries/s
 - [x] Conectar optix_host.cpp con el BVH Router entrenado (optix_training_bridge.py + optix_training_ext.cu)
 

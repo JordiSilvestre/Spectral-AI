@@ -424,7 +424,7 @@ Portal = [R | t]  (3x4 matrix)
 
 The Inception Engine was validated as part of the LiquidBit Zero-Matrix prototype:
 
-**Hardware:** NVIDIA RTX 5070 Ti (16 GB VRAM), CUDA 12.8, OptiX SDK 9.1.
+**Hardware:** NVIDIA RTX 5070 Ti (16 GB VRAM, Blackwell sm_120), CUDA 13.2, OptiX SDK 9.1.
 
 **Architecture:**
 - 4 levels: 64 domains x 64 subdomains x 256 concepts x 1024 leaves

@@ -54,6 +54,94 @@ from rt_training_bridge import get_rt_bridge, StraightThroughRT
 # Sparse Upcycling — initialize BVH Router from OLMoE gate weights
 # ─────────────────────────────────────────────────────────────────
 
+def initialize_radii_from_selectivity(
+    router: "EnhancedBVHRouter",
+    selectivity: dict,
+    clusters: list,
+    verbose: bool = True,
+) -> None:
+    """
+    Initialize BVH radii from expert selectivity analysis.
+
+    Key insight: experts have vastly different selectivity (5-8x range).
+    Generalist experts (low selectivity) should have LARGE radii (catch many tokens).
+    Specialist experts (high selectivity) should have SMALL radii.
+
+    Since the BVH has 3 levels with 4 children each, we aggregate selectivity
+    per branch: each L1 branch contains 16 experts, L2 contains 4, L3 contains 1.
+    The branch radius = mean inverse selectivity of its member experts.
+
+    Args:
+        router: EnhancedBVHRouter with level1/level2/level3
+        selectivity: dict mapping expert_id (str) -> selectivity (float)
+        clusters: list of 4 clusters, each with 'experts' list (from expert_deep_analysis.json)
+        verbose: print initialization details
+    """
+    sel_values = {int(k): float(v) for k, v in selectivity.items()}
+
+    # Normalize selectivity to [0.3, 3.0] range for radii
+    sel_tensor = torch.tensor([sel_values.get(i, 0.5) for i in range(64)])
+    sel_min, sel_max = sel_tensor.min(), sel_tensor.max()
+
+    # Inverse selectivity = radius (generalist -> big, specialist -> small)
+    # Map to log_radii: high selectivity -> negative log_radii, low -> positive
+    inv_sel = 1.0 / (sel_tensor + 0.1)  # avoid div by zero
+    inv_sel_norm = (inv_sel - inv_sel.mean()) / (inv_sel.std() + 1e-8)
+
+    # Build expert-to-branch mapping from clusters
+    # clusters[0..3] each have 16 experts -> L1 branches
+    branch_experts = {}  # branch_id -> list of expert_ids
+    for c_idx, cluster in enumerate(clusters):
+        experts = cluster['experts'][:16]  # cap at 16
+        branch_experts[c_idx] = experts
+        # Sub-branches: split 16 experts into 4 groups of 4
+        for sub_idx in range(4):
+            sub_experts = experts[sub_idx*4:(sub_idx+1)*4]
+            branch_experts[(c_idx, sub_idx)] = sub_experts
+            # Leaf branches
+            for leaf_idx, eid in enumerate(sub_experts):
+                branch_experts[(c_idx, sub_idx, leaf_idx)] = [eid]
+
+    with torch.no_grad():
+        # Level 1: 4 branches, each covering 16 experts
+        l1_radii = torch.zeros(router.n_level1)
+        for i in range(router.n_level1):
+            experts = branch_experts.get(i, list(range(i*16, (i+1)*16)))
+            mean_inv_sel = inv_sel_norm[[e for e in experts if e < 64]].mean()
+            l1_radii[i] = mean_inv_sel * 0.5  # scale factor
+        router.level1.log_radii.copy_(l1_radii)
+
+        # Level 2: 4 sub-branches within current traversal
+        l2_radii = torch.zeros(router.n_level2)
+        for j in range(router.n_level2):
+            # Aggregate across all L1 branches for this L2 position
+            all_experts = []
+            for i in range(router.n_level1):
+                all_experts.extend(branch_experts.get((i, j), []))
+            if all_experts:
+                mean_inv_sel = inv_sel_norm[[e for e in all_experts if e < 64]].mean()
+                l2_radii[j] = mean_inv_sel * 0.3
+        router.level2.log_radii.copy_(l2_radii)
+
+        # Level 3: 4 leaf positions
+        l3_radii = torch.zeros(router.n_level3)
+        for k in range(router.n_level3):
+            all_experts = []
+            for i in range(router.n_level1):
+                for j in range(router.n_level2):
+                    all_experts.extend(branch_experts.get((i, j, k), []))
+            if all_experts:
+                mean_inv_sel = inv_sel_norm[[e for e in all_experts if e < 64]].mean()
+                l3_radii[k] = mean_inv_sel * 0.3
+        router.level3.log_radii.copy_(l3_radii)
+
+    if verbose:
+        print(f"\n  [Selectivity Init] Expert selectivity range: {sel_min:.3f} - {sel_max:.3f} ({sel_max/sel_min:.1f}x)")
+        print(f"  L1 log_radii: {[f'{r:.3f}' for r in router.level1.log_radii.tolist()]}")
+        print(f"  L2 log_radii: {[f'{r:.3f}' for r in router.level2.log_radii.tolist()]}")
+        print(f"  L3 log_radii: {[f'{r:.3f}' for r in router.level3.log_radii.tolist()]}")
+
+
 def initialize_router_from_gate(
     router: "EnhancedBVHRouter",
     gate_weight: torch.Tensor,

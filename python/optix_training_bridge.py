@@ -90,12 +90,14 @@ def _find_ptx_paths() -> Tuple[Optional[str], Optional[str]]:
     for d in search_dirs:
         if not d.exists():
             continue
-        for f in d.glob("*.ptx"):
-            name = f.stem.lower()
-            if "raygen" in name and "router" in name:
-                raygen_path = str(f)
-            elif "hitgroup" in name and "router" in name:
-                hitgroup_path = str(f)
+        # Prefer OptiX IR (.optixir) over PTX (.ptx) — faster pipeline creation
+        for ext in ["*.optixir", "*.ptx"]:
+            for f in d.glob(ext):
+                name = f.stem.lower()
+                if "raygen" in name and "router" in name and raygen_path is None:
+                    raygen_path = str(f)
+                elif "hitgroup" in name and "router" in name and hitgroup_path is None:
+                    hitgroup_path = str(f)
 
     return raygen_path, hitgroup_path
 
