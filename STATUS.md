@@ -36,9 +36,11 @@
 | hybrid_residual mode | ✅ PPL 7.17 (+0.4%) — BVH selecciona, gate pesa. Brecha cerrada. |
 | benchmark_scaling.py | ✅ CREADO — O(log N) vs O(N) curva para N=64..4096 expertos |
 | retrofit_bvh.py | ✅ CREADO — Universal: MoE (replace gate) + Dense (sparsity dinamica) |
-| FASE F: BVH accuracy | 🔄 PARCIAL — 6 capas reentrenadas (L0,2,3,5,6,7) 96-96.7% top-8 |
+| FASE F: BVH accuracy | 🔄 PARCIAL — Solo L1 (93.4%) necesita retrain. L4,L8 rozando 96%. L9-L15 ya 96.8-97.6% |
 | Cross-disciplinary weights | ✅ 11 modos probados. render_eq PPL 7.33 (+2.5%) NUEVO RECORD puro |
 | E2E PPL (3 capas render_eq) | ✅ PPL 7.33 (+2.5%) — logit × geometry, puro sin gate |
+| E2E PPL (6 capas render_eq) | ✅ PPL 7.51 (+5.0%) — 6 capas FASE F (96%+), ~0.03 PPL/capa |
+| E2E PPL (16 capas render_eq)| PPL 9.17 (+28%) — degradado por L1 (93.4%) y capas FASE D |
 | FASE H: Patentes | ⏳ Pendiente — Filing USPTO, tests completos para claims |
 | FASE I: Paper | ⏳ Pendiente — Resultados publicables (PPL 7.33 puro, 7.17 hybrid) |
 
