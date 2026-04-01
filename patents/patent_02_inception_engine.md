@@ -435,12 +435,12 @@ The Inception Engine was validated as part of the LiquidBit Zero-Matrix prototyp
 
 | Metric | Inception v4.0 | GPT-2 Baseline | Delta |
 |---|---|---|---|
-| Perplexity (WikiText-2) | 191.3 | 187.4 | +2.1% |
+| Perplexity (WikiText-2) | 185.4 | 182.2 | +1.8% |
 | Parameters | 16.5M | 16.1M | +2.5% |
 | Attention Complexity | O(N log N) | O(N^2) | Logarithmic |
 | Training Time (10 epochs) | 3.7 min | --- | RTX 5070 Ti |
 
-The 2.1% perplexity increase demonstrates that the Inception Engine achieves near-parity with standard Transformer attention while operating in O(N log N) complexity, validating the core hypothesis that 4 levels of nested 3D can effectively replace high-dimensional attention.
+The 1.8% perplexity increase demonstrates that the Inception Engine achieves near-parity with standard Transformer attention while operating in O(N log N) complexity, validating the core hypothesis that 4 levels of nested 3D can effectively replace high-dimensional attention.
 
 **Routing Accuracy (with BVH Router integration):**
 

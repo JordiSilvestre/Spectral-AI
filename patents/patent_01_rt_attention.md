@@ -378,19 +378,20 @@ A prototype implementation was constructed and validated on the following hardwa
 
 | Metric | Measurement | Method |
 |---|---|---|
-| Routing Latency (batch=256, PyTorch) | 1,002 microseconds | `benchmark_e2e_final.py` |
-| Routing Latency (batch=256, CUDA Extension) | 11 microseconds | `benchmark_e2e_final.py` |
-| Routing Latency (batch=1, CUDA Extension) | 22 microseconds | `patent_benchmark.py` |
-| Speedup (CUDA Extension vs PyTorch) | 89-227x (batch dependent) | `benchmark_e2e_final.py` |
+| Routing Latency (batch=1, PyTorch) | 1,260 microseconds | `benchmark_e2e_final.py` |
+| Routing Latency (batch=1, CUDA Extension) | 11 microseconds | `benchmark_e2e_final.py` |
+| Routing Latency (batch=256, PyTorch) | 1,412 microseconds | `benchmark_e2e_final.py` |
+| Routing Latency (batch=256, CUDA Extension) | 10 microseconds | `benchmark_e2e_final.py` |
+| Speedup (CUDA Extension vs PyTorch) | 112-218x (batch dependent) | `benchmark_e2e_final.py` |
 | End-to-End Latency (routing + expert, batch=1) | 690 microseconds | `patent_benchmark.py` |
-| Token Generation Rate (full model baseline) | 50.0 tokens/second (peak) | `patent_benchmark.py`, `model.generate()` |
+| Token Generation Rate (full model baseline) | 55.4 tokens/second (peak) | `patent_benchmark.py`, `model.generate()` |
 | Active VRAM Usage (router + 1 expert) | 4.03 MB | Router 890 KB + Expert 3,234 KB |
 | VRAM Reduction vs Full Model | 731x less | 2,944 MB / 4.03 MB |
 
 **Measurement methodology:**
 - Active VRAM counts only the MoE routing overhead: projection layer (1536->128, 768 KB), BVH router (128-dim, 122 KB), and one active ternary expert (3,234 KB packed 2-bit). The attention backbone is shared infrastructure and is excluded from both the numerator and denominator.
-- Token generation rate measures the native HuggingFace `model.generate()` throughput as the baseline. The BVH routing overhead (22 us) is negligible relative to the per-token forward pass (~20 ms), so the system matches baseline speed.
-- Routing speedup is measured as PyTorch `BVHRouter.forward()` vs `bvh_router_ext.route()` CUDA kernel, both on GPU.
+- Token generation rate measures the native HuggingFace `model.generate()` throughput as the baseline. The BVH routing overhead (10-11 us) is negligible relative to the per-token forward pass (~20 ms), so the system matches baseline speed.
+- Routing speedup is measured as PyTorch `BVHRouter.forward()` vs `bvh_router_ext.route()` CUDA kernel, both on GPU. The conservative lower bound of ≥85x accounts for measurement variance across configurations; measured speedups range from 112x (batch=1) to 218x (batch=1024).
 
 The BVH router was validated against the OLMoE-1B-7B model (7 billion parameters, 64 experts, 16 MoE layers), achieving:
 - Top-8 expert selection accuracy: 85-95% across all 16 layers (with Spectral Techniques)
@@ -465,7 +466,7 @@ wherein the RT Cores and CUDA Cores operate concurrently, with the RT Cores perf
 
 **Claim 19.** The system of Claim 17, wherein the BVH stored in GPU memory has a memory footprint of less than 100 MB for a sequence of 100,000 tokens, compared to approximately 307 GB for a conventional KV cache of equivalent sequence length.
 
-**Claim 20.** The system of Claim 17, wherein the attention computation achieves a routing latency of less than 20 microseconds for a batch of 256 tokens, representing at least an 85x speedup over an equivalent PyTorch-based softmax attention computation, with measured speedups ranging from 89x to 227x depending on batch size.
+**Claim 20.** The system of Claim 17, wherein the attention computation achieves a routing latency of less than 20 microseconds for a batch of 256 tokens, representing at least an 85x speedup over an equivalent PyTorch-based softmax attention computation, with measured speedups ranging from 112x to 218x depending on batch size.
 
 **Claim 21.** The method of Claim 1, wherein the method further comprises a two-phase execution: a Phase A using RT Cores for O(log N) BVH traversal to identify the most relevant semantic region, and a Phase B using Tensor Cores for high-precision matrix multiplication within the identified region, with the total complexity being O(N log N) + O(M^2) where M is much smaller than N.
 
@@ -501,7 +502,7 @@ whereby the method eliminates accuracy compounding across multiple layers by sel
 
 ## ABSTRACT
 
-A system and method for computing attention in neural language models that replaces conventional matrix multiplication with hardware-accelerated ray tracing. Token embeddings are projected from high-dimensional space (R^D) into a three-dimensional semantic space preserving cosine similarity. The three-dimensional token representations are organized into a Bounding Volume Hierarchy (BVH). For each query token, rays are emitted into the semantic space and traversed against the BVH using dedicated RT Cores present in modern NVIDIA GPUs. Attention weights are computed at ray-token intersections using an exponential energy decay function analogous to the Beer-Lambert law: w = E_0 * exp(-lambda * d). The method achieves O(N log N) computational complexity versus O(N^2) for standard attention, reduces memory from approximately 307 GB to approximately 50 MB for 100,000-token sequences, and enables inference on consumer-grade GPUs (RTX 4090, RTX 5070 Ti) rather than datacenter hardware. Experimental validation demonstrates 89-227x routing speedup (batch-dependent), 731x VRAM reduction, and less than 1% perplexity degradation when replacing linear gates in a 7-billion-parameter Mixture of Experts model.
+A system and method for computing attention in neural language models that replaces conventional matrix multiplication with hardware-accelerated ray tracing. Token embeddings are projected from high-dimensional space (R^D) into a three-dimensional semantic space preserving cosine similarity. The three-dimensional token representations are organized into a Bounding Volume Hierarchy (BVH). For each query token, rays are emitted into the semantic space and traversed against the BVH using dedicated RT Cores present in modern NVIDIA GPUs. Attention weights are computed at ray-token intersections using an exponential energy decay function analogous to the Beer-Lambert law: w = E_0 * exp(-lambda * d). The method achieves O(N log N) computational complexity versus O(N^2) for standard attention, reduces memory from approximately 307 GB to approximately 50 MB for 100,000-token sequences, and enables inference on consumer-grade GPUs (RTX 4090, RTX 5070 Ti) rather than datacenter hardware. Experimental validation demonstrates 112-218x routing speedup (batch-dependent), 731x VRAM reduction, and less than 1% perplexity degradation when replacing linear gates in a 7-billion-parameter Mixture of Experts model.
 
 ---
 

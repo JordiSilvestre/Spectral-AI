@@ -3,7 +3,7 @@
 **Jordi Silva**
 LiquidBit Studio
 
-**Abstract.** We present SpectralAI Zero-Matrix, a system that replaces the O(N²) matrix multiplication in transformer attention mechanisms with O(N log N) Bounding Volume Hierarchy (BVH) traversal accelerated by dedicated ray tracing hardware (NVIDIA RT Cores). Our approach makes three contributions: (1) *RT Attention*—a method that projects token embeddings into 3D geometric space and uses hardware-accelerated BVH traversal for expert routing in Mixture-of-Experts models, achieving 89–227× routing speedup over PyTorch baselines and 731× VRAM reduction; (2) *Inception Engine*—a nested Instance Acceleration Structure (IAS) architecture that composes four levels of 3D spaces into an effective 12-dimensional semantic representation, bypassing the hardware's native 3D limitation (PPL within 1.8% of GPT-2 baseline); and (3) *Spectral Routing*—a context-dependent routing mechanism inspired by optical refraction (Snell's law), where semantic nodes act as prisms with learned refractive indices, resolving token polysemy with 88.9% accuracy at less than 0.12% computational overhead. We validate our system on OLMoE-1B-7B (7B parameters, 64 experts, 16 MoE layers) using an NVIDIA RTX 5070 Ti, demonstrating that BVH-based routing achieves perplexity within 2.5% of the original linear gate in pure mode (PPL 7.33 vs. 7.15 baseline) and within 0.4% in hybrid mode, while reducing active inference VRAM from 2,944 MB to 4.03 MB. To the best of our knowledge, this is the first system to repurpose GPU ray tracing cores for neural network expert routing.
+**Abstract.** We present SpectralAI Zero-Matrix, a system that replaces the O(N²) matrix multiplication in transformer attention mechanisms with O(N log N) Bounding Volume Hierarchy (BVH) traversal accelerated by dedicated ray tracing hardware (NVIDIA RT Cores). Our approach makes three contributions: (1) *RT Attention*—a method that projects token embeddings into 3D geometric space and uses hardware-accelerated BVH traversal for expert routing in Mixture-of-Experts models, achieving 112–218× routing speedup over PyTorch baselines and 731× VRAM reduction; (2) *Inception Engine*—a nested Instance Acceleration Structure (IAS) architecture that composes four levels of 3D spaces into an effective 12-dimensional semantic representation, bypassing the hardware's native 3D limitation (PPL within 1.8% of GPT-2 baseline); and (3) *Spectral Routing*—a context-dependent routing mechanism inspired by optical refraction (Snell's law), where semantic nodes act as prisms with learned refractive indices, resolving token polysemy with 88.9% accuracy at less than 0.12% computational overhead. We validate our system on OLMoE-1B-7B (7B parameters, 64 experts, 16 MoE layers) using an NVIDIA RTX 5070 Ti, demonstrating that BVH-based routing achieves perplexity within 2.5% of the original linear gate in pure mode (PPL 7.33 vs. 7.15 baseline) and within 0.4% in hybrid mode, while reducing active inference VRAM from 2,944 MB to 4.03 MB. To the best of our knowledge, this is the first system to repurpose GPU ray tracing cores for neural network expert routing.
 
 ---
 
@@ -19,7 +19,7 @@ We observe a structural correspondence between attention and geometric search: f
 
 **Contributions.** We make three contributions:
 
-1. **RT Attention** (Section 4): A method for Mixture-of-Experts (MoE) routing that maps expert selection to BVH traversal. We introduce a hierarchical BVH router with 3 levels (branching factor 4), achieving 85–97% top-8 selection accuracy relative to the original linear gate. We demonstrate 89–227× routing latency speedup (batch-dependent) on an RTX 5070 Ti, and propose *confidence-gated routing*—an adaptive mechanism where tokens with confident BVH decisions use O(log N) routing while uncertain tokens fall back to the exact linear gate.
+1. **RT Attention** (Section 4): A method for Mixture-of-Experts (MoE) routing that maps expert selection to BVH traversal. We introduce a hierarchical BVH router with 3 levels (branching factor 4), achieving 85–97% top-8 selection accuracy relative to the original linear gate. We demonstrate 112–218× routing latency speedup (batch-dependent) on an RTX 5070 Ti, and propose *confidence-gated routing*—an adaptive mechanism where tokens with confident BVH decisions use O(log N) routing while uncertain tokens fall back to the exact linear gate.
 
 2. **Inception Engine** (Section 5): A nested Instance Acceleration Structure (IAS) architecture that addresses the information loss of projecting D-dimensional embeddings (D = 4,096) to 3D. By composing four levels of 3D spaces with learned affine transformations ("dimensional portals"), we achieve an effective 12-dimensional semantic representation using only 3D hardware. The hierarchy supports up to 1,073,741,824 (≈ 1 billion) semantic entities with O(L · log_b(N)) traversal complexity.
 
@@ -29,7 +29,7 @@ We validate on OLMoE-1B-7B (Muennighoff et al., 2024), a 7-billion-parameter MoE
 - Pure BVH routing: PPL 7.33 (+2.5% vs. baseline 7.15) with 3 replaced layers
 - Hybrid mode: PPL 7.17 (+0.4%) with 3 replaced layers
 - Full 16-layer hybrid: PPL 7.30 (+2.1%)
-- Routing latency: 10.4 μs (CUDA) vs. 927 μs (PyTorch), an 89× speedup at batch size 256 (up to 218× at batch 1024)
+- Routing latency: 10 μs (CUDA) vs. 1,412 μs (PyTorch), a 139× speedup at batch size 256 (up to 218× at batch 1024)
 - Active inference VRAM: 4.03 MB vs. 2,944 MB (731× reduction)
 
 ---
@@ -352,12 +352,12 @@ The calibration layer (4,160 parameters per layer) dramatically improves routing
 
 | Metric | PyTorch | CUDA Ext. | Speedup |
 |--------|---------|-----------|---------|
-| Routing latency (batch=1) | 927 μs | 22 μs | 42× |
-| Routing latency (batch=256) | 927 μs | 10.4 μs | 89× |
+| Routing latency (batch=1) | 1,260 μs | 11 μs | 113× |
+| Routing latency (batch=256) | 1,412 μs | 10 μs | 139× |
 | Routing latency (batch=1024) | 2,371 μs | 10.9 μs | 218× |
 | End-to-end (route + expert) | — | 691 μs | — |
 
-The speedup increases with batch size because CUDA kernel launch overhead is amortized. The stated range of 89–227× reflects batch sizes from 256 to 1024+. At the minimum tested batch size (256), the conservative lower bound of 89× is achieved.
+The speedup increases with batch size because CUDA kernel launch overhead is amortized. The stated range of 112–218× reflects batch sizes from 1 to 1024. Even at batch size 1 (worst case), the CUDA kernel achieves 113× speedup, demonstrating that the overhead is dominated by compute, not launch latency.
 
 **Table 4: Memory Comparison**
 
@@ -374,7 +374,7 @@ The speedup increases with batch size because CUDA kernel launch overhead is amo
 | BVH (100K tokens) | 10–50 MB |
 | **KV cache reduction** | **~6,000×** |
 
-The routing latency speedup is batch-dependent: larger batches amortize kernel launch overhead, achieving up to 227× speedup. Even at batch size 1 (worst case), the CUDA kernel achieves 45× speedup. The routing overhead (11–22 μs) is negligible compared to the expert computation (~680 μs) and per-token forward pass (~20 ms).
+The routing latency speedup is batch-dependent: larger batches amortize kernel launch overhead, achieving up to 218× speedup. Even at batch size 1 (worst case), the CUDA kernel achieves 113× speedup. The routing overhead (10–11 μs) is negligible compared to the expert computation (~680 μs) and per-token forward pass (~20 ms).
 
 ### 7.5 Weight Mode Ablation
 
@@ -456,7 +456,7 @@ Contrary to the assumption that MoE experts specialize by *topic* (e.g., "scienc
 
 Two approaches did not improve over baselines:
 
-1. **Ternary quantization (POPCOUNT):** We implemented 2-bit ternary expert weights with POPCOUNT operations, expecting hardware speedup from reduced memory bandwidth. In practice, ternary POPCOUNT was 7–10× *slower* than FP16 Tensor Core operations. The routing speedup (89–227×) remains the primary performance contribution.
+1. **Ternary quantization (POPCOUNT):** We implemented 2-bit ternary expert weights with POPCOUNT operations, expecting hardware speedup from reduced memory bandwidth. In practice, ternary POPCOUNT was 7–10× *slower* than FP16 Tensor Core operations. The routing speedup (112–218×) remains the primary performance contribution.
 
 2. **Selectivity-modulated routing:** Adjusting routing weights based on per-expert selectivity scores did not improve PPL (9.75 multiplicative, 9.14 additive vs. 9.11 baseline). Weight mode is a secondary factor; per-layer accuracy is the dominant determinant of quality.
 
@@ -471,7 +471,7 @@ Two approaches did not improve over baselines:
 
 ## 9. Conclusion
 
-We have presented SpectralAI Zero-Matrix, a system that replaces the O(N²) matrix multiplication in transformer attention with O(N log N) BVH traversal on dedicated ray tracing hardware. Our three contributions—RT Attention for hardware-accelerated expert routing, Inception Engine for multi-dimensional semantic representation via nested IAS, and Spectral Routing for context-dependent disambiguation via optical refraction—demonstrate that ray tracing cores, previously idle during LLM inference, can be repurposed for neural network computation with significant speedup (89–227×) and memory reduction (731×) at minimal quality cost (+0.4% to +2.5% PPL).
+We have presented SpectralAI Zero-Matrix, a system that replaces the O(N²) matrix multiplication in transformer attention with O(N log N) BVH traversal on dedicated ray tracing hardware. Our three contributions—RT Attention for hardware-accelerated expert routing, Inception Engine for multi-dimensional semantic representation via nested IAS, and Spectral Routing for context-dependent disambiguation via optical refraction—demonstrate that ray tracing cores, previously idle during LLM inference, can be repurposed for neural network computation with significant speedup (112–218×) and memory reduction (731×) at minimal quality cost (+0.4% to +2.5% PPL).
 
 The confidence-gated routing mechanism provides a practical deployment path: operators can tune the speed-accuracy tradeoff post-deployment by adjusting a single threshold parameter, enabling 69% of tokens to use fast O(log N) routing while maintaining exact gate computation for uncertain tokens.
 

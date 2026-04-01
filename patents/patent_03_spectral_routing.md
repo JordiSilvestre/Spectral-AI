@@ -550,7 +550,8 @@ A test set of 1,000 polysemous words in context was evaluated:
 | Refraction per sphere | 256 MADs + Snell | 0.04% |
 | Chromatic aberration (B=4) | 4 * (256 MADs + Snell) | 0.12% |
 | Phase interference (R=8) | 8 * complex add | < 0.01% |
-| **Total** | | **< 0.03%** |
+| **Total (single-band)** | | **< 0.08%** |
+| **Total (chromatic, B=4)** | | **< 0.12%** |
 
 ---
 
@@ -730,7 +731,7 @@ whereby the method achieves adaptive routing complexity between O(N log N) and O
 (c) a confidence-gated dispatcher that evaluates per-token per-layer confidence and routes to (a) or (b);
 (d) a single threshold parameter shared across all tokens and layers controlling the routing partition;
 (e) a statistics module tracking the fraction of tokens routed geometrically versus linearly;
-whereby the system combines the speed advantage of geometric routing (85-170x speedup for confident tokens) with the accuracy of linear routing (for uncertain tokens), achieving effective routing speedup proportional to the fraction of confident tokens.
+whereby the system combines the speed advantage of geometric routing (112-218x speedup for confident tokens) with the accuracy of linear routing (for uncertain tokens), achieving effective routing speedup proportional to the fraction of confident tokens.
 
 ---
 
