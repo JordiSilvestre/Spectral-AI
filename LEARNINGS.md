@@ -29,10 +29,13 @@
 - 6 bugs corregidos en los tests: encoding UTF-8, constructor args, router tuple output,
   KV cache model_dim
 
-**Reproducibilidad verificada:**
+**Reproducibilidad verificada (WSL + RTX 5070 Ti + CUDA 12.8):**
 - `integration_test_v2.py`: 21/23 tests, 88.9% polysemy (8/9) — match exacto con patentes
-- `patent_benchmark.py`: requiere CUDA extensions (WSL only)
-- `benchmark_e2e_final.py`: PyTorch path confirma ~1.3ms routing latency
+- `patent_benchmark.py`: **9/9 claims PASS** — C1=9.5μs, C3=55.4tok/s, C4=4.03MB, C5=731×, C9=411.9μs
+- `benchmark_e2e_final.py`: Routing speedup **112-139× (batch 1-256)**, kernel 9.6-11.1μs
+  - Batch=1: 1,260μs PyTorch → 11μs CUDA = 112.6×
+  - Batch=256: 1,412μs PyTorch → 10μs CUDA = 139.0×
+  - Throughput pico: 92.5M tok/s (batch=1024)
 
 **Decisión:** Patentes primero (provisional $350×3), luego arXiv preprint, luego NeurIPS 2026.
 
