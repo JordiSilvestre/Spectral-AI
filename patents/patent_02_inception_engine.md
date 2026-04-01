@@ -6,7 +6,7 @@
 
 **Application Number:** [To be assigned by USPTO]
 **Filing Date:** [To be determined]
-**Applicant:** Jordi Silva
+**Applicant:** Jordi Silvestre Lopez
 **Assignee:** LiquidBit Studio
 **Status:** PROVISIONAL APPLICATION UNDER 35 U.S.C. 111(b)
 
@@ -92,11 +92,25 @@ The resulting system achieves an effective 12-dimensional semantic space while o
 
 ---
 
+## BRIEF DESCRIPTION OF THE DRAWINGS
+
+**FIG. 1** is a hierarchical diagram illustrating the 4-level nested Instance Acceleration Structure (IAS) architecture, showing Level 0 (Domains, 64 nodes), Level 1 (Subdomains, 64 per domain), Level 2 (Concepts, 256 per subdomain), and Level 3 (Leaves, 1024 per concept), with representative semantic labels at each level.
+
+**FIG. 2** is a diagram illustrating the affine portal transformation between levels, showing how a 3D coordinate in a parent level's local space is transformed via a learned 4x4 affine matrix (rotation, scaling, translation) into the 3D coordinate space of a child level, effectively encoding a "dimensional portal" between semantic subspaces.
+
+**FIG. 3** is a diagram showing the Fourier resonance mechanism at the leaf level, illustrating how semantic strings with M Fourier modes (frequency, amplitude, phase) vibrate to encode fine-grained semantic distinctions within a single leaf node.
+
+**FIG. 4** is a block diagram of the OptiX scene graph construction, showing how the nested IAS hierarchy maps to OptixTraversableHandle instances, with the root IAS referencing child IAS instances via OptixInstance structs containing the affine transformation matrices.
+
+**FIG. 5** is a graph showing the training loss convergence, including task loss (cross-entropy) and spatial loss (geometric coherence) annealing from initial to final values across training epochs.
+
+---
+
 ## DETAILED DESCRIPTION OF THE INVENTION
 
 ### 1. System Architecture Overview
 
-The Inception Engine operates on the principle that a hierarchical composition of 3D spaces can represent higher-dimensional information:
+The Inception Engine operates on the principle that a hierarchical composition of 3D spaces can represent higher-dimensional information (see FIG. 1):
 
 ```
 IAS_root (Level 0 --- Domains)
@@ -177,7 +191,7 @@ Leaf nodes contain the finest-grained semantic entities. Each leaf carries `Sema
 
 ### 3. The Dimensional Portal Mechanism
 
-The central innovation of the Inception Engine is the use of OptixInstance transform matrices as "dimensional portals" that effectively increase the dimensionality of the semantic space.
+The central innovation of the Inception Engine is the use of OptixInstance transform matrices as "dimensional portals" (see FIG. 2) that effectively increase the dimensionality of the semantic space.
 
 **3.1 AffinePortal Structure:**
 
@@ -235,7 +249,7 @@ rows[1] = (0, 1, 0, 0)  // y-axis, no translation
 rows[2] = (0, 0, 1, 0)  // z-axis, no translation
 ```
 
-### 4. SemanticSphere and Fourier Resonance
+### 4. SemanticSphere and Fourier Resonance (see FIG. 3)
 
 **4.1 SemanticSphere Structure:**
 
@@ -381,7 +395,7 @@ Where the sum is over all polysemous tokens c, and `proj_{S_i intersect S_j}` pr
 
 ### 7. Hardware Traversal of the Nested IAS
 
-The complete 4-level hierarchy is traversed by a single `optixTrace()` call. The traversal proceeds as follows:
+The complete 4-level hierarchy is traversed by a single `optixTrace()` call (see FIG. 4 for the OptiX scene graph). The traversal proceeds as follows:
 
 **Step 1:** Ray enters IAS_root (Level 0). RT Core tests ray against Domain sphere AABBs.
 
@@ -422,7 +436,7 @@ Portal = [R | t]  (3x4 matrix)
 
 ### 9. Experimental Validation
 
-The Inception Engine was validated as part of the LiquidBit Zero-Matrix prototype:
+The Inception Engine was validated as part of the LiquidBit Zero-Matrix prototype (see FIG. 5 for training convergence):
 
 **Hardware:** NVIDIA RTX 5070 Ti (16 GB VRAM, Blackwell sm_120), CUDA 13.2, OptiX SDK 9.1.
 
@@ -567,7 +581,7 @@ A system and method for representing and traversing high-dimensional semantic sp
 
 ---
 
-**Inventor:** Jordi Silva
+**Inventor:** Jordi Silvestre Lopez
 **Organization:** LiquidBit Studio
 **Date of Conception:** March 2026
 **Priority Date:** [Filing date of this provisional application]

@@ -6,7 +6,7 @@
 
 **Application Number:** [To be assigned by USPTO]
 **Filing Date:** [To be determined]
-**Applicant:** Jordi Silva
+**Applicant:** Jordi Silvestre Lopez
 **Assignee:** LiquidBit Studio
 **Status:** PROVISIONAL APPLICATION UNDER 35 U.S.C. 111(b)
 
@@ -82,11 +82,27 @@ The resulting system achieves O(N log N) attention complexity, reduces VRAM requ
 
 ---
 
+## BRIEF DESCRIPTION OF THE DRAWINGS
+
+**FIG. 1** is a block diagram illustrating the overall system architecture pipeline, showing the flow from token embeddings through 3D projection, BVH construction, RT Core traversal, and attention output aggregation.
+
+**FIG. 2** is a structural diagram of the TokenNode data structure, showing the geometric coordinates (centroid, AABB), compressed FP16 embedding, and attention state variables.
+
+**FIG. 3** is a diagram illustrating the Bounding Volume Hierarchy (BVH) tree structure with multiple levels of axis-aligned bounding boxes, and a ray traversing the tree to identify semantically relevant tokens.
+
+**FIG. 4** is a graph showing the exponential energy decay function (attention_weight = E_0 * exp(-lambda * d)), illustrating how attention weight decreases with semantic distance.
+
+**FIG. 5** is a block diagram of the EnhancedBVHRouter architecture showing the 3-level hierarchical routing structure with branching factor 4 (4x4x4 = 64 experts), including the projection layer, level centroids, and expert selection.
+
+**FIG. 6** is a flowchart of the confidence-gated routing mechanism, showing the decision path where tokens with high BVH confidence (above threshold T) are routed via O(log N) BVH traversal and tokens with low confidence fall back to the exact linear gate.
+
+---
+
 ## DETAILED DESCRIPTION OF THE INVENTION
 
 ### 1. System Architecture Overview
 
-The system comprises four principal components operating in a pipeline:
+The system comprises four principal components operating in a pipeline (see FIG. 1):
 
 ```
 Input Tokens -> [Token Geometry Module] -> [BVH Construction Module]
@@ -104,7 +120,7 @@ Input Tokens -> [Token Geometry Module] -> [BVH Construction Module]
 
 ### 2. TokenNode Data Structure
 
-Each token in the input sequence is represented as a `TokenNode` data structure containing:
+Each token in the input sequence is represented as a `TokenNode` data structure (see FIG. 2) containing:
 
 ```cpp
 struct TokenNode {
@@ -164,7 +180,7 @@ The `semantic_radius` is computed from the variance of the token's embedding acr
 
 ### 4. BVH Construction
 
-The Bounding Volume Hierarchy is a binary tree where each node contains a bounding box that encloses all descendant nodes. The BVH is constructed over the set of TokenNode AABBs using a top-down recursive algorithm:
+The Bounding Volume Hierarchy (see FIG. 3) is a binary tree where each node contains a bounding box that encloses all descendant nodes. The BVH is constructed over the set of TokenNode AABBs using a top-down recursive algorithm:
 
 **Step 1:** Compute the bounding box enclosing all token AABBs.
 
@@ -321,7 +337,7 @@ Note: Each ray-BVH intersection requires approximately 20-30 elementary FLOPs, r
 
 ### 9. Attention Decay Formula: Physical Basis
 
-The exponential attention decay formula:
+The exponential attention decay formula (illustrated in FIG. 4):
 
 ```
 w(d) = E_0 * exp(-lambda * d)
@@ -393,7 +409,7 @@ A prototype implementation was constructed and validated on the following hardwa
 - Token generation rate measures the native HuggingFace `model.generate()` throughput as the baseline. The BVH routing overhead (10-11 us) is negligible relative to the per-token forward pass (~20 ms), so the system matches baseline speed.
 - Routing speedup is measured as PyTorch `BVHRouter.forward()` vs `bvh_router_ext.route()` CUDA kernel, both on GPU. The conservative lower bound of ≥85x accounts for measurement variance across configurations; measured speedups range from 112x (batch=1) to 218x (batch=1024).
 
-The BVH router was validated against the OLMoE-1B-7B model (7 billion parameters, 64 experts, 16 MoE layers), achieving:
+The BVH router (see FIG. 5 for the hierarchical architecture, FIG. 6 for the confidence-gated routing mechanism) was validated against the OLMoE-1B-7B model (7 billion parameters, 64 experts, 16 MoE layers), achieving:
 - Top-8 expert selection accuracy: 85-95% across all 16 layers (with Spectral Techniques)
 - **Full 16/16 layer replacement (hybrid mode, 24+ candidates):** PPL 7.15 vs baseline 7.15 — **0.0% degradation**
 - Full 16/16 layer replacement (hybrid mode, 16 candidates): PPL 7.91 vs baseline 7.15 — +10.7% degradation
@@ -506,7 +522,7 @@ A system and method for computing attention in neural language models that repla
 
 ---
 
-**Inventor:** Jordi Silva
+**Inventor:** Jordi Silvestre Lopez
 **Organization:** LiquidBit Studio
 **Date of Conception:** March 2026
 **Priority Date:** [Filing date of this provisional application]

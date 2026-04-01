@@ -6,7 +6,7 @@
 
 **Application Number:** [To be assigned by USPTO]
 **Filing Date:** [To be determined]
-**Applicant:** Jordi Silva
+**Applicant:** Jordi Silvestre Lopez
 **Assignee:** LiquidBit Studio
 **Status:** PROVISIONAL APPLICATION UNDER 35 U.S.C. 111(b)
 
@@ -111,7 +111,23 @@ where the selection maps angular ranges to specific matrix blocks (e.g., 0-15 de
    - **Total Internal Reflection:** A discontinuous boundary mechanism where rays that exceed the critical angle for total internal reflection are redirected to a completely different semantic domain, enabling hard routing decisions.
    - **Phase-Coherent Multi-Ray Interference:** Multiple rays emitted from the same token with slightly different colors interfere constructively or destructively at target nodes, enabling ensemble-like routing decisions based on phase alignment.
 
-The system resolves polysemy with 88.9% accuracy while adding only 0.03% computational overhead relative to the base traversal.
+The system resolves polysemy with 88.9% accuracy while adding less than 0.12% computational overhead relative to the base traversal (less than 0.08% in single-band mode).
+
+---
+
+## BRIEF DESCRIPTION OF THE DRAWINGS
+
+**FIG. 1** is a block diagram illustrating the spectral encoding pipeline, showing how conversational context history is projected through a learned spectral encoding matrix W_spectral to produce a spectral color vector f in R^k (k=256), which is then attached to the emitted ray as metadata.
+
+**FIG. 2** is a cross-sectional diagram of a prismatic sphere showing Snell's law of refraction applied to a semantic ray, illustrating how the incoming ray angle theta_in is refracted to an output angle theta_out based on the context-dependent refractive index n = n_base + sigmoid(W_dispersion dot f), and how the refracted angle determines which of B candidate matrix blocks is selected.
+
+**FIG. 3** is a diagram showing polysemy resolution for a single word (e.g., "bank") in three different contexts (financial, geographic, programming), illustrating how the same geometric node routes to three different expert sub-networks based on the spectral color of the incoming ray, without duplicating any expert weights.
+
+**FIG. 4** is a diagram illustrating chromatic aberration, where a single ray is decomposed into B spectral bands (B=4 to 8), each band refracted at a slightly different angle through the prismatic sphere, and the resulting multi-band votes are aggregated into a final routing decision.
+
+**FIG. 5** is a diagram showing total internal reflection at a domain boundary, illustrating the critical angle condition where sin(theta_in) * n_1 > n_2 causes the ray to be reflected back into the originating semantic domain rather than crossing into an adjacent domain, enforcing hard routing boundaries.
+
+**FIG. 6** is a diagram illustrating phase-coherent multi-ray interference, where R rays (R=8) emitted from the same token with slightly perturbed spectral colors arrive at a target node with different phases, and constructive/destructive interference determines the confidence of the routing decision.
 
 ---
 
@@ -119,7 +135,7 @@ The system resolves polysemy with 88.9% accuracy while adding only 0.03% computa
 
 ### 1. System Architecture Overview
 
-The spectral routing system operates as a three-phase pipeline:
+The spectral routing system operates as a three-phase pipeline (see FIG. 1 for the spectral encoding phase):
 
 ```
 Phase 0: Spectral Encoding
@@ -231,7 +247,7 @@ refraction_thresholds[2] = 90.0  -> angles (35, 90]   -> matrix_block_ids[2] (me
 
 This selection is O(MAX_DISPERSION_CONTEXTS) = O(8) per node, negligible compared to the O(log N) traversal.
 
-### 4. PrismaticRay Structure and Snell's Law Implementation
+### 4. PrismaticRay Structure and Snell's Law Implementation (see FIG. 2)
 
 ```cpp
 struct PrismaticRay {
@@ -293,7 +309,7 @@ ray.final_refraction_angle = refraction_angle
 
 ### 5. Polysemy Resolution Mechanism
 
-The spectral routing mechanism resolves polysemy through the following process:
+The spectral routing mechanism resolves polysemy through the following process (see FIG. 3 for a visual illustration):
 
 **Example: The word "bank"**
 
@@ -415,7 +431,7 @@ where theta_i is the incidence angle and theta_t is the refraction angle. This g
 
 ### 8. Advanced Mechanism: Chromatic Aberration (Multi-Band Decomposition)
 
-In physical optics, chromatic aberration occurs because different wavelengths of light refract at slightly different angles through a prism. The present invention implements an analogous mechanism for semantic routing.
+In physical optics, chromatic aberration occurs because different wavelengths of light refract at slightly different angles through a prism (see FIG. 4). The present invention implements an analogous mechanism for semantic routing.
 
 **8.1 Band Decomposition:**
 
@@ -456,7 +472,7 @@ Chromatic aberration provides a richer routing signal than a single refraction c
 
 ### 9. Advanced Mechanism: Total Internal Reflection (Discontinuous Boundary)
 
-When a ray enters a sphere with a high refractive index at a shallow angle, total internal reflection (TIR) occurs: the ray is completely reflected back rather than refracting through. In physical optics, TIR occurs when:
+When a ray enters a sphere with a high refractive index at a shallow angle, total internal reflection (TIR) occurs (see FIG. 5): the ray is completely reflected back rather than refracting through. In physical optics, TIR occurs when:
 
 ```
 sin(theta_i) > n_2 / n_1    (critical angle)
@@ -490,7 +506,7 @@ This discontinuous boundary is complementary to the smooth refraction of normal 
 
 ### 10. Advanced Mechanism: Phase-Coherent Multi-Ray Interference
 
-In physical optics, when multiple light waves arrive at the same point, they interfere constructively (if in phase) or destructively (if out of phase). The present invention implements an analogous mechanism.
+In physical optics, when multiple light waves arrive at the same point, they interfere constructively (if in phase) or destructively (if out of phase) (see FIG. 6). The present invention implements an analogous mechanism.
 
 **10.1 Multi-Ray Emission:**
 
@@ -741,7 +757,7 @@ A system and method for context-dependent routing in neural language models usin
 
 ---
 
-**Inventor:** Jordi Silva
+**Inventor:** Jordi Silvestre Lopez
 **Organization:** LiquidBit Studio
 **Date of Conception:** March 2026
 **Priority Date:** [Filing date of this provisional application]
