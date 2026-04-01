@@ -4,6 +4,58 @@
 
 ---
 
+### [2026-04-01] Deep Expert Analysis: los 64 expertos de OLMoE NO especializan por tema
+
+**Archivos:** `python/analyze_experts.py`, `expert_catalog_exhaustive.json`, `expert_deep_analysis.json`
+
+**Objetivo:** Catalogar que hace cada experto de OLMoE para organizar el BVH semanticamente.
+Analisis en 3 fases: 30 categorias tematicas, analisis por tipo de token, y co-activacion en 16 capas.
+
+**Hallazgo principal: los expertos especializan por TIPO DE TOKEN, no por tema.**
+
+Con 30 categorias (algebra, physics, poetry, devops, etc.), el experto mas "especializado"
+tiene solo 6.8% en su categoria primaria (vs 3.3% uniforme). La especializacion tematica es debil.
+
+Pero a nivel de TOKEN, la especializacion es clara:
+```
+Exp 40: 82% function_word -- "the"(94), "of"(63), "in"(39)
+Exp 49: 70% function_word -- "of"(63), "in"(39), "to"(27)
+Exp  9: 54% punctuation   -- ","(52), "."(51), ":"(51)
+Exp 19: 67% punctuation   -- "."(75), ":"(62), ")"(31)
+Exp 57: 91% content_word  -- "of"(20), "matrix"(8), "value"(5)
+Exp 36: 29% punct + 22% number -- "(", ")", "2", "^", "3" (math syntax)
+```
+
+**Co-activacion: 4 clusters naturales de 16 expertos (perfecto para BVH 4x4x4):**
+- C0: content_word 63% -- palabras de dominio
+- C1: content_word 62% + function_word 21% -- contenido + pegamento
+- C2: content_word 42% + punctuation 19% -- transicion/mixto
+- C3: function_word 30% + punctuation 27% -- estructura/sintaxis
+
+**Estabilidad entre capas: BAJA (4.7-6.2%).**
+Los clusters cambian entre capas -- cada capa reorganiza sus expertos.
+No hay clusters "universales" que se mantengan de L0 a L15.
+
+**Selectividad (std/mean de logits) tiene forma de U:**
+- L0-L3: alta selectividad (~0.52-0.61) -- capas tempranas discriminan fuerte
+- L5-L7: baja selectividad (~0.38-0.42) -- capas medias procesan uniforme
+- L12-L15: alta selectividad (~0.51-0.59) -- capas tardias discriminan fuerte
+
+**Evolucion del tipo de token por capa:**
+- L0: 55/64 expertos = content_word (dominio semantico)
+- L8-L10: function_word sube a 15-19 expertos (estructura gramatical)
+- L15: content_word baja a 44, function_word sube a 15
+
+**Implicaciones para el BVH:**
+1. La organizacion ideal del arbol es por TIPO DE TOKEN, no por tema
+2. Cada capa necesita su propia organizacion (clusters no estables)
+3. El BVH actual (aleatorio) podria reorganizarse por co-activacion per-layer
+4. Pero como los clusters cambian entre capas, un BVH unico no servira para todas
+
+**Para paper:** "OLMoE expert specialization is syntactic, not semantic" -- hallazgo publicable.
+
+---
+
 ### [2026-04-01] Cross-disciplinary weight modes: render_eq baja PPL puro de 7.42 a 7.33
 
 **Archivos:** `python/olmoe_e2e_eval.py`, `python/olmoe_bvh_distill.py`

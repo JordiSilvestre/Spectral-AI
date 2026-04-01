@@ -38,6 +38,7 @@
 | retrofit_bvh.py | ✅ CREADO — Universal: MoE (replace gate) + Dense (sparsity dinamica) |
 | FASE F: BVH accuracy | 🔄 PARCIAL — Solo L1 (93.4%) necesita retrain. L4,L8 rozando 96%. L9-L15 ya 96.8-97.6% |
 | Cross-disciplinary weights | ✅ 11 modos probados. render_eq PPL 7.33 (+2.5%) NUEVO RECORD puro |
+| Expert Analysis (deep) | ✅ 30 categorias + token-level + co-activacion 16 capas. Expertos = sintacticos, no semanticos |
 | E2E PPL (3 capas render_eq) | ✅ PPL 7.33 (+2.5%) — logit × geometry, puro sin gate |
 | E2E PPL (6 capas render_eq) | ✅ PPL 7.51 (+5.0%) — 6 capas FASE F (96%+), ~0.03 PPL/capa |
 | E2E PPL (16 capas render_eq)| PPL 9.17 (+28%) — degradado por L1 (93.4%) y capas FASE D |
@@ -99,6 +100,35 @@ L6  [##########----] 96.4%  FASE F     L14 [###########---] 97.5%  FASE D OK
 L7  [##########----] 96.6%  FASE F     L15 [############--] 97.6%  FASE D OK
 ```
 
+### Descubrimiento: Expert Analysis Deep (16 capas)
+
+Analisis exhaustivo de los 64 expertos de OLMoE revela:
+
+```
+1. Expertos NO especializan por tema (math, code, etc.)
+   - Mejor especialista tematico: solo 6.8% (vs 3.3% uniforme)
+   - Especializan por TIPO DE TOKEN: content_word, function_word, punctuation
+
+2. Co-activacion forma 4 clusters de 16 (perfecto para BVH 4x4x4)
+   - C0: content puro (63%)
+   - C1: content + function words (62% + 21%)
+   - C2: mixto/transicion (42% content + 19% punct)
+   - C3: estructura (30% function + 27% punct)
+
+3. Clusters CAMBIAN entre capas (estabilidad 4.7-6.2%)
+   - Cada capa reorganiza los 64 expertos de forma diferente
+   - Un BVH unico no servira para todas las capas
+
+4. Selectividad tiene forma de U
+   - L0-L3: alta (0.52-0.61) -- capas tempranas discriminan fuerte
+   - L5-L7: baja (0.38-0.42) -- capas medias procesan uniforme
+   - L12-L15: alta (0.51-0.59) -- capas tardias discriminan fuerte
+
+5. Evolucion por capa: L0=55 content experts, L9=19 function experts
+```
+
+**Implicacion:** El BVH deberia organizarse per-layer por co-activacion, no por tema.
+
 ### Que falta — PROXIMO PASO
 
 **1. Reentrenar L1 (PRIORIDAD ALTA)**
@@ -107,18 +137,20 @@ L7  [##########----] 96.6%  FASE F     L15 [############--] 97.6%  FASE D OK
 - Estimado: ~35 min. Objetivo: subir a 96%+
 - Opcional: L4 (95.1%) y L8 (95.9%)
 
-**2. Re-evaluar 16 capas con render_eq (tras retrain L1)**
-- Prediccion: si L1 sube a 96%, PPL 16 capas deberia bajar de 9.17 a ~8.0-8.5
-- Con todas las capas al 96%+, proyeccion: ~7.7 puro
+**2. BVH semantico per-layer (basado en expert analysis)**
+- Usar clusters de co-activacion de cada capa para organizar el arbol BVH
+- Cada capa tiene su propio arbol optimizado
+- Integrar en retrofit_bvh.py
 
-**3. Completar retrofit_bvh.py**
-- Testear con OLMoE real y un modelo denso pequeno
-- Bloqueado por GPU (necesita que no haya training corriendo)
+**3. Re-evaluar 16 capas con render_eq (tras retrain L1 + BVH semantico)**
+- Prediccion: si L1 sube a 96%, PPL 16 capas deberia bajar de 9.17 a ~8.0-8.5
+- Con BVH semantico: potencialmente mejor
 
 **4. FASE H: Patentes**
 - 3 provisionales ya redactadas
 - Falta: tests completos para todos los claims, filing USPTO ($1,050)
 - Los 11 weight modes son patentables (cross-disciplinary routing)
+- NUEVO: "Expert specialization is syntactic, not semantic" -- publicable
 
 **5. FASE I: Paper**
 - Resultados ya publicables:
@@ -127,6 +159,7 @@ L7  [##########----] 96.6%  FASE F     L15 [############--] 97.6%  FASE D OK
   - Routing: 85-170x speedup
   - Scaling: O(log N) demostrado
   - Cross-disciplinary: 11 modos, 3 convergen
+  - NUEVO: Deep expert analysis en 16 capas
 - Falta: completar 16 capas para tabla completa
 
 ### Decisiones tomadas
@@ -135,6 +168,7 @@ L7  [##########----] 96.6%  FASE F     L15 [############--] 97.6%  FASE D OK
 - **FP16 expertos**: Estandar. La ventaja es el ROUTING BVH, no la cuantizacion.
 - **Weight mode recomendado**: render_eq (puro) o hybrid_residual (mixto)
 - **FASE F 200 epochs**: NO necesaria para L9-L15 (ya estaban bien con 100ep FASE D)
+- **Expert analysis**: Organizacion BVH por co-activacion per-layer, no por tema
 
 ---
 

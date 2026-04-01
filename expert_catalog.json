@@ -1,0 +1,922 @@
+{
+  "n_experts": 64,
+  "n_layers": 16,
+  "categories": [
+    "math",
+    "code",
+    "language",
+    "science",
+    "reasoning",
+    "conversation",
+    "factual",
+    "punctuation"
+  ],
+  "category_tokens": {
+    "math": 72,
+    "code": 106,
+    "language": 60,
+    "science": 64,
+    "reasoning": 83,
+    "conversation": 71,
+    "factual": 77,
+    "punctuation": 105
+  },
+  "catalog": {
+    "0": {
+      "primary": "reasoning",
+      "primary_pct": 15.83872115171322,
+      "distribution": {
+        "reasoning": 15.8,
+        "math": 15.8,
+        "language": 14.2,
+        "science": 12.8,
+        "factual": 12.0,
+        "conversation": 11.3,
+        "code": 10.7,
+        "punctuation": 7.4
+      }
+    },
+    "1": {
+      "primary": "language",
+      "primary_pct": 14.397596738030005,
+      "distribution": {
+        "language": 14.4,
+        "science": 14.3,
+        "conversation": 14.2,
+        "reasoning": 13.2,
+        "factual": 12.7,
+        "punctuation": 12.2,
+        "math": 11.8,
+        "code": 7.3
+      }
+    },
+    "2": {
+      "primary": "code",
+      "primary_pct": 20.105095946413158,
+      "distribution": {
+        "code": 20.1,
+        "math": 16.3,
+        "reasoning": 12.2,
+        "factual": 11.4,
+        "punctuation": 11.0,
+        "science": 10.5,
+        "language": 9.4,
+        "conversation": 9.0
+      }
+    },
+    "3": {
+      "primary": "punctuation",
+      "primary_pct": 14.938850495362463,
+      "distribution": {
+        "punctuation": 14.9,
+        "factual": 14.6,
+        "code": 14.3,
+        "language": 13.5,
+        "conversation": 11.4,
+        "math": 11.4,
+        "science": 10.1,
+        "reasoning": 9.8
+      }
+    },
+    "4": {
+      "primary": "conversation",
+      "primary_pct": 21.681847342486734,
+      "distribution": {
+        "conversation": 21.7,
+        "code": 17.3,
+        "reasoning": 14.5,
+        "math": 12.7,
+        "punctuation": 12.2,
+        "science": 7.6,
+        "language": 7.5,
+        "factual": 6.5
+      }
+    },
+    "5": {
+      "primary": "reasoning",
+      "primary_pct": 16.75081973009876,
+      "distribution": {
+        "reasoning": 16.8,
+        "math": 15.6,
+        "science": 14.1,
+        "code": 11.9,
+        "punctuation": 11.6,
+        "language": 11.4,
+        "factual": 10.8,
+        "conversation": 7.8
+      }
+    },
+    "6": {
+      "primary": "code",
+      "primary_pct": 18.510280825006756,
+      "distribution": {
+        "code": 18.5,
+        "punctuation": 16.8,
+        "reasoning": 12.6,
+        "math": 12.5,
+        "language": 11.3,
+        "factual": 10.5,
+        "conversation": 9.4,
+        "science": 8.5
+      }
+    },
+    "7": {
+      "primary": "reasoning",
+      "primary_pct": 15.500888113580153,
+      "distribution": {
+        "reasoning": 15.5,
+        "punctuation": 15.0,
+        "code": 12.6,
+        "factual": 12.4,
+        "language": 12.3,
+        "math": 11.6,
+        "conversation": 11.2,
+        "science": 9.4
+      }
+    },
+    "8": {
+      "primary": "code",
+      "primary_pct": 18.94499090349764,
+      "distribution": {
+        "code": 18.9,
+        "science": 13.0,
+        "conversation": 12.9,
+        "math": 12.3,
+        "language": 12.2,
+        "factual": 11.2,
+        "reasoning": 9.7,
+        "punctuation": 9.7
+      }
+    },
+    "9": {
+      "primary": "punctuation",
+      "primary_pct": 19.059788317187405,
+      "distribution": {
+        "punctuation": 19.1,
+        "science": 15.9,
+        "factual": 13.9,
+        "reasoning": 12.5,
+        "language": 11.8,
+        "math": 10.1,
+        "code": 8.6,
+        "conversation": 8.1
+      }
+    },
+    "10": {
+      "primary": "conversation",
+      "primary_pct": 17.17574006801418,
+      "distribution": {
+        "conversation": 17.2,
+        "language": 16.1,
+        "factual": 12.4,
+        "reasoning": 12.2,
+        "punctuation": 12.2,
+        "science": 10.8,
+        "math": 9.7,
+        "code": 9.4
+      }
+    },
+    "11": {
+      "primary": "code",
+      "primary_pct": 16.083864104831065,
+      "distribution": {
+        "code": 16.1,
+        "math": 15.0,
+        "punctuation": 12.9,
+        "reasoning": 11.6,
+        "conversation": 11.5,
+        "factual": 11.5,
+        "language": 11.0,
+        "science": 10.4
+      }
+    },
+    "12": {
+      "primary": "conversation",
+      "primary_pct": 19.228280398591718,
+      "distribution": {
+        "conversation": 19.2,
+        "punctuation": 14.9,
+        "factual": 13.5,
+        "language": 12.6,
+        "reasoning": 11.5,
+        "science": 11.3,
+        "code": 9.1,
+        "math": 7.9
+      }
+    },
+    "13": {
+      "primary": "conversation",
+      "primary_pct": 13.82961272530115,
+      "distribution": {
+        "conversation": 13.8,
+        "math": 13.4,
+        "code": 13.3,
+        "reasoning": 12.8,
+        "punctuation": 12.4,
+        "science": 12.1,
+        "language": 11.6,
+        "factual": 10.7
+      }
+    },
+    "14": {
+      "primary": "language",
+      "primary_pct": 16.977151775492256,
+      "distribution": {
+        "language": 17.0,
+        "reasoning": 15.1,
+        "science": 14.9,
+        "factual": 13.7,
+        "math": 12.2,
+        "conversation": 11.2,
+        "punctuation": 9.5,
+        "code": 6.4
+      }
+    },
+    "15": {
+      "primary": "language",
+      "primary_pct": 16.376517289725133,
+      "distribution": {
+        "language": 16.4,
+        "code": 13.0,
+        "punctuation": 12.8,
+        "reasoning": 12.8,
+        "conversation": 12.8,
+        "science": 11.6,
+        "math": 10.8,
+        "factual": 9.9
+      }
+    },
+    "16": {
+      "primary": "language",
+      "primary_pct": 14.46836812140865,
+      "distribution": {
+        "language": 14.5,
+        "math": 14.1,
+        "reasoning": 14.1,
+        "code": 13.6,
+        "conversation": 12.3,
+        "science": 11.8,
+        "punctuation": 11.0,
+        "factual": 8.7
+      }
+    },
+    "17": {
+      "primary": "math",
+      "primary_pct": 18.701021769520374,
+      "distribution": {
+        "math": 18.7,
+        "code": 17.3,
+        "reasoning": 16.3,
+        "punctuation": 12.2,
+        "science": 11.9,
+        "factual": 8.9,
+        "language": 8.0,
+        "conversation": 6.7
+      }
+    },
+    "18": {
+      "primary": "science",
+      "primary_pct": 14.766695764523682,
+      "distribution": {
+        "science": 14.8,
+        "factual": 14.0,
+        "language": 13.5,
+        "conversation": 13.4,
+        "reasoning": 11.6,
+        "punctuation": 11.0,
+        "math": 11.0,
+        "code": 10.8
+      }
+    },
+    "19": {
+      "primary": "factual",
+      "primary_pct": 22.040789901946408,
+      "distribution": {
+        "factual": 22.0,
+        "code": 16.7,
+        "science": 12.9,
+        "punctuation": 11.3,
+        "math": 10.0,
+        "language": 9.8,
+        "reasoning": 9.6,
+        "conversation": 7.6
+      }
+    },
+    "20": {
+      "primary": "math",
+      "primary_pct": 15.449401405031846,
+      "distribution": {
+        "math": 15.4,
+        "science": 14.4,
+        "conversation": 14.0,
+        "factual": 12.5,
+        "reasoning": 12.4,
+        "language": 12.4,
+        "punctuation": 10.4,
+        "code": 8.4
+      }
+    },
+    "21": {
+      "primary": "punctuation",
+      "primary_pct": 17.763539446912276,
+      "distribution": {
+        "punctuation": 17.8,
+        "conversation": 16.1,
+        "code": 15.0,
+        "reasoning": 14.0,
+        "math": 12.3,
+        "language": 11.5,
+        "science": 6.9,
+        "factual": 6.4
+      }
+    },
+    "22": {
+      "primary": "conversation",
+      "primary_pct": 18.144972929400407,
+      "distribution": {
+        "conversation": 18.1,
+        "language": 17.5,
+        "punctuation": 13.4,
+        "reasoning": 13.0,
+        "science": 11.6,
+        "factual": 10.2,
+        "math": 9.0,
+        "code": 7.1
+      }
+    },
+    "23": {
+      "primary": "punctuation",
+      "primary_pct": 15.013944068281013,
+      "distribution": {
+        "punctuation": 15.0,
+        "conversation": 14.0,
+        "reasoning": 13.5,
+        "math": 13.4,
+        "science": 12.0,
+        "language": 11.4,
+        "factual": 11.3,
+        "code": 9.4
+      }
+    },
+    "24": {
+      "primary": "factual",
+      "primary_pct": 16.438515415290738,
+      "distribution": {
+        "factual": 16.4,
+        "reasoning": 13.3,
+        "punctuation": 13.1,
+        "science": 12.3,
+        "code": 11.6,
+        "language": 11.6,
+        "conversation": 11.2,
+        "math": 10.4
+      }
+    },
+    "25": {
+      "primary": "code",
+      "primary_pct": 20.679430531494937,
+      "distribution": {
+        "code": 20.7,
+        "language": 14.7,
+        "conversation": 12.4,
+        "punctuation": 12.3,
+        "math": 12.1,
+        "reasoning": 11.5,
+        "science": 11.1,
+        "factual": 5.2
+      }
+    },
+    "26": {
+      "primary": "factual",
+      "primary_pct": 19.374076845854223,
+      "distribution": {
+        "factual": 19.4,
+        "language": 16.1,
+        "science": 15.5,
+        "reasoning": 10.9,
+        "conversation": 10.6,
+        "code": 10.0,
+        "punctuation": 9.1,
+        "math": 8.4
+      }
+    },
+    "27": {
+      "primary": "reasoning",
+      "primary_pct": 14.864101197324576,
+      "distribution": {
+        "reasoning": 14.9,
+        "punctuation": 14.3,
+        "code": 13.7,
+        "conversation": 13.6,
+        "language": 13.4,
+        "math": 12.6,
+        "factual": 9.4,
+        "science": 8.2
+      }
+    },
+    "28": {
+      "primary": "factual",
+      "primary_pct": 17.12775239170018,
+      "distribution": {
+        "factual": 17.1,
+        "science": 15.4,
+        "conversation": 14.1,
+        "math": 12.1,
+        "code": 11.4,
+        "reasoning": 11.3,
+        "language": 10.3,
+        "punctuation": 8.3
+      }
+    },
+    "29": {
+      "primary": "science",
+      "primary_pct": 16.69206145961639,
+      "distribution": {
+        "science": 16.7,
+        "factual": 15.2,
+        "punctuation": 13.0,
+        "math": 12.8,
+        "code": 11.1,
+        "reasoning": 10.7,
+        "conversation": 10.4,
+        "language": 10.1
+      }
+    },
+    "30": {
+      "primary": "code",
+      "primary_pct": 15.5918075321671,
+      "distribution": {
+        "code": 15.6,
+        "punctuation": 15.4,
+        "reasoning": 14.4,
+        "math": 12.8,
+        "conversation": 10.6,
+        "factual": 10.5,
+        "science": 10.4,
+        "language": 10.3
+      }
+    },
+    "31": {
+      "primary": "code",
+      "primary_pct": 20.184262234349447,
+      "distribution": {
+        "code": 20.2,
+        "science": 13.2,
+        "language": 13.0,
+        "factual": 12.2,
+        "math": 11.8,
+        "reasoning": 11.6,
+        "conversation": 10.4,
+        "punctuation": 7.6
+      }
+    },
+    "32": {
+      "primary": "science",
+      "primary_pct": 18.06953274335813,
+      "distribution": {
+        "science": 18.1,
+        "math": 15.6,
+        "factual": 13.9,
+        "reasoning": 12.2,
+        "punctuation": 11.5,
+        "language": 10.0,
+        "conversation": 9.5,
+        "code": 9.1
+      }
+    },
+    "33": {
+      "primary": "conversation",
+      "primary_pct": 17.431067716978728,
+      "distribution": {
+        "conversation": 17.4,
+        "science": 17.2,
+        "punctuation": 15.8,
+        "language": 11.4,
+        "reasoning": 11.4,
+        "factual": 10.4,
+        "math": 9.2,
+        "code": 7.2
+      }
+    },
+    "34": {
+      "primary": "science",
+      "primary_pct": 16.92976100487486,
+      "distribution": {
+        "science": 16.9,
+        "math": 14.6,
+        "conversation": 14.1,
+        "reasoning": 14.0,
+        "factual": 12.2,
+        "language": 10.3,
+        "punctuation": 9.9,
+        "code": 7.9
+      }
+    },
+    "35": {
+      "primary": "science",
+      "primary_pct": 17.47736563366893,
+      "distribution": {
+        "science": 17.5,
+        "reasoning": 13.7,
+        "code": 13.3,
+        "math": 12.5,
+        "punctuation": 11.5,
+        "conversation": 11.4,
+        "factual": 10.8,
+        "language": 9.3
+      }
+    },
+    "36": {
+      "primary": "code",
+      "primary_pct": 14.666068259224453,
+      "distribution": {
+        "code": 14.7,
+        "reasoning": 13.8,
+        "punctuation": 13.6,
+        "science": 13.5,
+        "math": 12.2,
+        "factual": 11.5,
+        "language": 11.5,
+        "conversation": 9.3
+      }
+    },
+    "37": {
+      "primary": "factual",
+      "primary_pct": 19.05017984404174,
+      "distribution": {
+        "factual": 19.1,
+        "language": 17.6,
+        "conversation": 13.2,
+        "science": 12.4,
+        "punctuation": 10.5,
+        "reasoning": 10.3,
+        "math": 10.0,
+        "code": 6.9
+      }
+    },
+    "38": {
+      "primary": "science",
+      "primary_pct": 16.66083313717137,
+      "distribution": {
+        "science": 16.7,
+        "math": 15.6,
+        "reasoning": 14.2,
+        "conversation": 12.4,
+        "language": 11.3,
+        "factual": 10.9,
+        "code": 10.0,
+        "punctuation": 9.0
+      }
+    },
+    "39": {
+      "primary": "conversation",
+      "primary_pct": 19.565608902610897,
+      "distribution": {
+        "conversation": 19.6,
+        "code": 15.1,
+        "language": 13.4,
+        "punctuation": 12.5,
+        "math": 10.6,
+        "reasoning": 10.0,
+        "factual": 9.5,
+        "science": 9.3
+      }
+    },
+    "40": {
+      "primary": "factual",
+      "primary_pct": 19.824221047206887,
+      "distribution": {
+        "factual": 19.8,
+        "language": 15.7,
+        "punctuation": 14.8,
+        "reasoning": 11.4,
+        "code": 10.6,
+        "conversation": 10.1,
+        "math": 8.9,
+        "science": 8.6
+      }
+    },
+    "41": {
+      "primary": "conversation",
+      "primary_pct": 19.618953378236885,
+      "distribution": {
+        "conversation": 19.6,
+        "language": 18.5,
+        "reasoning": 13.2,
+        "factual": 12.1,
+        "punctuation": 11.3,
+        "math": 10.6,
+        "science": 9.1,
+        "code": 5.5
+      }
+    },
+    "42": {
+      "primary": "code",
+      "primary_pct": 20.98136221871875,
+      "distribution": {
+        "code": 21.0,
+        "punctuation": 16.9,
+        "math": 13.3,
+        "reasoning": 13.1,
+        "language": 10.9,
+        "conversation": 9.9,
+        "science": 7.6,
+        "factual": 7.3
+      }
+    },
+    "43": {
+      "primary": "factual",
+      "primary_pct": 18.999107759589474,
+      "distribution": {
+        "factual": 19.0,
+        "code": 16.8,
+        "math": 13.8,
+        "reasoning": 12.8,
+        "punctuation": 12.1,
+        "science": 11.8,
+        "conversation": 7.3,
+        "language": 6.3
+      }
+    },
+    "44": {
+      "primary": "code",
+      "primary_pct": 17.448793335951347,
+      "distribution": {
+        "code": 17.4,
+        "factual": 17.3,
+        "science": 12.2,
+        "punctuation": 11.7,
+        "math": 11.6,
+        "language": 11.4,
+        "reasoning": 9.8,
+        "conversation": 8.4
+      }
+    },
+    "45": {
+      "primary": "language",
+      "primary_pct": 16.47470329759703,
+      "distribution": {
+        "language": 16.5,
+        "punctuation": 14.6,
+        "conversation": 12.3,
+        "math": 12.2,
+        "factual": 12.1,
+        "code": 11.8,
+        "reasoning": 11.6,
+        "science": 8.9
+      }
+    },
+    "46": {
+      "primary": "science",
+      "primary_pct": 17.11593029896016,
+      "distribution": {
+        "science": 17.1,
+        "math": 15.6,
+        "code": 13.8,
+        "factual": 13.3,
+        "language": 12.0,
+        "reasoning": 11.9,
+        "punctuation": 8.5,
+        "conversation": 7.8
+      }
+    },
+    "47": {
+      "primary": "math",
+      "primary_pct": 15.850285980361198,
+      "distribution": {
+        "math": 15.9,
+        "reasoning": 15.6,
+        "science": 13.4,
+        "code": 12.5,
+        "punctuation": 11.4,
+        "language": 11.4,
+        "conversation": 10.6,
+        "factual": 9.3
+      }
+    },
+    "48": {
+      "primary": "science",
+      "primary_pct": 19.269145367649816,
+      "distribution": {
+        "science": 19.3,
+        "factual": 18.6,
+        "conversation": 12.5,
+        "math": 12.0,
+        "reasoning": 11.5,
+        "language": 11.1,
+        "punctuation": 7.5,
+        "code": 7.5
+      }
+    },
+    "49": {
+      "primary": "factual",
+      "primary_pct": 22.406902536318192,
+      "distribution": {
+        "factual": 22.4,
+        "language": 15.0,
+        "science": 14.3,
+        "conversation": 12.8,
+        "reasoning": 10.9,
+        "punctuation": 10.0,
+        "code": 7.8,
+        "math": 6.8
+      }
+    },
+    "50": {
+      "primary": "conversation",
+      "primary_pct": 17.26867791247459,
+      "distribution": {
+        "conversation": 17.3,
+        "language": 14.4,
+        "punctuation": 13.3,
+        "factual": 13.1,
+        "reasoning": 13.1,
+        "science": 12.7,
+        "math": 9.7,
+        "code": 6.5
+      }
+    },
+    "51": {
+      "primary": "code",
+      "primary_pct": 21.81420997158214,
+      "distribution": {
+        "code": 21.8,
+        "punctuation": 17.0,
+        "math": 12.8,
+        "reasoning": 11.3,
+        "conversation": 11.3,
+        "science": 11.0,
+        "factual": 8.4,
+        "language": 6.4
+      }
+    },
+    "52": {
+      "primary": "math",
+      "primary_pct": 18.663510929394608,
+      "distribution": {
+        "math": 18.7,
+        "factual": 14.1,
+        "code": 13.6,
+        "science": 13.5,
+        "reasoning": 13.0,
+        "punctuation": 12.5,
+        "language": 7.7,
+        "conversation": 6.9
+      }
+    },
+    "53": {
+      "primary": "language",
+      "primary_pct": 20.67333962553957,
+      "distribution": {
+        "language": 20.7,
+        "conversation": 20.1,
+        "punctuation": 11.8,
+        "factual": 11.2,
+        "code": 10.1,
+        "math": 9.9,
+        "science": 8.9,
+        "reasoning": 7.3
+      }
+    },
+    "54": {
+      "primary": "conversation",
+      "primary_pct": 14.766482092574124,
+      "distribution": {
+        "conversation": 14.8,
+        "punctuation": 14.4,
+        "math": 14.3,
+        "reasoning": 12.8,
+        "factual": 11.6,
+        "code": 11.5,
+        "science": 11.5,
+        "language": 9.0
+      }
+    },
+    "55": {
+      "primary": "punctuation",
+      "primary_pct": 15.342640370529223,
+      "distribution": {
+        "punctuation": 15.3,
+        "math": 14.9,
+        "factual": 13.9,
+        "language": 12.9,
+        "reasoning": 12.0,
+        "science": 11.9,
+        "code": 11.4,
+        "conversation": 7.7
+      }
+    },
+    "56": {
+      "primary": "language",
+      "primary_pct": 15.817926035145419,
+      "distribution": {
+        "language": 15.8,
+        "reasoning": 13.2,
+        "conversation": 13.0,
+        "science": 12.9,
+        "math": 12.6,
+        "factual": 12.3,
+        "code": 10.5,
+        "punctuation": 9.6
+      }
+    },
+    "57": {
+      "primary": "science",
+      "primary_pct": 18.483353653866224,
+      "distribution": {
+        "science": 18.5,
+        "math": 16.8,
+        "factual": 13.8,
+        "reasoning": 11.8,
+        "code": 10.8,
+        "language": 10.1,
+        "conversation": 9.3,
+        "punctuation": 9.0
+      }
+    },
+    "58": {
+      "primary": "language",
+      "primary_pct": 16.229500087622245,
+      "distribution": {
+        "language": 16.2,
+        "punctuation": 15.4,
+        "code": 13.4,
+        "conversation": 12.2,
+        "math": 11.7,
+        "reasoning": 11.5,
+        "science": 10.5,
+        "factual": 9.1
+      }
+    },
+    "59": {
+      "primary": "language",
+      "primary_pct": 21.185425405813056,
+      "distribution": {
+        "language": 21.2,
+        "punctuation": 14.3,
+        "factual": 13.0,
+        "science": 12.5,
+        "conversation": 12.0,
+        "reasoning": 9.8,
+        "math": 9.5,
+        "code": 7.8
+      }
+    },
+    "60": {
+      "primary": "conversation",
+      "primary_pct": 22.470638844606253,
+      "distribution": {
+        "conversation": 22.5,
+        "punctuation": 18.5,
+        "language": 13.8,
+        "code": 11.7,
+        "reasoning": 10.8,
+        "science": 8.2,
+        "factual": 7.6,
+        "math": 6.9
+      }
+    },
+    "61": {
+      "primary": "conversation",
+      "primary_pct": 15.129835408461709,
+      "distribution": {
+        "conversation": 15.1,
+        "math": 14.7,
+        "factual": 13.6,
+        "code": 13.1,
+        "reasoning": 12.4,
+        "punctuation": 11.5,
+        "language": 10.6,
+        "science": 8.9
+      }
+    },
+    "62": {
+      "primary": "code",
+      "primary_pct": 16.673741326471898,
+      "distribution": {
+        "code": 16.7,
+        "conversation": 15.0,
+        "punctuation": 13.1,
+        "science": 12.6,
+        "reasoning": 12.4,
+        "math": 10.4,
+        "factual": 10.3,
+        "language": 9.5
+      }
+    },
+    "63": {
+      "primary": "factual",
+      "primary_pct": 19.743922854390743,
+      "distribution": {
+        "factual": 19.7,
+        "science": 16.9,
+        "conversation": 15.1,
+        "language": 13.3,
+        "punctuation": 9.5,
+        "reasoning": 9.3,
+        "math": 9.0,
+        "code": 7.2
+      }
+    }
+  }
+}
