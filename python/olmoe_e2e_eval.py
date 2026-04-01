@@ -477,6 +477,83 @@ class BVHGateWrapper(nn.Module):
                     dim=-1, keepdim=True
                 )
 
+        elif self.weight_mode == "geometric":
+            # GEOMETRIC WEIGHTS (inspired by inverse distance weighting / gravity)
+            # BVH selects top-k by logits. Weights come from 1/distance in
+            # the BVH 3D space — closer experts get more weight. Pure mode:
+            # NO original gate needed. Only 1 param (temperature) per layer.
+            _, top_k_index = torch.topk(logits, self.top_k, dim=-1)
+            geo_dist = getattr(self.router, '_last_geometric_distances', None)
+            if geo_dist is not None:
+                geo_dist = geo_dist.to(logits.device)
+                # Gather distances for selected experts
+                top_k_dist = geo_dist.gather(1, top_k_index)  # (B, k)
+                # Inverse distance weighting: weight = 1 / (d + eps)
+                inv_dist = 1.0 / (top_k_dist + 1e-6)
+                # Softmax over inverse distances with learned temperature
+                geo_temp = self._geo_temperature if hasattr(self, '_geo_temperature') else 1.0
+                top_k_weights = F.softmax(inv_dist / geo_temp, dim=-1)
+            else:
+                # Fallback: uniform if no geometric data
+                top_k_weights = torch.full(
+                    (logits.shape[0], self.top_k), 1.0 / self.top_k,
+                    dtype=torch.float, device=logits.device)
+            weight_scale = self.topk_scale if self.topk_scale else 0.43
+            top_k_weights = top_k_weights * weight_scale
+            router_probs = torch.zeros(logits.shape[0], logits.shape[1],
+                                       dtype=torch.float, device=logits.device)
+            router_probs.scatter_(1, top_k_index, top_k_weights)
+
+        elif self.weight_mode == "lambert":
+            # LAMBERT COSINE LAW (from optics: intensity ∝ cos(angle of incidence))
+            # The "angle" is computed between the query's direction vector (pos3d)
+            # and each expert centroid's normal. Experts hit more "head-on" get
+            # more weight. Pure mode: no gate needed.
+            _, top_k_index = torch.topk(logits, self.top_k, dim=-1)
+            geo_dist = getattr(self.router, '_last_geometric_distances', None)
+            if geo_dist is not None:
+                geo_dist = geo_dist.to(logits.device)
+                top_k_dist = geo_dist.gather(1, top_k_index)
+                # Lambert: cos(θ) ≈ 1 - normalized_distance (monotonically decreasing)
+                # Normalize distances to [0, 1] range per token
+                d_min = top_k_dist.min(dim=-1, keepdim=True).values
+                d_max = top_k_dist.max(dim=-1, keepdim=True).values
+                d_range = d_max - d_min + 1e-8
+                d_norm = (top_k_dist - d_min) / d_range  # [0, 1]
+                cos_theta = 1.0 - d_norm  # closer = higher cos
+                # Clamp to avoid zero weights
+                cos_theta = cos_theta.clamp(min=0.05)
+                top_k_weights = cos_theta / cos_theta.sum(dim=-1, keepdim=True)
+            else:
+                top_k_weights = torch.full(
+                    (logits.shape[0], self.top_k), 1.0 / self.top_k,
+                    dtype=torch.float, device=logits.device)
+            weight_scale = self.topk_scale if self.topk_scale else 0.43
+            top_k_weights = top_k_weights * weight_scale
+            router_probs = torch.zeros(logits.shape[0], logits.shape[1],
+                                       dtype=torch.float, device=logits.device)
+            router_probs.scatter_(1, top_k_index, top_k_weights)
+
+        elif self.weight_mode == "resonance":
+            # HARMONIC RESONANCE (from acoustics / wave physics)
+            # Each expert has a "natural frequency" (its logit magnitude).
+            # Weight follows a resonance curve: sharper peak for strong matches,
+            # broader response for weak matches. Like a tuning fork — experts
+            # that "resonate" with the query dominate.
+            top_k_vals, top_k_index = torch.topk(logits, self.top_k, dim=-1)
+            top_k_f32 = top_k_vals.float()
+            # Resonance: weight = 1 / ((f - f0)^2 + gamma^2)  (Lorentzian)
+            # f0 = peak (top-1 logit), gamma = bandwidth
+            f0 = top_k_f32[:, 0:1]  # peak frequency (strongest expert)
+            gamma = 0.5  # bandwidth — controls how quickly non-peak experts decay
+            resonance = 1.0 / ((top_k_f32 - f0) ** 2 + gamma ** 2)
+            top_k_weights = resonance / resonance.sum(dim=-1, keepdim=True)
+            weight_scale = self.topk_scale if self.topk_scale else 0.43
+            top_k_weights = top_k_weights * weight_scale
+            router_probs = torch.zeros(logits.shape[0], logits.shape[1],
+                                       dtype=torch.float, device=logits.device)
+            router_probs.scatter_(1, top_k_index, top_k_weights)
+
         else:
             # Standard: softmax over all 64 experts, then top-k
             router_probs = F.softmax(logits, dtype=torch.float, dim=-1)
@@ -1106,13 +1183,16 @@ def main():
     parser.add_argument("--weight-mode", type=str, default="softmax",
                         choices=["softmax", "relu_norm", "relu_log", "relu_cbrt",
                                  "topk_softmax", "uniform", "gate_dist", "rank_template",
-                                 "hybrid_residual"],
+                                 "hybrid_residual", "geometric", "lambert", "resonance"],
                         help="How to compute routing weights from BVH logits. "
                              "relu_norm: ReLU + L1 norm (recommended for pure mode). "
                              "topk_softmax: softmax over top-k only. "
                              "uniform: equal 1/k weights. "
                              "gate_dist: fixed weights from original gate distribution. "
-                             "hybrid_residual: alpha*BVH + (1-alpha)*gate (closes PPL gap). "
+                             "hybrid_residual: BVH selects + gate weights (closes PPL gap). "
+                             "geometric: inverse distance weighting from BVH 3D space. "
+                             "lambert: cosine law weights from BVH geometry. "
+                             "resonance: Lorentzian curve weights (harmonic resonance). "
                              "softmax: standard full softmax (default).")
     parser.add_argument("--hybrid-alpha", type=float, default=0.98,
                         help="Blending factor for hybrid_residual mode. "

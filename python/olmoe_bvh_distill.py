@@ -426,13 +426,33 @@ class EnhancedBVHRouter(nn.Module):
         self.register_buffer('expert_counts', torch.zeros(self.n_experts))
 
     def _forward_from_h(self, h: torch.Tensor, T: float) -> torch.Tensor:
-        """Forward pass from projected h (256-dim) to logits (64-dim)."""
+        """Forward pass from projected h (256-dim) to logits (64-dim).
+
+        Side effect: stores self._last_geometric_distances (B, 64) —
+        composite distance from query to each of the 64 expert leaf nodes
+        in the BVH tree. Used by geometric weight modes in BVHGateWrapper.
+        """
         # Level 1: domains
         p1, f1, pos1 = self.level1(h, T)
         # Level 2: subdomains
         p2, f2, pos2 = self.level2(f1, T)
         # Level 3: concepts
         p3, f3, pos3 = self.level3(f2, T)
+
+        # Compute composite geometric distance to all 64 leaf nodes.
+        # Each leaf (i,j,k) has distance = d1[i] + d2[j] + d3[k]
+        # where d1/d2/d3 are distances at each BVH level.
+        d1 = torch.sqrt(((pos1.unsqueeze(1) - self.level1.centers.unsqueeze(0)) ** 2).sum(-1) + 1e-8)  # (B, 4)
+        d2 = torch.sqrt(((pos2.unsqueeze(1) - self.level2.centers.unsqueeze(0)) ** 2).sum(-1) + 1e-8)  # (B, 4)
+        d3 = torch.sqrt(((pos3.unsqueeze(1) - self.level3.centers.unsqueeze(0)) ** 2).sum(-1) + 1e-8)  # (B, 4)
+
+        # Expand to (B, 64) via outer sum: expert_idx = i*16 + j*4 + k
+        d1_exp = d1.unsqueeze(2).unsqueeze(3).expand(-1, -1, self.n_level2, self.n_level3)  # (B,4,4,4)
+        d2_exp = d2.unsqueeze(1).unsqueeze(3).expand(-1, self.n_level1, -1, self.n_level3)
+        d3_exp = d3.unsqueeze(1).unsqueeze(2).expand(-1, self.n_level1, self.n_level2, -1)
+        composite_dist = (d1_exp + d2_exp + d3_exp).reshape(h.shape[0], -1)  # (B, 64)
+        self._last_geometric_distances = composite_dist
+
         # Combine
         combined = torch.cat([f3, p1, p2, p3], dim=-1)
         logits = self.expert_head(combined)
