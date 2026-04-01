@@ -279,6 +279,11 @@ class BVHGateWrapper(nn.Module):
         self._delta_predictor = None
         # Rank template: fixed weight distribution by rank position
         self._rank_template = None
+        # Expert permutation: maps tree positions back to expert IDs
+        # perm[tree_pos] = expert_id. Applied to output logits.
+        self._expert_perm = None
+        # OptiX RT Core bridge: set externally for hardware-accelerated routing
+        self._optix_bridge = None
 
         if calibration_mode == "affine" and calibration_state is not None:
             self.register_buffer('cal_scale', calibration_state["scale"])
@@ -309,20 +314,68 @@ class BVHGateWrapper(nn.Module):
         hidden_dim = hidden_states.shape[-1]
         h2d = hidden_states.reshape(-1, hidden_dim)
 
-        with torch.no_grad():
-            self.router(h2d.float(), n_rays=self.n_rays)
-            raw_logits = self.router._last_logits
+        # OptiX RT Core path: use hardware ray tracing for routing
+        _use_optix = (self._optix_bridge is not None
+                      and self._optix_bridge.available)
+        if _use_optix:
+            import time as _time
+            with torch.no_grad():
+                # Project to 3D using the router's learned projection
+                h = self.router.input_proj(h2d.float())
+                T = self.router.temperature.item()
+                _, _, pos_3d = self.router.level1(h, T)
+                # Compute directions toward weighted center
+                centers = self.router.level1.centers  # (4, 3)
+                # Use omnidirectional rays (normalized random-ish)
+                directions = torch.ones_like(pos_3d)
+                directions = directions / directions.norm(
+                    dim=-1, keepdim=True
+                ).clamp(min=1e-6)
+                # RT Core routing
+                _t0 = _time.perf_counter()
+                topk_ids, topk_dists = self._optix_bridge.route_rt_topk(
+                    pos_3d, directions, self.top_k
+                )
+                if h2d.is_cuda:
+                    torch.cuda.synchronize()
+                _rt_us = (_time.perf_counter() - _t0) * 1e6
+                # Convert to logits: closer distance = higher logit
+                logits = torch.zeros(
+                    h2d.shape[0], 64,
+                    dtype=hidden_states.dtype, device=h2d.device,
+                )
+                # Inverse distance as logit proxy
+                inv_dist = 1.0 / (topk_dists.float() + 1e-6)
+                logits.scatter_(1, topk_ids.long(), inv_dist.to(logits.dtype))
+                raw_logits = logits
+                # Print latency once
+                BVHGateWrapper._diag_count += 1
+                if BVHGateWrapper._diag_count <= 1:
+                    print(f"  [OptiX] RT Core routing: {_rt_us:.1f} us/batch "
+                          f"({h2d.shape[0]} tokens)")
+        else:
+            with torch.no_grad():
+                self.router(h2d.float(), n_rays=self.n_rays)
+                raw_logits = self.router._last_logits
 
-            if self.calibration_mode == "affine":
-                logits = raw_logits * self.cal_scale + self.cal_bias
-            elif self.calibration_mode == "topk_preserving":
-                logits = raw_logits * self.cal_inv_temp + self.cal_bias
-            elif self.calibration_mode == "linear":
-                logits = self.cal_linear(raw_logits)
-            else:
-                logits = raw_logits
+                if self.calibration_mode == "affine":
+                    logits = raw_logits * self.cal_scale + self.cal_bias
+                elif self.calibration_mode == "topk_preserving":
+                    logits = raw_logits * self.cal_inv_temp + self.cal_bias
+                elif self.calibration_mode == "linear":
+                    logits = self.cal_linear(raw_logits)
+                else:
+                    logits = raw_logits
 
         logits = logits.to(hidden_states.dtype)
+
+        # Expert permutation: remap from tree positions to expert IDs.
+        # During training, targets were permuted so co-activating experts
+        # sit in the same BVH branch. Here we undo that permutation.
+        # perm[tree_pos] = expert_id, so inv_perm maps back.
+        if self._expert_perm is not None:
+            inv_perm = torch.argsort(self._expert_perm)
+            logits = logits[:, inv_perm]
 
         # Apply temperature scaling if set (fixes peaked distributions
         # without changing top-8 expert selection order)
@@ -676,6 +729,34 @@ class BVHGateWrapper(nn.Module):
                                        dtype=torch.float, device=logits.device)
             router_probs.scatter_(1, top_k_index, top_k_weights)
 
+        elif self.weight_mode == "hierarchical":
+            # HIERARCHICAL BRANCH BONUS (from BVH tree structure)
+            # Experts in the same branch as the query's main routing choice
+            # get bonus weight. Uses tree topology, not retraining.
+            # 64 experts = 4×4×4 tree. Same domain +20%, same subdomain +10%.
+            top_k_vals, top_k_index = torch.topk(logits, self.top_k, dim=-1)
+            top_k_f32 = top_k_vals.float()
+            shifted = top_k_f32 - top_k_f32.min(dim=-1, keepdim=True).values + 1.0
+            logit_signal = torch.sqrt(shifted)
+
+            # Branch bonus from tree structure
+            branch_bonus = getattr(self.router, '_last_branch_bonus', None)
+            if branch_bonus is not None:
+                branch_bonus = branch_bonus.to(logits.device)
+                top_k_bonus = branch_bonus.gather(1, top_k_index)
+                # Normalize bonus to mean=1 so it modulates without changing scale
+                top_k_bonus = top_k_bonus / (top_k_bonus.mean(dim=-1, keepdim=True) + 1e-8)
+            else:
+                top_k_bonus = 1.0
+
+            combined = logit_signal * top_k_bonus
+            top_k_weights = combined / (combined.sum(dim=-1, keepdim=True) + 1e-8)
+            weight_scale = self.topk_scale if self.topk_scale else 0.43
+            top_k_weights = top_k_weights * weight_scale
+            router_probs = torch.zeros(logits.shape[0], logits.shape[1],
+                                       dtype=torch.float, device=logits.device)
+            router_probs.scatter_(1, top_k_index, top_k_weights)
+
         elif self.weight_mode == "spectral_weight":
             # SPECTRAL REFRACTION WEIGHTS (from our own optics architecture)
             # The PrismaticRefraction module computes how each expert "refracts"
@@ -1008,6 +1089,7 @@ def replace_gate_with_bvh(
     weight_mode: str = "softmax",
     n_rays: int = 1,
     hybrid_alpha: float = 0.98,
+    use_optix: bool = False,
 ) -> tuple:
     """
     Replace the linear gate in one OLMoE layer with the trained BVH Router.
@@ -1153,6 +1235,40 @@ def replace_gate_with_bvh(
         # Store original gate weight for hybrid_residual mode
         if hasattr(original_gate, 'weight') and original_gate.weight is not None:
             wrapper._original_gate_weight = original_gate.weight.data.to(gate_device)
+        # Load expert permutation from checkpoint if present
+        ep = ckpt.get("expert_perm", None)
+        if ep is not None:
+            perm_tensor = torch.tensor(ep, dtype=torch.long, device=gate_device)
+            wrapper._expert_perm = perm_tensor
+            print(f"  Expert permutation loaded for layer {layer_idx} "
+                  f"(first 8: {perm_tensor[:8].tolist()})")
+        # Initialize OptiX RT Core bridge if requested
+        if use_optix:
+            try:
+                from optix_training_bridge import OptiXTrainingBridge
+                bridge = OptiXTrainingBridge(auto_init=True)
+                if bridge.has_extension:
+                    # Build GAS from the 64 leaf-level expert positions
+                    # Use level3 centers as the expert sphere positions
+                    with torch.no_grad():
+                        centers = router.level3.centers.detach().cpu().float()
+                        radii = torch.exp(
+                            router.level3.log_radii.detach().cpu().float()
+                        )
+                    if bridge.build_gas(centers, radii, use_triangles=True):
+                        wrapper._optix_bridge = bridge
+                        print(f"  OptiX RT Core bridge initialized "
+                              f"(GAS: {bridge._smooth_hit.__class__.__name__}, "
+                              f"{centers.shape[0]} experts)")
+                    else:
+                        print(f"  [WARNING] OptiX GAS build failed, "
+                              f"using PyTorch fallback")
+                else:
+                    print(f"  [WARNING] OptiX extension not loaded, "
+                          f"using PyTorch fallback")
+            except Exception as exc:
+                print(f"  [WARNING] OptiX init failed: {exc}, "
+                      f"using PyTorch fallback")
         setattr(mlp, gate_attr, wrapper)
         cal_str = f"{cal_mode}" if cal_mode else "none"
         wm = wrapper.weight_mode  # resolved mode (accounts for --topk-softmax compat)
@@ -1394,7 +1510,7 @@ def main():
                                  "topk_softmax", "uniform", "gate_dist", "rank_template",
                                  "hybrid_residual", "geometric", "lambert", "resonance",
                                  "zipf", "render_eq", "ray_march", "importance",
-                                 "bm25", "gravity", "spectral_weight"],
+                                 "bm25", "gravity", "spectral_weight", "hierarchical"],
                         help="How to compute routing weights from BVH logits. "
                              "relu_norm: ReLU + L1 norm (recommended for pure mode). "
                              "topk_softmax: softmax over top-k only. "
@@ -1410,11 +1526,16 @@ def main():
                              "importance: softmax(logit) × 1/dist (Monte Carlo). "
                              "bm25: saturated logit × geometry (search engine anti-monopoly). "
                              "gravity: logit - α·log(dist) (economic gravity / ALiBi). "
-                             "spectral_weight: logit × spectral_refraction × geometry (full rendering eq). "
+                             "spectral_weight: logit * spectral * geometry (full CG rendering). "
+                             "hierarchical: logit * tree_branch_bonus (pure tree structure). "
                              "softmax: standard full softmax (default).")
     parser.add_argument("--hybrid-alpha", type=float, default=0.98,
                         help="Blending factor for hybrid_residual mode. "
                              "0.98 = 98%% BVH + 2%% original gate (default).")
+
+    # ── OptiX RT Core flags ──
+    parser.add_argument("--use-optix", action="store_true",
+                        help="Use OptiX RT Cores for routing (requires compiled extension)")
 
     # ── Generation demo flags ──
     parser.add_argument("--generate", action="store_true",
@@ -1503,6 +1624,7 @@ def main():
                 weight_mode=args.weight_mode,
                 n_rays=getattr(args, 'n_rays', 1),
                 hybrid_alpha=getattr(args, 'hybrid_alpha', 0.98),
+                use_optix=getattr(args, 'use_optix', False),
             )
             replaced_layers.append(layer_idx)
         print(f"\n  Total: {n_layers} layers replaced: {replaced_layers}")
@@ -1523,6 +1645,7 @@ def main():
             weight_mode=args.weight_mode,
             n_rays=getattr(args, 'n_rays', 1),
             hybrid_alpha=getattr(args, 'hybrid_alpha', 0.98),
+            use_optix=getattr(args, 'use_optix', False),
         )
         replaced_layers = [args.layer]
 

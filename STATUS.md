@@ -39,6 +39,9 @@
 | FASE F: BVH accuracy | 🔄 PARCIAL — Solo L1 (93.4%) necesita retrain. L4,L8 rozando 96%. L9-L15 ya 96.8-97.6% |
 | Cross-disciplinary weights | ✅ 11 modos probados. render_eq PPL 7.33 (+2.5%) NUEVO RECORD puro |
 | Expert Analysis (deep) | ✅ 30 categorias + token-level + co-activacion 16 capas. Expertos = sintacticos, no semanticos |
+| Expert Permutation (L3) | ✅ 86.2% top-8, PPL 7.55 (+5.6%) — permutacion no mejora PPL, mejora traversal RT |
+| Expert Permutation (16 capas) | 🔄 EN PROGRESO — Entrenando 16 capas con --expert-perm + real data |
+| Bugs corregidos (distill) | ✅ distillation_loss NaN, benchmark inv_perm, olmoe_layer=None |
 | E2E PPL (3 capas render_eq) | ✅ PPL 7.33 (+2.5%) — logit × geometry, puro sin gate |
 | E2E PPL (6 capas render_eq) | ✅ PPL 7.51 (+5.0%) — 6 capas FASE F (96%+), ~0.03 PPL/capa |
 | E2E PPL (16 capas render_eq)| PPL 9.17 (+28%) — degradado por L1 (93.4%) y capas FASE D |

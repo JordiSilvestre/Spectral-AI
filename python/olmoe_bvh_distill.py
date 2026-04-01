@@ -453,6 +453,27 @@ class EnhancedBVHRouter(nn.Module):
         composite_dist = (d1_exp + d2_exp + d3_exp).reshape(h.shape[0], -1)  # (B, 64)
         self._last_geometric_distances = composite_dist
 
+        # Compute hierarchical branch bonus for each expert
+        # Expert idx = i*16 + j*4 + k (4×4×4 tree)
+        # Branch bonus: same domain? +1.2x, same subdomain? +1.1x, else +1.0x
+        expert_indices = torch.arange(64, device=h.device)
+        level1_idx = (expert_indices // 16)  # which of 4 domains
+        level2_idx = ((expert_indices % 16) // 4)  # which of 4 subdomains
+        level3_idx = (expert_indices % 4)  # which of 4 concepts
+
+        # Current token's position in tree
+        p1_argmax = torch.argmax(p1, dim=-1)  # (B,) — which domain
+        p2_argmax = torch.argmax(p2, dim=-1)  # (B,) — which subdomain
+        p3_argmax = torch.argmax(p3, dim=-1)  # (B,) — which concept
+
+        # Broadcast and compare
+        same_domain = (level1_idx.unsqueeze(0) == p1_argmax.unsqueeze(1)).float()  # (B, 64)
+        same_subdomain = (level2_idx.unsqueeze(0) == p2_argmax.unsqueeze(1)).float()  # (B, 64)
+
+        # Branch bonus: 1.0 base, +0.2 if same domain, +0.1 if same subdomain
+        branch_bonus = 1.0 + 0.2 * same_domain + 0.1 * same_subdomain  # (B, 64)
+        self._last_branch_bonus = branch_bonus
+
         # Combine
         combined = torch.cat([f3, p1, p2, p3], dim=-1)
         logits = self.expert_head(combined)
@@ -745,9 +766,15 @@ def distillation_loss(
     (post-softmax), not raw logits. We convert them back to log-space before
     applying temperature scaling to avoid double-softmax.
     """
-    # Convert teacher probs back to logits (undo the softmax in extract_real_hiddens.py)
-    # log(softmax(x)) ∝ x (up to a constant), so log(probs) recovers the logit scale
-    teacher_log = (teacher_logits + 1e-9).log()  # (B, 64) — now in logit space
+    # Detect whether teacher_logits are probabilities (from extract_real_hiddens.py)
+    # or raw logits (from synthetic gate_logits). Probs are non-negative and sum to ~1.
+    is_probs = (teacher_logits.min() >= 0)
+    if is_probs:
+        # Convert probs back to logits for temperature scaling
+        teacher_log = (teacher_logits + 1e-9).log()
+    else:
+        # Already raw logits — use directly
+        teacher_log = teacher_logits
 
     # Soft loss (KL on temperature-scaled softmax)
     student_soft = F.log_softmax(student_logits / temperature, dim=-1)
@@ -854,6 +881,8 @@ def train_bvh_distillation(
     save_dir: str = "checkpoints",
     real_data_path: str = None,
     spectral_mode: bool = False,
+    expert_perm: torch.Tensor = None,
+    layer_idx: int = None,
 ):
     """
     Train enhanced BVH router to match OLMoE gate via knowledge distillation.
@@ -999,6 +1028,14 @@ def train_bvh_distillation(
             topk_ids = topk_ids.to(device, non_blocking=True)
             top1_labels = top1_labels.to(device, non_blocking=True)
 
+            # Apply expert permutation: remap gate targets to BVH tree positions
+            # perm[tree_pos] = expert_id, so inv_perm[expert_id] = tree_pos
+            if expert_perm is not None:
+                inv_perm = torch.argsort(expert_perm)
+                gate_logits_batch = gate_logits_batch[:, expert_perm]
+                topk_ids = inv_perm[topk_ids]
+                top1_labels = inv_perm[top1_labels]
+
             # Ensure FP32 base (AMP autocast handles mixed precision)
             hidden = hidden.float()
             gate_logits_batch = gate_logits_batch.float()
@@ -1089,6 +1126,11 @@ def train_bvh_distillation(
                 hidden = hidden.to(device, non_blocking=True)
                 topk_ids = topk_ids.to(device, non_blocking=True)
 
+                # Apply expert permutation to validation targets
+                if expert_perm is not None:
+                    inv_perm = torch.argsort(expert_perm)
+                    topk_ids = inv_perm[topk_ids]
+
                 with torch.amp.autocast("cuda", enabled=use_amp, dtype=amp_dtype):
                     expert_probs, expert_ids = router(hidden)
                 tk_acc, t1_acc = compute_topk_accuracy(expert_probs, topk_ids)
@@ -1119,7 +1161,10 @@ def train_bvh_distillation(
             best_topk_acc = val_topk_acc
             best_top1_acc = val_top1_acc
             is_mlp = isinstance(router, MLPBaselineRouter)
-            ckpt_name = "mlp_router_best.pt" if is_mlp else "bvh_router_best.pt"
+            if layer_idx is not None:
+                ckpt_name = f"mlp_router_L{layer_idx}_best.pt" if is_mlp else f"bvh_router_L{layer_idx}_best.pt"
+            else:
+                ckpt_name = "mlp_router_best.pt" if is_mlp else "bvh_router_best.pt"
             ckpt_path = os.path.join(save_dir, ckpt_name)
             torch.save({
                 "epoch": epoch + 1,
@@ -1139,6 +1184,7 @@ def train_bvh_distillation(
                     "spectral_mode": spectral_mode,
                     "spectral_dim": getattr(router, 'spectral_dim', 64),
                 },
+                "expert_perm": expert_perm.cpu().tolist() if expert_perm is not None else None,
             }, ckpt_path)
             print(f"  -> NEW BEST (top-8: {val_topk_acc*100:.1f}%, top-1: {val_top1_acc*100:.1f}%)")
 
@@ -1155,7 +1201,8 @@ def train_bvh_distillation(
     print("=" * 60)
     print(f"  Best top-8 overlap: {best_topk_acc*100:.1f}%")
     print(f"  Best top-1 accuracy: {best_top1_acc*100:.1f}%")
-    print(f"  Checkpoint: {save_dir}/bvh_router_best.pt")
+    ckpt_suffix = f"L{layer_idx}_best.pt" if layer_idx is not None else "best.pt"
+    print(f"  Checkpoint: {save_dir}/bvh_router_{ckpt_suffix}")
 
     baseline_topk = 8.0 / 64.0 * 100
     baseline_top1 = 1.0 / 64.0 * 100
@@ -1182,6 +1229,7 @@ def benchmark_routing(
     router: EnhancedBVHRouter,
     n_samples: int = 5000,
     device: str = "cuda",
+    expert_perm: torch.Tensor = None,
 ):
     """Compare BVH routing vs linear gate on expert output cosine similarity."""
     print("\n" + "=" * 60)
@@ -1207,6 +1255,11 @@ def benchmark_routing(
 
             # BVH routing
             bvh_probs, bvh_ids = router(h.float())
+            # Apply inverse permutation: tree positions -> expert IDs
+            if expert_perm is not None:
+                remapped = torch.zeros_like(bvh_probs)
+                remapped[:, expert_perm] = bvh_probs
+                bvh_probs = remapped
             bvh_topk = bvh_probs.topk(8, dim=-1)
             bvh_probs_norm = F.softmax(bvh_topk.values, dim=-1).to(dtype)
             bvh_out = olmoe_layer.forward_topk(h, bvh_probs_norm, bvh_topk.indices)
@@ -1284,6 +1337,9 @@ def main():
     parser.add_argument("--spectral-dim", type=int, default=64,
                         help="Spectral color dimensions (16/64/128/256). "
                              "Higher = better polysemy resolution, minimal cost")
+    parser.add_argument("--expert-perm", type=str, default=None,
+                        help="JSON file with per-layer expert permutation from "
+                             "co-activation analysis. Maps tree positions to expert IDs.")
     args = parser.parse_args()
 
     print("=" * 60)
@@ -1342,9 +1398,34 @@ def main():
             torch.cuda.empty_cache()
         print(f"\n  Freed OLMoE layer from memory (using pre-extracted real data)")
 
+    # Load expert permutation if provided
+    perm_tensor = None
+    if args.expert_perm:
+        import json as _json
+        with open(args.expert_perm) as f:
+            perm_data = _json.load(f)
+        # Support per-layer permutation: look for this layer's clusters
+        layer_key = str(args.layer)
+        if "per_layer_clusters" in perm_data and layer_key in perm_data["per_layer_clusters"]:
+            clusters = perm_data["per_layer_clusters"][layer_key]
+            perm_list = []
+            for c in clusters:
+                perm_list.extend(c["experts"])
+            # Pad with any missing experts
+            remaining = [e for e in range(64) if e not in perm_list]
+            perm_list.extend(remaining)
+            perm_tensor = torch.tensor(perm_list[:64], dtype=torch.long, device=args.device)
+            print(f"\n  [Perm] Loaded co-activation permutation for layer {args.layer}")
+            print(f"         Branch 0: {perm_list[:16]}")
+            print(f"         Branch 1: {perm_list[16:32]}")
+            print(f"         Branch 2: {perm_list[32:48]}")
+            print(f"         Branch 3: {perm_list[48:64]}")
+        else:
+            print(f"\n  [Perm] WARNING: No clusters found for layer {args.layer} in {args.expert_perm}")
+
     # Step 3: Train
     router, best_acc = train_bvh_distillation(
-        olmoe_layer=None,  # not needed when using real data
+        olmoe_layer=olmoe_layer,
         router=router,
         n_train=args.n_train,
         n_val=args.n_val,
@@ -1356,6 +1437,8 @@ def main():
         save_dir=args.save_dir,
         real_data_path=args.real_data,
         spectral_mode=args.spectral,
+        expert_perm=perm_tensor,
+        layer_idx=args.layer,
     )
 
     # Step 4: Benchmark (only if model is loaded)
@@ -1365,6 +1448,7 @@ def main():
             router=router,
             n_samples=5000,
             device=args.device,
+            expert_perm=perm_tensor,
         )
 
 

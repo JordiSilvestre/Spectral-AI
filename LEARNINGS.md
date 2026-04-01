@@ -4,6 +4,34 @@
 
 ---
 
+### [2026-04-01] Expert Permutation: BVH reorganizado por co-activacion
+
+**Archivos:** `python/olmoe_bvh_distill.py`, `python/olmoe_e2e_eval.py`
+
+**Contexto:** Tras descubrir que la co-activacion forma 4 clusters de ~16 expertos por capa,
+implementamos permutacion semantica: `perm[tree_pos] = expert_id` agrupa expertos co-activados
+en la misma rama BVH (4x16). Cada capa tiene su propia permutacion.
+
+**Implementacion:**
+- Training: `--expert-perm expert_deep_analysis.json` permuta targets
+- Inference: `inv_perm` aplicado a logits del BVH antes de top-k
+- Checkpoint guarda `expert_perm` para reproducibilidad
+
+**3 bugs corregidos:**
+1. `distillation_loss()` hacia `.log()` de raw logits negativos -> NaN. Fix: detectar probs vs logits.
+2. `benchmark_routing()` no aplicaba inv_perm -> accuracy artificial ~13%. Fix: remap antes de comparar.
+3. `olmoe_layer=None` hardcodeado en main() en vez de pasar la variable.
+
+**Resultados L3:**
+- Sintetico 20ep: 84.3% top-8, 76.5% top-1 -> PPL 7.54 (+5.5%)
+- Real data 30ep: 86.2% top-8, 83.6% top-1 -> PPL 7.55 (+5.6%)
+- Permutacion NO mejora PPL individual — ventaja es eficiencia de traversal para RT Cores
+
+**Conclusion:** Permutacion es para el hardware path (menos nodos BVH visitados), no para accuracy.
+Entrenando 16 capas con permutacion para evaluar impacto total en PPL.
+
+---
+
 ### [2026-04-01] Deep Expert Analysis: los 64 expertos de OLMoE NO especializan por tema
 
 **Archivos:** `python/analyze_experts.py`, `expert_catalog_exhaustive.json`, `expert_deep_analysis.json`
