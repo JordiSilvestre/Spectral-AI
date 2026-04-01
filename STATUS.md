@@ -35,7 +35,8 @@
 | Ternary decision | ✅ DESCARTADO para modelos actuales — usar FP16 (Tensor Cores 10x mas rapido) |
 | hybrid_residual mode | ✅ PPL 7.17 (+0.4%) — BVH selecciona, gate pesa. Brecha cerrada. |
 | benchmark_scaling.py | ✅ CREADO — O(log N) vs O(N) curva para N=64..4096 expertos |
-| FASE F: BVH accuracy | ⏳ Pendiente — Retrain para 95%->99% accuracy (cone tracing, data aug) |
+| retrofit_bvh.py | ✅ CREADO — Universal: MoE (replace gate) + Dense (sparsity dinamica) |
+| FASE F: BVH accuracy | 🔄 EN CURSO — Retrain 16 capas con 200 epochs + topk_loss |
 | FASE H: Patentes | ⏳ Pendiente — Filing USPTO, tests completos para claims |
 | FASE I: Paper | ⏳ Pendiente — Resultados publicables (PPL 7.42, benchmarks CUDA) |
 
@@ -118,6 +119,7 @@
 | `python/benchmark.py` | OptiX vs cuBLAS (requiere batch_runner.exe) | Requiere C++ |
 | `python/benchmark_e2e.py` | Router + Expert types (pre-extension) | Antiguo |
 | `python/benchmark_scaling.py` | BVH O(log N) vs Linear Gate O(N) scaling curve | Activo |
+| `python/retrofit_bvh.py` | Universal BVH retrofit: any HF model (MoE + Dense) | NUEVO |
 | `python/scaling_inception.py` | v4.0 benchmark OptiX vs cuBLAS vs FlashAttention | Analitico |
 
 ### Python — UTILIDADES Y EXPERIMENTAL
