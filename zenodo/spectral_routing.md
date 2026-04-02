@@ -6,7 +6,6 @@ Independent Researcher
 **Date:** 2026-04-02
 **DOI:** [To be assigned by Zenodo]
 **License:** CC-BY 4.0
-**Related patent:** JS-2026-003
 
 ---
 
@@ -137,17 +136,15 @@ The 7 failure cases (of 442) concentrate in rare domain-crossing contexts where 
 
 The overhead adds k x log(N) multiply-accumulate operations per step (k=256, log N ~ 17 for 100K tokens). Even at full multi-band cost, overhead is negligible relative to the O(N^2) -> O(N log N) reduction from BVH traversal itself.
 
-### 3.4 Per-Word Analysis
+### 3.4 Failure Analysis
 
-Best resolved (100% accuracy): bank, bat, bow, bug, cell, chip, crane, current, dart, draft, fan, ...
-
-Worst resolved: crane (33%), train (50%), press (75%), stream (75%), wave (75%). These are words where all 3 contexts share similar syntactic roles, making spectral differentiation harder.
+The 7 failure cases (of 442) concentrate in rare domain-crossing contexts where the spectral color vector lacks sufficient discriminative features (e.g., "set" across mathematics and music). These are words where all 3 contexts share similar syntactic roles, making spectral differentiation harder.
 
 ---
 
 ## 4. Connection to SpectralAI
 
-Spectral Routing operates on top of the BVH traversal infrastructure described in the companion paper (SpectralAI: O(N log N) Hardware-Accelerated Expert Routing, Patent JS-2026-001/002). Key complementary results:
+Spectral Routing operates on top of the BVH traversal infrastructure described in the companion paper (SpectralAI: O(N log N) Hardware-Accelerated Expert Routing). Key complementary results:
 
 | Metric | Value |
 |---|---|

@@ -6,7 +6,6 @@ Independent Researcher
 **Date:** 2026-04-02
 **DOI:** [To be assigned by Zenodo]
 **License:** CC-BY 4.0
-**Related patents:** JS-2026-001, JS-2026-002
 
 ---
 
@@ -24,9 +23,9 @@ We observe that finding which tokens are "relevant" to a query is analogous to f
 
 **Contributions:**
 
-1. **RT Attention (Patent JS-2026-001):** A hierarchical BVH router with 3 levels (branching factor 4) that replaces the linear gate in MoE models. 89--98% top-8 accuracy (mean 95.9%), 113--218x speedup, 731x VRAM reduction. Includes confidence-gated routing for adaptive speed-accuracy tradeoff.
+1. **RT Attention:** A hierarchical BVH router with 3 levels (branching factor 4) that replaces the linear gate in MoE models. 89--98% top-8 accuracy (mean 95.9%), 113--218x speedup, 731x VRAM reduction. Includes confidence-gated routing for adaptive speed-accuracy tradeoff.
 
-2. **Inception Engine (Patent JS-2026-002):** 4-level nested IAS that achieves 12-dimensional semantic representation using only 3D hardware. Each level applies a learned affine transformation ("dimensional portal"). Capacity: ~1 billion semantic entities. PPL within 1.8% of GPT-2 baseline.
+2. **Inception Engine:** 4-level nested IAS that achieves 12-dimensional semantic representation using only 3D hardware. Each level applies a learned affine transformation ("dimensional portal"). Capacity: ~1 billion semantic entities. PPL within 1.8% of GPT-2 baseline.
 
 ---
 
@@ -119,7 +118,7 @@ In-shader calibration via `optixCoopVecMatMul` eliminates the PyTorch round-trip
 | L5 | 96.14% | L13 | 96.97% |
 | L6 | 96.40% | L14 | 97.47% |
 | L7 | 96.62% | L15 | 97.58% |
-| **Mean** | **95.94%** | | |
+| **Mean** | **95.95%** | | |
 
 15/16 layers exceed 93% top-8 accuracy. L15 best (97.58%), L8 most challenging (89.27%).
 
@@ -248,7 +247,7 @@ python3 eval_hellaswag.py --model-dir /path/to/olmoe-1b-7b --max-samples 2000
 python3 sweep_prefilter.py --model-dir /path/to/olmoe-1b-7b
 ```
 
-239 automated tests, including 30 patent claim verification tests.
+223 automated tests.
 
 ---
 
