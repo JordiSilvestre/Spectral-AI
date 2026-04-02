@@ -27,8 +27,8 @@
 | RT Training Bridge | ✅ StraightThroughRT (STE): RT hard forward + soft backward |
 | OptiX Training Ext | ✅ pybind11 extension + JIT build + test script + integration wrapper |
 | Inception v4.0 opt | ✅ PPL 185.4 — gap 1.75% vs GPT-2 (objetivo <=2.1% CUMPLIDO) |
-| Patent claims certificados | ✅ 9/10 cumplidos, 3 superados (C4, C5, C9) |
-| Patentes | 3 provisionales redactadas, Patent 3 reforzada con Claims 21-33 |
+| Claims certificados | ✅ 10/10 cumplidos, 5 superados (C4, C5, C8, C9, C10) |
+| Publicaciones Zenodo | 3 preprints verificados y listos para upload |
 | FASE D: Retrain con topk_loss | ✅ COMPLETADA — 16/16 capas, L11=97.2% top-8 |
 | FASE E: Pure mode PPL | ✅ CERRADA — Best: 3 capas PPL 7.42 (+3.9%), 16 capas PPL 8.42 (+17.8%) |
 | Multi-ray ensemble | ✅ Implementado, NO mejora (7.43 vs 7.42 sin multi-ray) |
@@ -43,7 +43,7 @@
 | Expert Analysis (deep) | ✅ 30 categorias + token-level + co-activacion 16 capas. Expertos = sintacticos, no semanticos |
 | Expert Permutation (L3) | ✅ 86.2% top-8, PPL 7.55 (+5.6%) — permutacion no mejora PPL, mejora traversal RT |
 | Expert Permutation (16 capas) | ✅ PPL 42.25 (30ep insuficiente). Perm es para RT Cores, no para PPL |
-| Confidence-Gated Routing | ✅ BREAKTHROUGH — PPL 7.88-8.37 con 48-69% BVH puro. Threshold tunable. Claim de patente nuevo |
+| Confidence-Gated Routing | ✅ BREAKTHROUGH — PPL 7.88-8.37 con 48-69% BVH puro. Threshold tunable |
 | Selectivity-Modulated Routing | ✅ PROBADO: v1 multiplicativo PPL 9.75, v2 aditivo PPL 9.14. No mejora — cuello de botella es accuracy |
 | BVH Radios aprendidos | ✅ ANALIZADO: todos ~1.0 (rango 0.96-1.08). Geometria no se diferencia. MLPs dominan routing |
 | E2E PPL (16 capas FASE D/F) | ✅ Pure=9.11 (+27.4%), Hybrid=7.66 (+7.2%), ConfGate@0.90=8.37 (+17.1%, 69%BVH) |
@@ -51,9 +51,9 @@
 | E2E PPL (3 capas render_eq) | ✅ PPL 7.33 (+2.5%) — logit × geometry, puro sin gate |
 | E2E PPL (6 capas render_eq) | ✅ PPL 7.51 (+5.0%) — 6 capas FASE F (96%+), ~0.03 PPL/capa |
 | E2E PPL (16 capas render_eq)| PPL 9.17 (+28%) — degradado por L1 (93.4%) y capas FASE D |
-| Patent Claims Tests | ✅ 30/30 pasando — Verifica consistencia datos vs claims en 3 patentes |
-| Patent Audit | ✅ 6 contradicciones corregidas, prior art verificado, reduction to practice OK |
-| FASE H: Patentes | ✅ LISTAS para USPTO filing — 3 provisionales ($350×3 = $1,050) |
+| Claims Tests | ✅ 30/30 pasando — Verifica consistencia datos vs claims |
+| Data Audit | ✅ 6 contradicciones corregidas, prior art verificado |
+| FASE H: Publicacion | ✅ 3 preprints Zenodo escritos y verificados |
 | FASE I: Paper | ✅ ESCRITO — paper/spectral_ai_zero_matrix.md (516 líneas, 9 secciones, 16 refs) |
 | Paper Review | ✅ 10 discrepancias encontradas y corregidas por code-reviewer |
 | Reproducibility Scripts | ✅ integration_test_v2.py + eval_polysemy.py: 98.4% polysemy (80 words, 442 pairs) |
@@ -170,10 +170,9 @@ Analisis exhaustivo de los 64 expertos de OLMoE revela:
 - Prediccion: si L1 sube a 96%, PPL 16 capas deberia bajar de 9.17 a ~8.0-8.5
 - Con BVH semantico: potencialmente mejor
 
-**4. FASE H: Patentes**
-- 3 provisionales ya redactadas
-- Falta: tests completos para todos los claims, filing USPTO ($1,050)
-- Los 11 weight modes son patentables (cross-disciplinary routing)
+**4. FASE H: Publicacion Academica**
+- 3 preprints Zenodo escritos y verificados
+- Pendiente: upload Zenodo, endorsement arXiv, submit NeurIPS/ICLR
 - NUEVO: "Expert specialization is syntactic, not semantic" -- publicable
 
 **5. FASE I: Paper**
@@ -356,9 +355,9 @@ Analisis exhaustivo de los 64 expertos de OLMoE revela:
 | `docs/MEMORY_BREAKTHROUGH.md` | Analisis VRAM y cache | Actual |
 | `docs/BENCHMARK_TEORICO.md` | Benchmarks vs estado del arte | Actual |
 | `python/README_TRAINING.md` | Guia de training | Actual |
-| `patents/patent_01_rt_attention.md` | Patente 1: RT Core Attention | Lista |
-| `patents/patent_02_inception_engine.md` | Patente 2: Inception Engine | Lista |
-| `patents/patent_03_spectral_routing.md` | Patente 3: Spectral/Snell (reforzada) | Lista |
+| `patents/patent_01_rt_attention.md` | Technical design: RT Core Attention | Referencia |
+| `patents/patent_02_inception_engine.md` | Technical design: Inception Engine | Referencia |
+| `patents/patent_03_spectral_routing.md` | Technical design: Spectral/Snell | Referencia |
 
 ---
 
@@ -414,7 +413,7 @@ Analisis exhaustivo de los 64 expertos de OLMoE revela:
 - [x] L1 reentrenada con --spectral: 79.3% → 81.9% top-8 (+2.6pp), beta=10.0
 - [x] L11 reentrenada con --spectral: 81.8% → 93.3% top-8 (+11.5pp!)
 - [x] PPL actual (16/16 sin topk_loss): ~8.38
-- [x] Patent claims certificados: 9/10, 3 superados (2026-03-30)
+- [x] Claims certificados: 10/10, 5 superados (2026-04-02)
 - [x] `topk_matching_loss` integrada en training loop (weight=0.3)
 - [x] `FORCE_RETRAIN=true` para re-entrenar capas ya spectral
 - [🔄] FASE D: Retrain TODAS 16 capas con spectral + topk_loss (EN CURSO)
@@ -536,9 +535,9 @@ bash scripts/train_remaining_layers.sh   # FORCE_RETRAIN=true, weight_topk=0.3
 - Benchmark: latencia (target 51.9 tok/s), throughput, VRAM (target 7.86 MB active)
 - Comparativa con OLMoE original (PPL target: 6.16, +0.8%)
 
-### PASO 7: Patentes
-- Review final de las 3 provisionales contra codigo real
-- Buscar abogado de patentes
+### PASO 7: Publicacion
+- Upload Zenodo (3 preprints con DOI)
+- Endorsement arXiv + submit conferencia
 - Filing ($1,050 total para las 3)
 
 ---
@@ -560,9 +559,9 @@ bash scripts/train_remaining_layers.sh   # FORCE_RETRAIN=true, weight_topk=0.3
 - [ ] Benchmark: latencia, throughput, VRAM
 - [ ] Comparativa con OLMoE original
 
-### FASE 6: Patentes
-- [ ] Review final de las 3 provisionales
-- [ ] Buscar abogado de patentes
+### FASE 6: Publicacion
+- [x] 3 preprints Zenodo verificados
+- [ ] Upload Zenodo + arXiv endorsement
 - [ ] Filing ($1,050 total para las 3)
 
 ### FASE 7: Escalado (futuro)

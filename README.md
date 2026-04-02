@@ -101,11 +101,11 @@ Input tokens
 
 Three key innovations:
 
-1. **RT Core Attention (Patent JS-2026-001):** BVH traversal replaces dense MatMul. O(log N) instead of O(N^2). OptiX 9.0 Cooperative Vectors enable in-shader calibration via Tensor Cores.
+1. **RT Core Attention:** BVH traversal replaces dense MatMul. O(log N) instead of O(N^2). OptiX 9.0 Cooperative Vectors enable in-shader calibration via Tensor Cores.
 
-2. **Inception Engine (Patent JS-2026-002):** 4 nested IAS levels encode 12 semantic dimensions using only 3D hardware. Each level is a "dimensional portal" that resets coordinates.
+2. **Inception Engine:** 4 nested IAS levels encode 12 semantic dimensions using only 3D hardware. Each level is a "dimensional portal" that resets coordinates.
 
-3. **Spectral Routing (Patent JS-2026-003):** Rays carry a "color" (context vector). Nodes act as prisms (Snell's law) -- the same node routes differently based on context, resolving polysemy without duplicating parameters.
+3. **Spectral Routing:** Rays carry a "color" (context vector). Nodes act as prisms (Snell's law) -- the same node routes differently based on context, resolving polysemy without duplicating parameters.
 
 ---
 
@@ -142,8 +142,8 @@ spectral-ai/
 │
 ├── include/               # C++ public headers
 ├── src/                   # C++ implementations
-├── tests/                 # 239 automated tests
-├── patents/               # 3 provisional patent drafts + 17 figures
+├── tests/                 # 223 automated tests
+├── patents/               # 3 technical design documents + 17 figures
 ├── paper/                 # Academic paper (arXiv submission)
 ├── figures/               # Publication figures
 ├── scripts/               # Automation scripts
@@ -204,21 +204,21 @@ Release\rt_router_benchmark.exe ".."
 
 ---
 
-## Patents
+## Publications
 
-Three provisional patent applications (2026):
+Three preprints available on Zenodo:
 
-| Docket | Title | Innovation |
-|---|---|---|
-| JS-2026-001 | RT Core O(log N) Attention | BVH replaces MatMul in attention + in-shader calibration via Cooperative Vectors |
-| JS-2026-002 | Nested IAS for 12D | 4 levels of 3D = 12 dimensions via OptiX instancing |
-| JS-2026-003 | Spectral Routing + Snell | Context-dependent routing without parameter duplication |
+| Title | Scope |
+|---|---|
+| SpectralAI: O(N log N) Hardware-Accelerated Expert Routing | RT Core attention + Inception Engine |
+| Spectral Routing: Context-Dependent Expert Selection | Snell's law, polysemy, TIR |
+| Expert Specialization in MoE Language Models | Syntactic roles, U-shaped selectivity |
 
 ---
 
 ## License
 
-Proprietary. Patent pending.
+CC-BY 4.0.
 
 ## Author
 

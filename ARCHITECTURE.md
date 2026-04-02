@@ -72,8 +72,8 @@ spectral-ai/
 │   ├── semantic_bvh.cpp        # BVH construction and updates
 │   └── alpha_bsh.cpp           # AlphaBSH orchestration Phase A/B
 │
-├── tests/                  # 239 automated tests
-├── patents/                # 3 provisional patent drafts (JS-2026-001/002/003)
+├── tests/                  # 223 automated tests
+├── patents/                # 3 technical design documents
 │   └── figures/                # 17 patent figures + FIGURE_SPECS.md
 ├── paper/                  # Academic paper (arXiv submission)
 ├── figures/                # Publication figures
@@ -159,18 +159,18 @@ Where:
 
 ## Three Key Innovations
 
-### 1. RT Core Attention (Patent JS-2026-001)
+### 1. RT Core Attention
 
 BVH traversal replaces dense MatMul. O(log N) instead of O(N^2). OptiX 9.0 Cooperative Vectors enable in-shader calibration via Tensor Cores.
 
-### 2. Inception Engine (Patent JS-2026-002)
+### 2. Inception Engine
 
 4 nested IAS (Instance Acceleration Structure) levels encode 12 semantic dimensions using only 3D hardware. Each level is a "dimensional portal" that resets coordinates:
 - Level 1: Domains (Science, Code, Humanities, General)
 - Level 2: Subdomains (4 per domain = 16)
 - Level 3: Concepts (4 per subdomain = 64 experts)
 
-### 3. Spectral Routing (Patent JS-2026-003)
+### 3. Spectral Routing
 
 Rays carry a "color" (context vector `f in R^64`). Nodes act as prisms via Snell's law — the same node routes differently based on context, resolving polysemy without duplicating parameters.
 
