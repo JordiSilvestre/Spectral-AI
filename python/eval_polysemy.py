@@ -15,7 +15,7 @@ Usage:
     # Compare BVH vs linear gate
     python eval_polysemy.py --model-dir /path/to/olmoe-1b-7b --compare-gate
 
-Copyright (c) 2026 SpectralAI Studio
+Copyright (c) 2026 Jordi Silvestre Lopez
 """
 
 import argparse

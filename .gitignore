@@ -88,6 +88,7 @@ wikitext2_*.npy
 
 # Checkpoint backups and experiments
 checkpoints/olmoe_distill_perm/
+checkpoints/olmoe_distill_layer3_dim256/
 checkpoints/ternary/
 checkpoints/ternary_1.5b/
 checkpoints/inception_best.pt

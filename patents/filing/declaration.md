@@ -13,13 +13,13 @@ I, the undersigned inventor, hereby declare that:
 
 ### Identification of Application
 
-**For Patent 1 (LBS-2026-001):**
+**For Patent 1 (JS-2026-001):**
 - Title of Invention: "System and Method for Computing Neural Network Attention Using Hardware-Accelerated Bounding Volume Hierarchy Traversal on Ray Tracing Cores"
 
-**For Patent 2 (LBS-2026-002):**
+**For Patent 2 (JS-2026-002):**
 - Title of Invention: "Nested Instance Acceleration Structure for Multi-Dimensional Semantic Representation Using Three-Dimensional Ray Tracing Hardware"
 
-**For Patent 3 (LBS-2026-003):**
+**For Patent 3 (JS-2026-003):**
 - Title of Invention: "Context-Dependent Routing in Neural Networks Using Spectral Encoding and Optical Refraction Principles"
 
 ### Inventor Information

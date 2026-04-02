@@ -18,7 +18,7 @@
  * After warmup (2 tokens), all 3 engines run simultaneously.
  * Steady-state latency ≈ max(route, prep, expert) instead of sum.
  *
- * Copyright (c) 2026 SpectralAI Studio — Apache 2.0
+ * Copyright (c) 2026 Jordi Silvestre Lopez — Apache 2.0
  */
 
 #include <cuda_runtime.h>

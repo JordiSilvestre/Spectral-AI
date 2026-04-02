@@ -12,7 +12,7 @@ Results are formatted for paper/patent documentation.
 Usage:
     python benchmark_cuda_pipeline.py [--warmup 50] [--iters 500]
 
-Copyright (c) 2026 SpectralAI Studio — Apache 2.0
+Copyright (c) 2026 Jordi Silvestre Lopez — Apache 2.0
 """
 
 import sys

@@ -1,6 +1,6 @@
 # NON-PROVISIONAL PATENT APPLICATION
 
-## LBS-2026-002: System and Method for Multi-Dimensional Semantic Representation Using Nested Instance Acceleration Structures in Ray Tracing Hardware
+## JS-2026-002: System and Method for Multi-Dimensional Semantic Representation Using Nested Instance Acceleration Structures in Ray Tracing Hardware
 
 ---
 
@@ -15,8 +15,8 @@
 ## CROSS-REFERENCE TO RELATED APPLICATIONS
 
 This application is related to co-pending provisional applications:
-- LBS-2026-001: "System and Method for Attention Mechanism in Neural Language Models Using Hardware-Accelerated Ray Tracing with Bounding Volume Hierarchy Traversal" (filed concurrently)
-- LBS-2026-003: "System and Method for Context-Dependent Routing in Neural Networks Using Spectral Encoding and Optical Refraction Principles" (filed concurrently)
+- JS-2026-001: "System and Method for Attention Mechanism in Neural Language Models Using Hardware-Accelerated Ray Tracing with Bounding Volume Hierarchy Traversal" (filed concurrently)
+- JS-2026-003: "System and Method for Context-Dependent Routing in Neural Networks Using Spectral Encoding and Optical Refraction Principles" (filed concurrently)
 
 The disclosures of the above-identified applications are incorporated herein by reference in their entireties.
 
@@ -36,7 +36,7 @@ The present invention relates to the field of artificial intelligence and neural
 
 Modern GPU ray tracing hardware (NVIDIA RT Cores, AMD Ray Accelerators) operates exclusively in three-dimensional space. All ray-geometry intersection tests --- including ray-triangle, ray-AABB (axis-aligned bounding box), and ray-sphere tests --- are performed in R^3. The hardware has no native support for operations in higher-dimensional spaces.
 
-Neural language models, however, operate in high-dimensional embedding spaces. BERT-base uses 768 dimensions, GPT-2 uses 1024 or 1600 dimensions, and GPT-4-scale models use 4096 dimensions or more. Projecting from these high-dimensional spaces to 3D (as described in related application LBS-2026-001) necessarily loses information. Specifically, a PCA projection from D=4096 to 3 dimensions captures only the top 3 principal components, discarding information from the remaining 4093 dimensions.
+Neural language models, however, operate in high-dimensional embedding spaces. BERT-base uses 768 dimensions, GPT-2 uses 1024 or 1600 dimensions, and GPT-4-scale models use 4096 dimensions or more. Projecting from these high-dimensional spaces to 3D (as described in related application JS-2026-001) necessarily loses information. Specifically, a PCA projection from D=4096 to 3 dimensions captures only the top 3 principal components, discarding information from the remaining 4093 dimensions.
 
 There exists a need for a method to leverage 3D ray tracing hardware for operations in higher-dimensional semantic spaces without modifying the hardware.
 
@@ -229,7 +229,7 @@ The AffinePortal at each level transition encodes the learned mapping between co
 D_effective = num_levels x 3 = 4 x 3 = 12 dimensions
 ```
 
-This is a significant improvement over a flat 3D BVH (related application LBS-2026-001), which operates in only 3 effective dimensions.
+This is a significant improvement over a flat 3D BVH (related application JS-2026-001), which operates in only 3 effective dimensions.
 
 **3.3 Construction of Portals:**
 

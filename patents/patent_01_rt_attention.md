@@ -1,6 +1,6 @@
 # NON-PROVISIONAL PATENT APPLICATION
 
-## LBS-2026-001: System and Method for Attention Mechanism in Neural Language Models Using Hardware-Accelerated Ray Tracing with Bounding Volume Hierarchy Traversal
+## JS-2026-001: System and Method for Attention Mechanism in Neural Language Models Using Hardware-Accelerated Ray Tracing with Bounding Volume Hierarchy Traversal
 
 ---
 
@@ -15,8 +15,8 @@
 ## CROSS-REFERENCE TO RELATED APPLICATIONS
 
 This application is related to co-pending provisional applications:
-- LBS-2026-002: "System and Method for Multi-Dimensional Semantic Representation Using Nested Instance Acceleration Structures in Ray Tracing Hardware" (filed concurrently)
-- LBS-2026-003: "System and Method for Context-Dependent Routing in Neural Networks Using Spectral Encoding and Optical Refraction Principles" (filed concurrently)
+- JS-2026-002: "System and Method for Multi-Dimensional Semantic Representation Using Nested Instance Acceleration Structures in Ray Tracing Hardware" (filed concurrently)
+- JS-2026-003: "System and Method for Context-Dependent Routing in Neural Networks Using Spectral Encoding and Optical Refraction Principles" (filed concurrently)
 
 The disclosures of the above-identified applications are incorporated herein by reference in their entireties.
 

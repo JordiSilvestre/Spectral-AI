@@ -4,7 +4,7 @@ test_enhanced_bvh_router.py -- Comprehensive tests for EnhancedBVHRouter
 Tests the 3-level hierarchical BVH router (4x4x4 = 64 experts) from
 python/olmoe_bvh_distill.py. All tests are CPU-only, no GPU required.
 
-Copyright (c) 2026 SpectralAI Studio -- Apache 2.0
+Copyright (c) 2026 Jordi Silvestre Lopez -- Apache 2.0
 """
 
 import sys

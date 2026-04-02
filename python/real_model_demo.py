@@ -17,7 +17,7 @@ Pipeline:
 Results on RTX 5070 Ti with Qwen2.5-Coder-1.5B:
   - 51.9 tok/s, 375x less active VRAM, both CUDA kernels active.
 
-Copyright (c) 2026 SpectralAI Studio -- Apache 2.0
+Copyright (c) 2026 Jordi Silvestre Lopez -- Apache 2.0
 """
 
 import argparse

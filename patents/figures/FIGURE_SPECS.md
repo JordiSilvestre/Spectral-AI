@@ -17,7 +17,7 @@
 
 ---
 
-## PATENT 1: RT Attention (LBS-2026-001)
+## PATENT 1: RT Attention (JS-2026-001)
 
 ### FIG. 1 — System Architecture Pipeline
 
@@ -209,7 +209,7 @@ Input Token Embedding (1536-dim)
 
 ---
 
-## PATENT 2: Inception Engine (LBS-2026-002)
+## PATENT 2: Inception Engine (JS-2026-002)
 
 ### FIG. 1 — 4-Level Nested IAS Hierarchy
 
@@ -362,7 +362,7 @@ OptixTraversableHandle (root) (710)
 
 ---
 
-## PATENT 3: Spectral Routing (LBS-2026-003)
+## PATENT 3: Spectral Routing (JS-2026-003)
 
 ### FIG. 1 — Spectral Encoding Pipeline
 

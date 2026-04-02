@@ -20,7 +20,7 @@ Usage:
     OPTIX_DIR="C:/ProgramData/NVIDIA Corporation/OptiX SDK 9.1.0" \
         python cuda/v5/build_optix_ext.py
 
-Copyright (c) 2026 SpectralAI Studio -- Apache 2.0
+Copyright (c) 2026 Jordi Silvestre Lopez -- Apache 2.0
 """
 
 import os

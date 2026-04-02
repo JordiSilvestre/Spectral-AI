@@ -21,7 +21,7 @@ Usage:
     # Phase 1: Distill from Mixtral gate (future)
     python train_router.py --model mistralai/Mixtral-8x7B-v0.1 --distill
 
-Copyright (c) 2026 SpectralAI Studio — Apache 2.0
+Copyright (c) 2026 Jordi Silvestre Lopez — Apache 2.0
 """
 
 import argparse

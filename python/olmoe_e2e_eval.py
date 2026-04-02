@@ -23,7 +23,7 @@ Usage:
     # Identity test (diagnostic)
     python olmoe_e2e_eval.py --model-dir /path/to/olmoe-1b-7b --identity-test
 
-Copyright (c) 2026 SpectralAI Studio -- Apache 2.0
+Copyright (c) 2026 Jordi Silvestre Lopez -- Apache 2.0
 """
 
 import argparse

@@ -13,7 +13,7 @@ Usage:
     else:
         expert = TernaryExpertModule(ternary_expert_data, output_proj)  # fallback
 
-Copyright (c) 2026 SpectralAI Studio — Apache 2.0
+Copyright (c) 2026 Jordi Silvestre Lopez — Apache 2.0
 """
 
 import numpy as np

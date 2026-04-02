@@ -1,6 +1,6 @@
 # NON-PROVISIONAL PATENT APPLICATION
 
-## LBS-2026-003: System and Method for Context-Dependent Routing in Neural Networks Using Spectral Encoding and Optical Refraction Principles
+## JS-2026-003: System and Method for Context-Dependent Routing in Neural Networks Using Spectral Encoding and Optical Refraction Principles
 
 ---
 
@@ -15,10 +15,10 @@
 ## CROSS-REFERENCE TO RELATED APPLICATIONS
 
 This application is related to co-pending provisional applications:
-- LBS-2026-001: "System and Method for Attention Mechanism in Neural Language Models Using Hardware-Accelerated Ray Tracing with Bounding Volume Hierarchy Traversal" (filed concurrently)
-- LBS-2026-002: "System and Method for Multi-Dimensional Semantic Representation Using Nested Instance Acceleration Structures in Ray Tracing Hardware" (filed concurrently)
+- JS-2026-001: "System and Method for Attention Mechanism in Neural Language Models Using Hardware-Accelerated Ray Tracing with Bounding Volume Hierarchy Traversal" (filed concurrently)
+- JS-2026-002: "System and Method for Multi-Dimensional Semantic Representation Using Nested Instance Acceleration Structures in Ray Tracing Hardware" (filed concurrently)
 
-The disclosures of the above-identified applications are incorporated herein by reference in their entireties. In particular, the BVH traversal mechanism of LBS-2026-001 and the nested IAS hierarchy of LBS-2026-002 provide the underlying geometric framework upon which the spectral routing mechanism of the present invention operates.
+The disclosures of the above-identified applications are incorporated herein by reference in their entireties. In particular, the BVH traversal mechanism of JS-2026-001 and the nested IAS hierarchy of JS-2026-002 provide the underlying geometric framework upon which the spectral routing mechanism of the present invention operates.
 
 ---
 
@@ -358,7 +358,7 @@ The wormhole decision is based on the same spectral color, ensuring that the jum
 
 **Duplication vs. Wormhole Decision:**
 
-The system uses the DuplScore formula (described in related application LBS-2026-002) to decide between duplicating a node and creating a wormhole:
+The system uses the DuplScore formula (described in related application JS-2026-002) to decide between duplicating a node and creating a wormhole:
 
 ```
 DuplScore(C) = (sum f(C,s) * R(C,s)) * exp(-gamma * D(S_c)) - delta * (|S_c| - 1) * size(C)
@@ -663,7 +663,7 @@ wherein the combination of (c) and (d) achieves O(N log N) + O(M^2) total comple
 
 **Claim 17.** The system of Claim 16, wherein the selective computation module of (d) performs lazy loading of matrix blocks from host memory or storage to GPU memory on demand, loading only the matrix block selected by the refraction angle.
 
-**Claim 18.** The system of Claim 16, wherein the prismatic BVH traversal of (c) operates within the nested IAS hierarchy described in related application LBS-2026-002, with spectral refraction computed at each level of the 4-level hierarchy.
+**Claim 18.** The system of Claim 16, wherein the prismatic BVH traversal of (c) operates within the nested IAS hierarchy described in related application JS-2026-002, with spectral refraction computed at each level of the 4-level hierarchy.
 
 **Claim 19.** The system of Claim 16, further comprising an energy decay mechanism wherein the ray's energy decreases exponentially with traversal distance:
 E(d) = E_0 * exp(-lambda * d)
@@ -823,7 +823,7 @@ whereby the entire spectral routing pipeline (BVH traversal via RT Cores + spect
 
 ## ABSTRACT
 
-A system and method for context-dependent routing in neural language models using spectral encoding and optical refraction principles. Each ray traversing a semantic hierarchy carries a "spectral color" --- a k-dimensional vector (k=256) encoding the conversational context, computed from the context history via a learned spectral encoding matrix. Each node in the hierarchy acts as an optical prism with a learned dispersion weight vector that determines a context-dependent refractive index: n = n_base + sigmoid(dot(W_dispersion, f)). Snell's law of refraction computes the routing angle, which selects a specialized matrix block from among up to 8 candidates per node. The same geometric node routes to different expert sub-networks depending on context, resolving polysemy without weight duplication. Three advanced mechanisms --- chromatic aberration (multi-band spectral decomposition), total internal reflection (discontinuous hard routing boundaries), and phase-coherent multi-ray interference (ensemble-like confidence estimation) --- collectively achieve 98.4% polysemy resolution accuracy (80 polysemous words, 442 context pairs) with less than 0.12% computational overhead. All spectral parameters (W_spectral, W_dispersion, refractive indices, angle thresholds) are jointly optimized end-to-end with the base language model. The system integrates with the BVH traversal (LBS-2026-001) and nested IAS hierarchy (LBS-2026-002) to provide a complete O(N log N) inference pipeline on consumer GPU hardware. The routing principles are applicable to any hierarchical routing system where context-dependent node-level decisions select among specialized sub-networks, with the spectral-optical formulation being one preferred embodiment.
+A system and method for context-dependent routing in neural language models using spectral encoding and optical refraction principles. Each ray traversing a semantic hierarchy carries a "spectral color" --- a k-dimensional vector (k=256) encoding the conversational context, computed from the context history via a learned spectral encoding matrix. Each node in the hierarchy acts as an optical prism with a learned dispersion weight vector that determines a context-dependent refractive index: n = n_base + sigmoid(dot(W_dispersion, f)). Snell's law of refraction computes the routing angle, which selects a specialized matrix block from among up to 8 candidates per node. The same geometric node routes to different expert sub-networks depending on context, resolving polysemy without weight duplication. Three advanced mechanisms --- chromatic aberration (multi-band spectral decomposition), total internal reflection (discontinuous hard routing boundaries), and phase-coherent multi-ray interference (ensemble-like confidence estimation) --- collectively achieve 98.4% polysemy resolution accuracy (80 polysemous words, 442 context pairs) with less than 0.12% computational overhead. All spectral parameters (W_spectral, W_dispersion, refractive indices, angle thresholds) are jointly optimized end-to-end with the base language model. The system integrates with the BVH traversal (JS-2026-001) and nested IAS hierarchy (JS-2026-002) to provide a complete O(N log N) inference pipeline on consumer GPU hardware. The routing principles are applicable to any hierarchical routing system where context-dependent node-level decisions select among specialized sub-networks, with the spectral-optical formulation being one preferred embodiment.
 
 ---
 

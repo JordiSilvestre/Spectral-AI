@@ -152,7 +152,7 @@ def demo_patent_1(has_gpu: bool) -> None:
     """Demonstrate BVH routing speedup and VRAM reduction."""
     print(_section(
         "PHASE 1: RT-Accelerated BVH Routing",
-        "Patent LBS-2026-001 — O(N log N) spatial attention via BVH traversal",
+        "Patent JS-2026-001 — O(N log N) spatial attention via BVH traversal",
     ))
 
     print(f"\n  {BOLD}The Problem:{RESET}")
@@ -246,7 +246,7 @@ def demo_patent_2() -> None:
     """Demonstrate nested IAS hierarchy and dimensional expansion."""
     print(_section(
         "PHASE 2: Inception Engine — Nested Semantic Hierarchy",
-        "Patent LBS-2026-002 — 12D semantic space via 4-level nested traversal",
+        "Patent JS-2026-002 — 12D semantic space via 4-level nested traversal",
     ))
 
     print(f"\n  {BOLD}The Innovation:{RESET}")
@@ -287,7 +287,7 @@ def demo_patent_3() -> None:
     """Demonstrate context-dependent routing via spectral refraction."""
     print(_section(
         "PHASE 3: Spectral Routing — Context-Dependent Expert Selection",
-        "Patent LBS-2026-003 — Snell's law refraction for polysemy resolution",
+        "Patent JS-2026-003 — Snell's law refraction for polysemy resolution",
     ))
 
     print(f"\n  {BOLD}The Problem:{RESET}")

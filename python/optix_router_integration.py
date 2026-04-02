@@ -15,7 +15,7 @@ Usage:
     # Mode 2: Train one layer with OptiX+STE
     python python/optix_router_integration.py --mode train --layer 8 --device cuda
 
-Copyright (c) 2026 SpectralAI Studio -- Apache 2.0
+Copyright (c) 2026 Jordi Silvestre Lopez -- Apache 2.0
 """
 
 import argparse

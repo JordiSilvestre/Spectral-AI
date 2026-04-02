@@ -16,7 +16,7 @@ Usage:
     python sweep_prefilter.py --model-dir /path/to/olmoe-1b-7b \
         --max-tokens 10000 --candidates 16 24 32
 
-Copyright (c) 2026 SpectralAI Studio
+Copyright (c) 2026 Jordi Silvestre Lopez
 """
 
 import argparse

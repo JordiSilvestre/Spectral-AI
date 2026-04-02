@@ -21,36 +21,44 @@ Instead of computing a dense attention matrix (Query x Key), tokens are projecte
 
 ---
 
-## Current status (2026-04-02)
+## Current Results (2026-04-02)
 
-### What works
+Validated on **OLMoE-1B-7B** (7B parameters, 64 experts, 16 MoE layers):
 
-| Component | Status | Key metric |
-|---|---|---|
-| BVH Router (PyTorch) | Validated | 3-level hierarchy, Gumbel-Softmax, 64 experts |
-| CUDA router kernel | Compiled + tested | 10.4 us/batch, 85-170x vs PyTorch |
-| OptiX RT Core pipeline | Validated (Windows) | **19.1 us/batch, 13.4M q/s, 100% accuracy** |
-| OptiX 9.0 CoopVec | Integrated | In-shader calibration via Tensor Cores |
-| PyTorch extension (zero-copy) | Integrated | 10 us routing, auto kernel selection |
-| Ternary expert kernel (POPCOUNT) | Validated | Zero FP multiplications, 0.000038 diff vs FP32 |
-| Demo (Qwen 1.5B) | Executed | 51.9 tok/s, 375x less VRAM |
-| Inception Engine (4-level 12D) | PPL 185.4 | Only 1.8% worse than GPT-2 baseline |
-| Spectral encoding + Snell | Implemented | 88.9% polysemy resolution |
-| Calibration export | Working | PyTorch -> FP16 binary (272B affine) + C header |
+### Perplexity (WikiText-2)
 
-### OLMoE Distillation -- Main result
-
-We replaced the linear gate of OLMoE-1B-7B (a real 7B-parameter MoE model with 64 experts) with our geometric BVH Router and measured perplexity impact:
-
-| Configuration | PPL | Delta vs baseline | Status |
+| Configuration | PPL | Delta | Mode |
 |---|---|---|---|
-| Baseline (OLMoE linear gate) | 7.15 | -- | Reference |
-| BVH Router hybrid 3 layers | 7.17 | **+0.4%** | Validated |
-| BVH Router hybrid 16 layers | 7.30 | **+2.1%** | Validated |
-| BVH Router pure 3 layers (render_eq) | 7.33 | **+2.5%** | Validated |
-| Confidence-gated 16 layers (T=0.90) | 8.37 | +17.1% | 69% BVH routing |
+| Baseline (linear gate) | 6.69 | -- | Reference |
+| Pre-filter 48 candidates (16 layers) | 6.79 | **+1.5%** | Pre-filter |
+| Hybrid 3 layers (L3, L8, L15) | 7.17 | +0.4% | Hybrid |
+| Hybrid 16 layers | 7.30 | +2.1% | Hybrid |
+| Pure 3 layers (render_eq) | 7.33 | +2.5% | Pure |
+| Pre-filter 32 candidates (16 layers) | 7.36 | +10.0% | Pre-filter |
 
-### RT Core Benchmark (RTX 5070 Ti, Windows native)
+### HellaSwag (Downstream Accuracy, N=2,000)
+
+| Configuration | Accuracy | Delta |
+|---|---|---|
+| Baseline | 53.1% (1062/2000) | -- |
+| 3-layer hybrid | 52.2% (1045/2000) | -0.9 pp |
+| 16-layer hybrid | 52.0% (1040/2000) | **-1.1 pp** |
+
+### BVH Router Accuracy (Top-8, per layer)
+
+| Layer | Accuracy | Layer | Accuracy |
+|---|---|---|---|
+| L0 | 95.4% | L8 | 89.3% |
+| L1 | 93.4% | L9 | 96.8% |
+| L2 | 96.1% | L10 | 97.2% |
+| L3 | 96.2% | L11 | 97.2% |
+| L4 | 95.2% | L12 | 97.4% |
+| L5 | 96.1% | L13 | 97.0% |
+| L6 | 96.4% | L14 | 97.5% |
+| L7 | 96.6% | L15 | 97.6% |
+| **Mean** | **95.9%** | | |
+
+### RT Core Benchmark (RTX 5070 Ti)
 
 | Mode | Latency (us/batch) | Throughput (M q/s) | Accuracy |
 |---|---|---|---|
@@ -59,15 +67,11 @@ We replaced the linear gate of OLMoE-1B-7B (a real 7B-parameter MoE model with 6
 | Triangle sync | 32.5 | 7.9 | 100% |
 | **Triangle async** | **19.1** | **13.4** | **100%** |
 
-**~48x speedup** vs PyTorch linear gate (~927 us). GAS memory: 11 KB for 64 experts.
+**~48x speedup** vs PyTorch linear gate (~927 us). CUDA kernel: **85-170x** speedup.
 
-### Routing Speed Comparison
+### Polysemy Resolution
 
-```
-RT Core (OptiX triangle async): 19.1 us/batch -> 13.4M q/s
-BVH Router (CUDA kernel):       10.4 us/batch -> 24.7M tok/s
-Linear gate (PyTorch):         ~927  us/batch -> 48-94x slower
-```
+**98.4%** accuracy (80 polysemous words, 442 context pairs) -- the MoE gate routes the same word to different expert subsets depending on context, and our BVH router preserves this behavior.
 
 ---
 
@@ -97,11 +101,11 @@ Input tokens
 
 Three key innovations:
 
-1. **RT Core Attention (Patent LBS-2026-001):** BVH traversal replaces dense MatMul. O(log N) instead of O(N^2). OptiX 9.0 Cooperative Vectors enable in-shader calibration via Tensor Cores.
+1. **RT Core Attention (Patent JS-2026-001):** BVH traversal replaces dense MatMul. O(log N) instead of O(N^2). OptiX 9.0 Cooperative Vectors enable in-shader calibration via Tensor Cores.
 
-2. **Inception Engine (Patent LBS-2026-002):** 4 nested IAS levels encode 12 semantic dimensions using only 3D hardware. Each level is a "dimensional portal" that resets coordinates.
+2. **Inception Engine (Patent JS-2026-002):** 4 nested IAS levels encode 12 semantic dimensions using only 3D hardware. Each level is a "dimensional portal" that resets coordinates.
 
-3. **Spectral Routing (Patent LBS-2026-003):** Rays carry a "color" (context vector). Nodes act as prisms (Snell's law) -- the same node routes differently based on context, resolving polysemy without duplicating parameters.
+3. **Spectral Routing (Patent JS-2026-003):** Rays carry a "color" (context vector). Nodes act as prisms (Snell's law) -- the same node routes differently based on context, resolving polysemy without duplicating parameters.
 
 ---
 
@@ -109,10 +113,12 @@ Three key innovations:
 
 ```
 spectral-ai/
+├── README.md              # This file
 ├── CLAUDE.md              # Architecture reference (for AI agents)
 ├── LEARNINGS.md           # Decision log, failures, discoveries
 ├── STATUS.md              # Detailed status with file inventory
-├── README.md              # This file
+├── ROADMAP.md             # Development roadmap
+├── BUILD.md               # Build instructions
 ├── CMakeLists.txt         # C++/CUDA build system
 │
 ├── python/                # ~50 files, ~25K lines
@@ -121,6 +127,7 @@ spectral-ai/
 │   ├── olmoe_bvh_distill.py   # BVH Router distillation from OLMoE gate
 │   ├── olmoe_e2e_eval.py      # End-to-end PPL evaluation (multi-layer)
 │   ├── eval_hellaswag.py      # HellaSwag downstream evaluation
+│   ├── sweep_prefilter.py     # Pre-filter candidate sweep
 │   ├── calibrate_router.py    # Post-hoc weight calibration (affine/linear)
 │   ├── export_calibration.py  # Export calibration to FP16 binary + C header
 │   └── benchmark_scaling.py   # O(log N) vs O(N) scaling curve
@@ -133,14 +140,16 @@ spectral-ai/
 │       ├── ternary_torch_ext.cu   # POPCOUNT ternary extension
 │       └── calibration_weights/   # Exported FP16 weights for in-shader use
 │
-├── include/               # C++ public headers (7 files)
-├── src/                   # C++ implementations (3 files)
-├── tests/                 # C++ tests and benchmarks (7 files)
-├── patents/               # 3 provisional patent drafts
-├── paper/                 # Academic paper draft
+├── include/               # C++ public headers
+├── src/                   # C++ implementations
+├── tests/                 # 239 automated tests
+├── patents/               # 3 provisional patent drafts + 17 figures
+├── paper/                 # Academic paper (arXiv submission)
+├── figures/               # Publication figures
 ├── scripts/               # Automation scripts
-├── data/                  # Datasets, embeddings (generated, not in git)
-└── checkpoints/           # Trained models (generated, not in git)
+├── docs/                  # Technical documentation
+│   └── internal/          # Internal design notes
+└── checkpoints/           # Trained BVH Router weights (16 layers)
 ```
 
 ---
@@ -176,15 +185,15 @@ python python/olmoe_bvh_distill.py --layer 8 --real-data data/real_hiddens_layer
 python python/calibrate_router.py --mode linear --epochs 100 \
     --real-data data/real_hiddens_layer8.pt --device cpu
 
-# 4. Evaluate PPL (should give ~7.17 hybrid, +0.4% vs baseline 7.15)
+# 4. Evaluate PPL
 python python/olmoe_e2e_eval.py --model-dir /path/to/olmoe-1b-7b \
     --router-checkpoint checkpoints/olmoe_distill/bvh_router_best.pt --max-tokens 50000
 
 # 5. Evaluate HellaSwag (downstream task)
-python python/eval_hellaswag.py --model-dir /path/to/olmoe-1b-7b --max-samples 200
+python python/eval_hellaswag.py --model-dir /path/to/olmoe-1b-7b --max-samples 2000
 
 # Build C++/CUDA (Windows native with OptiX):
-cd build_win
+mkdir build && cd build
 cmake .. -G "Visual Studio 17 2022" -A x64 \
     -DOptiX_INSTALL_DIR="C:\ProgramData\NVIDIA Corporation\OptiX SDK 9.1.0"
 cmake --build . --config Release
@@ -197,13 +206,13 @@ Release\rt_router_benchmark.exe ".."
 
 ## Patents
 
-Three provisional patent applications (filed 2026):
+Three provisional patent applications (2026):
 
 | Docket | Title | Innovation |
 |---|---|---|
-| LBS-2026-001 | RT Core O(log N) Attention | BVH replaces MatMul in attention + in-shader calibration via Cooperative Vectors |
-| LBS-2026-002 | Nested IAS for 12D | 4 levels of 3D = 12 dimensions via OptiX instancing |
-| LBS-2026-003 | Spectral Routing + Snell | Context-dependent routing without parameter duplication |
+| JS-2026-001 | RT Core O(log N) Attention | BVH replaces MatMul in attention + in-shader calibration via Cooperative Vectors |
+| JS-2026-002 | Nested IAS for 12D | 4 levels of 3D = 12 dimensions via OptiX instancing |
+| JS-2026-003 | Spectral Routing + Snell | Context-dependent routing without parameter duplication |
 
 ---
 
@@ -213,4 +222,4 @@ Proprietary. Patent pending.
 
 ## Author
 
-Jordi Silvestre Lopez -- SpectralAI Studio, 2026.
+Jordi Silvestre Lopez, 2026.

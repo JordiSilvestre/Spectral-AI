@@ -10,11 +10,11 @@ These are NOT functional tests — they verify CLAIM CONSISTENCY:
   - Empirical results (where reproducible on CPU) match claims
 
 Patents covered:
-  - LBS-2026-001: RT Attention (patent_01_rt_attention.md)
-  - LBS-2026-002: Inception Engine (patent_02_inception_engine.md)
-  - LBS-2026-003: Spectral Routing (patent_03_spectral_routing.md)
+  - JS-2026-001: RT Attention (patent_01_rt_attention.md)
+  - JS-2026-002: Inception Engine (patent_02_inception_engine.md)
+  - JS-2026-003: Spectral Routing (patent_03_spectral_routing.md)
 
-Copyright (c) 2026 SpectralAI Studio — Apache 2.0
+Copyright (c) 2026 Jordi Silvestre Lopez — Apache 2.0
 """
 
 import math
@@ -30,7 +30,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "python"))
 
 
 # =========================================================================
-# Patent 1 (LBS-2026-001): RT Attention
+# Patent 1 (JS-2026-001): RT Attention
 # =========================================================================
 
 
@@ -179,7 +179,7 @@ class TestPatent1_SpeedupClaims:
 
 
 # =========================================================================
-# Patent 2 (LBS-2026-002): Inception Engine / BVH Hierarchical
+# Patent 2 (JS-2026-002): Inception Engine / BVH Hierarchical
 # =========================================================================
 
 
@@ -220,7 +220,7 @@ class TestPatent2_HierarchyConstants:
 
 
 # =========================================================================
-# Patent 3 (LBS-2026-003): Spectral Routing
+# Patent 3 (JS-2026-003): Spectral Routing
 # =========================================================================
 
 

@@ -18,15 +18,15 @@
 
 ### Patent-Specific Titles:
 
-**Patent 1 (LBS-2026-001):**
+**Patent 1 (JS-2026-001):**
 - Title: "System and Method for Computing Neural Network Attention Using Hardware-Accelerated Bounding Volume Hierarchy Traversal on Ray Tracing Cores"
 - Drawing Sheets: 6
 
-**Patent 2 (LBS-2026-002):**
+**Patent 2 (JS-2026-002):**
 - Title: "Nested Instance Acceleration Structure for Multi-Dimensional Semantic Representation Using Three-Dimensional Ray Tracing Hardware"
 - Drawing Sheets: 5
 
-**Patent 3 (LBS-2026-003):**
+**Patent 3 (JS-2026-003):**
 - Title: "Context-Dependent Routing in Neural Networks Using Spectral Encoding and Optical Refraction Principles"
 - Drawing Sheets: 6
 
@@ -101,16 +101,16 @@
 ## 7. Related Applications
 
 ### Patent 1 references:
-- LBS-2026-002 (Inception Engine) — cross-referenced, incorporated by reference
-- LBS-2026-003 (Spectral Routing) — cross-referenced, incorporated by reference
+- JS-2026-002 (Inception Engine) — cross-referenced, incorporated by reference
+- JS-2026-003 (Spectral Routing) — cross-referenced, incorporated by reference
 
 ### Patent 2 references:
-- LBS-2026-001 (RT Attention) — cross-referenced, incorporated by reference
-- LBS-2026-003 (Spectral Routing) — cross-referenced, incorporated by reference
+- JS-2026-001 (RT Attention) — cross-referenced, incorporated by reference
+- JS-2026-003 (Spectral Routing) — cross-referenced, incorporated by reference
 
 ### Patent 3 references:
-- LBS-2026-001 (RT Attention) — cross-referenced, incorporated by reference
-- LBS-2026-002 (Inception Engine) — cross-referenced, incorporated by reference
+- JS-2026-001 (RT Attention) — cross-referenced, incorporated by reference
+- JS-2026-002 (Inception Engine) — cross-referenced, incorporated by reference
 
 > **Important:** When all 3 patents are filed, update each with the actual USPTO application numbers for cross-referencing.
 

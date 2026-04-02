@@ -18,7 +18,7 @@ Usage:
         --real-data data/real_hiddens_layer8.pt \
         --mode linear
 
-Copyright (c) 2026 SpectralAI Studio — Apache 2.0
+Copyright (c) 2026 Jordi Silvestre Lopez — Apache 2.0
 """
 
 import argparse

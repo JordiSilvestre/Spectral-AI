@@ -18,7 +18,7 @@ Usage:
             positions_3d, directions, centers, radii, soft_signal
         )
 
-Copyright (c) 2026 SpectralAI Studio — Apache 2.0
+Copyright (c) 2026 Jordi Silvestre Lopez — Apache 2.0
 """
 
 import logging

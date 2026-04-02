@@ -20,7 +20,7 @@ Usage:
     # Benchmark: PyTorch vs OptiX routing
     bridge.benchmark(prompt_embeddings, n_iters=100)
 
-Copyright (c) 2026 SpectralAI Studio — Apache 2.0
+Copyright (c) 2026 Jordi Silvestre Lopez — Apache 2.0
 """
 
 import os

@@ -28,7 +28,7 @@ Usage:
     # Resume from checkpoint:
     python finetune_ternary_experts.py --model qwen-0.5b --resume checkpoints/ternary_ep10.pt
 
-Copyright (c) 2026 SpectralAI Studio -- Apache 2.0
+Copyright (c) 2026 Jordi Silvestre Lopez -- Apache 2.0
 """
 
 import argparse

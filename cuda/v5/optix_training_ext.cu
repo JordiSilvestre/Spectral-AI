@@ -11,7 +11,7 @@
  *   expert_ids, distances = optix_training_ext.route(positions_gpu, directions_gpu)
  *   expert_ids_topk, dists_topk = optix_training_ext.route_topk(positions_gpu, directions_gpu, k=8)
  *
- * Copyright (c) 2026 SpectralAI Studio — Apache 2.0
+ * Copyright (c) 2026 Jordi Silvestre Lopez — Apache 2.0
  */
 
 #include <torch/extension.h>

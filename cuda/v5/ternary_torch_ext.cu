@@ -17,7 +17,7 @@
  *   00 = zero, 01 = +1, 10 = -1
  *
  * Compile: python cuda/v5/build_ternary_ext.py
- * Copyright (c) 2026 SpectralAI Studio — Apache 2.0
+ * Copyright (c) 2026 Jordi Silvestre Lopez — Apache 2.0
  */
 
 #include <torch/extension.h>

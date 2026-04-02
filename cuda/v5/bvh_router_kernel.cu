@@ -22,7 +22,7 @@
  * For RTX 4090 (sm_89):
  *   nvcc ... -gencode=arch=compute_89,code=sm_89 ...
  *
- * Copyright (c) 2026 SpectralAI Studio -- Apache 2.0
+ * Copyright (c) 2026 Jordi Silvestre Lopez -- Apache 2.0
  */
 
 #include <cuda_runtime.h>

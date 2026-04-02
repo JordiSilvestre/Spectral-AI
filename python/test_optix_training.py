@@ -9,7 +9,7 @@ pure SmoothBVHHit on a synthetic routing task.
 Usage:
     python python/test_optix_training.py [--device cuda] [--steps 200]
 
-Copyright (c) 2026 SpectralAI Studio -- Apache 2.0
+Copyright (c) 2026 Jordi Silvestre Lopez -- Apache 2.0
 """
 
 import argparse

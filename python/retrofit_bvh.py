@@ -31,7 +31,7 @@ Usage:
         --epochs 100 --batch-size 64 --device cuda \\
         --output-dir retrofitted_model/
 
-Copyright (c) 2026 SpectralAI Studio — Apache 2.0
+Copyright (c) 2026 Jordi Silvestre Lopez — Apache 2.0
 """
 
 import argparse

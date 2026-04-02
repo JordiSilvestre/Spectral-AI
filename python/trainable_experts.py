@@ -12,7 +12,7 @@ Architecture per expert:
 
 Total for 16 experts: ~64M params (fits easily in 16 GB VRAM).
 
-Copyright (c) 2026 SpectralAI Studio — Apache 2.0
+Copyright (c) 2026 Jordi Silvestre Lopez — Apache 2.0
 """
 
 import math

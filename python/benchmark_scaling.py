@@ -16,7 +16,7 @@ Also generates analytical O(log N) vs O(N) curve for comparison.
 Usage:
     python benchmark_scaling.py [--warmup 50] [--iters 500] [--batch 256]
 
-Copyright (c) 2026 SpectralAI Studio — Apache 2.0
+Copyright (c) 2026 Jordi Silvestre Lopez — Apache 2.0
 """
 
 import argparse
