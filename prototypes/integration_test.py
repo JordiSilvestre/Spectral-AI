@@ -431,7 +431,7 @@ solved = [
     ("Esferas ganan vs Voronoi",                   "Benchmark empírico confirmado"),
     ("VRAM: solo carga esfera activa",             "0 bytes cargados para esferas no activas"),
     ("Wormholes + DuplScore (matemático)",          "Fórmulas en LEARNINGS.md"),
-    ("Fuzzy BSH training (matemático)",             "OHBSC documentado en CLAUDE.md"),
+    ("Fuzzy BSH training (matemático)",             "OHBSC documentado en ARCHITECTURE.md"),
     ("C++ headers completos",                      "5 headers: token_geometry, semantic_bvh, optical_attention, alpha_bsh, spectral_ray"),
     ("CUDA kernels OptiX (estructura)",            "6 .cu files: ray_attention, phase_a/b, closest_hit, miss, ray_gen"),
 ]

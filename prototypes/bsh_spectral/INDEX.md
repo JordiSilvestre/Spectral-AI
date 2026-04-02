@@ -183,7 +183,7 @@ OUTPUT_DIM = 768                # Dimensión de salida
 
 ## Referencias
 
-- **CLAUDE.md**: Arquitectura completa del proyecto
+- **ARCHITECTURE.md**: Arquitectura completa del proyecto
 - **LEARNINGS.md**: Decisiones y aprendizajes previos
 - **Headers C++**: `include/token_geometry.h`, `semantic_bvh.h`, `optical_attention.h`
 

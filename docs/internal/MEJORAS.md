@@ -160,7 +160,7 @@ Sin rayos espectrales funcionando, no hay nada que comprimir. Secuencia:
 ### 3.1 SmoothSTE — Diferenciabilidad del BVH (CRITICO)
 
 **Problema en SpectralAI**: Los RT Cores no son diferenciables. El BVH traversal
-es discreto (hit/miss), gradiente = 0. Marcado como "mayor desafio" en CLAUDE.md.
+es discreto (hit/miss), gradiente = 0. Marcado como "mayor desafio" en ARCHITECTURE.md.
 
 **Solucion de Lyra**: `SmoothTernarySTE` usa tanh suave con beta annealing:
 
@@ -377,7 +377,7 @@ proyecciones basadas en las implementaciones ya probadas en CPU (`python/spectra
 | Expert forward | 940 us | benchmark_e2e |
 | VRAM activa (routing) | 7.86 MB | real_model_demo |
 | Resolucion polisemia | 0% | sin espectral |
-| Training E2E del BVH | NO (no diferenciable) | CLAUDE.md |
+| Training E2E del BVH | NO (no diferenciable) | ARCHITECTURE.md |
 | Auto-poda BVH | NO (64 nodos fijos) | — |
 | Avg top-8 accuracy | 85.6% | ROADMAP (tabla por capa) |
 

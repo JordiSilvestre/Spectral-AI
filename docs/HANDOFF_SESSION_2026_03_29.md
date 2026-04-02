@@ -326,7 +326,7 @@ e5ef2f3 chore: remove turboquant submodules, document PolarQuant idea
 
 | Doc | Contenido |
 |---|---|
-| `CLAUDE.md` | Arquitectura, conceptos matematicos, structs |
+| `ARCHITECTURE.md` | Arquitectura, conceptos matematicos, structs |
 | `ROADMAP.md` | Fases 1-11 + A + B, comandos, tareas pendientes |
 | `MEJORAS.md` | 51 bugs, proyecciones antes/despues, secuencia |
 | `LEARNINGS.md` | Decisiones, fallos, aprendizajes |

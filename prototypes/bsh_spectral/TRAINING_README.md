@@ -250,6 +250,6 @@ R: El mismo código escala O(log N) en traversal. El entrenamiento escalaría co
 
 ## References
 
-- **CLAUDE.md**: Arquitectura general y fórmula de Snell semántica
+- **ARCHITECTURE.md**: Arquitectura general y fórmula de Snell semántica
 - **integration_test.py**: Pipeline completo (Fase 0, A, B)
 - **train_dispersion.py**: Este archivo (training loop)

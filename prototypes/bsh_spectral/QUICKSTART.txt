@@ -137,7 +137,7 @@ Optimizer: SGD con learning_rate=0.1, gradient_clipping=±1.0
 REFERENCIAS
 ───────────
 
-CLAUDE.md
+ARCHITECTURE.md
   • Arquitectura general (Sección "Idea 3")
   • Ley de Snell: n(esfera, f) = 1 + σ(W_dispersion · f)
   • Función de pérdida L_spatial

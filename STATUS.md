@@ -347,7 +347,7 @@ Analisis exhaustivo de los 64 expertos de OLMoE revela:
 | Archivo | Funcion | Estado |
 |---|---|---|
 | `README.md` | Descripcion proyecto para humanos | Actual |
-| `CLAUDE.md` | Guia arquitectura para agentes IA | Actual |
+| `ARCHITECTURE.md` | Guia arquitectura para agentes IA | Actual |
 | `LEARNINGS.md` | Registro de decisiones y fallos | Actual (~2800 lineas) |
 | `ROADMAP.md` | Roadmap por fases | Necesita reescritura |
 | `STATUS.md` | ESTE ARCHIVO | Nuevo |

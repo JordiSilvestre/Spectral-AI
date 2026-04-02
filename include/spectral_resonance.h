@@ -102,7 +102,7 @@ struct alignas(64) AffinePortal {
  *
  * Estos coeficientes NO son matrices de pesos fijas — son parámetros de una
  * función continua que produce el peso de salida en función de la frecuencia ω.
- * Se aprenden durante el entrenamiento minimizando L_total (ver CLAUDE.md).
+ * Se aprenden durante el entrenamiento minimizando L_total (ver ARCHITECTURE.md).
  */
 struct alignas(32) ResonanceParams {
     float    a[RESONANCE_NUM_MODES];    ///< Coeficientes de seno (a_1 .. a_M)

@@ -458,7 +458,7 @@ __miss__alpha_bsh_ms() {
  *   - Alternativamente, usar PCA esférica (ver token_geometry.h)
  *
  * En producción, esta proyección debe preservar la métrica coseno del
- * espacio original (ver CLAUDE.md, sección "Proyección Token → Geometría 3D").
+ * espacio original (ver ARCHITECTURE.md, sección "Proyección Token → Geometría 3D").
  *
  * @param embedding Embedding de entrada (FP32 o FP16)
  * @param embedding_dim Dimensión del embedding

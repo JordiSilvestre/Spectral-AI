@@ -116,6 +116,6 @@ El prototipo valida la viabilidad teórica. Para implementación en GPU (CUDA/Op
 
 ## Referencias
 
-- CLAUDE.md: Arquitectura completa del proyecto
+- ARCHITECTURE.md: Arquitectura completa del proyecto
 - LEARNINGS.md: Decisiones y aprendizajes previos
 - `include/token_geometry.h`, `semantic_bvh.h`, `optical_attention.h`: Headers C++

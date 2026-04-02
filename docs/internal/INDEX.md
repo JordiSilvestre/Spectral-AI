@@ -3,7 +3,7 @@
 ## 📍 Navegación Rápida
 
 ### Documentación Principal
-- **[CLAUDE.md](CLAUDE.md)** — Guía de contexto y arquitectura general del proyecto
+- **[ARCHITECTURE.md](ARCHITECTURE.md)** — Guía de contexto y arquitectura general del proyecto
 - **[LEARNINGS.md](LEARNINGS.md)** — Registro vivo de decisiones arquitectónicas
 - **[IMPLEMENTATION_SUMMARY.md](IMPLEMENTATION_SUMMARY.md)** — Resumen de implementación de kernels
 - **[README_KERNELS.md](README_KERNELS.md)** — Documentación técnica detallada de kernels
@@ -76,7 +76,7 @@
 ## 🎯 Guía de Lectura por Rol
 
 ### Si eres un Investigador
-1. Lee [CLAUDE.md](CLAUDE.md) para entender la visión del proyecto
+1. Lee [ARCHITECTURE.md](ARCHITECTURE.md) para entender la visión del proyecto
 2. Lee [IMPLEMENTATION_SUMMARY.md](IMPLEMENTATION_SUMMARY.md) para ver lo completado
 3. Lee [LEARNINGS.md](LEARNINGS.md) para entender las decisiones
 

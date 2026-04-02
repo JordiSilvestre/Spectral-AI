@@ -114,7 +114,7 @@ Three key innovations:
 ```
 spectral-ai/
 ├── README.md              # This file
-├── CLAUDE.md              # Architecture reference (for AI agents)
+├── ARCHITECTURE.md        # Architecture reference for contributors
 ├── LEARNINGS.md           # Decision log, failures, discoveries
 ├── STATUS.md              # Detailed status with file inventory
 ├── ROADMAP.md             # Development roadmap
