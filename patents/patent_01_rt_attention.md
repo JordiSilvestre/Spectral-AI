@@ -426,35 +426,35 @@ The BVH router (see FIG. 5 for the hierarchical architecture, FIG. 6 for the con
 
 **Claim 1.** A computer-implemented method for computing attention in a neural language model, the method comprising:
 (a) receiving a sequence of N token embeddings, each token embedding being a vector in R^D;
-(b) projecting each token embedding from R^D to a three-dimensional position in R^3 using a dimensionality reduction technique that preserves cosine similarity;
-(c) constructing an axis-aligned bounding box (AABB) around each projected three-dimensional position, the AABB having dimensions proportional to a semantic radius associated with the token;
-(d) building a Bounding Volume Hierarchy (BVH) over the set of AABBs;
-(e) for each query token in the sequence, generating one or more rays originating from the query token's three-dimensional position with directions distributed across a semantic hemisphere;
-(f) traversing the BVH using hardware-accelerated ray tracing cores (RT Cores) of a graphics processing unit to identify tokens whose AABBs are intersected by the rays;
-(g) computing an attention weight for each ray-token intersection using an exponential energy decay function of the form: attention_weight = E_0 * exp(-lambda * d), where E_0 is the ray's remaining energy, lambda is a semantic absorption coefficient, and d is the distance between the query token and the intersected token in the three-dimensional space; and
+(b) projecting each token embedding from R^D to a position in a K-dimensional geometric space, where K is less than D, using a learned or statistical dimensionality reduction;
+(c) constructing a bounding volume around each projected position, the bounding volume having dimensions proportional to a semantic radius associated with the token;
+(d) building a spatial acceleration structure over the set of bounding volumes;
+(e) for each query token in the sequence, generating one or more rays originating from the query token's position in the geometric space with directions distributed across a semantic hemisphere;
+(f) traversing the spatial acceleration structure using a hardware or software spatial traversal engine to identify tokens whose bounding volumes are intersected by the rays;
+(g) computing an attention weight for each ray-token intersection using a monotonically decreasing function of the distance between the query token and the intersected token in the geometric space; and
 (h) aggregating the attention weights to produce an attention output for each query token.
 
 **Claim 2.** The method of Claim 1, wherein the dimensionality reduction technique of step (b) comprises spherical Principal Component Analysis (PCA) performed on L2-normalized token embeddings, projecting onto the top three principal components.
 
 **Claim 3.** The method of Claim 1, wherein the semantic radius of step (c) is computed from the variance of the token's embedding across multiple occurrences in a reference corpus, such that polysemous tokens receive larger semantic radii.
 
-**Claim 4.** The method of Claim 1, wherein the BVH of step (d) is constructed using a top-down recursive algorithm that at each level selects the axis with the largest extent, sorts tokens along that axis, and splits at the median.
+**Claim 4.** The method of Claim 1, wherein the spatial acceleration structure of step (d) is a Bounding Volume Hierarchy (BVH) constructed using a top-down recursive algorithm that at each level selects the axis with the largest extent, sorts tokens along that axis, and splits at the median.
 
-**Claim 5.** The method of Claim 1, wherein the BVH is constructed once per input sequence and reused across all attention layers of the neural language model.
+**Claim 5.** The method of Claim 1, wherein the spatial acceleration structure is constructed once per input sequence and reused across all attention layers of the neural language model.
 
 **Claim 6.** The method of Claim 1, wherein the ray directions in step (e) are distributed according to a Fibonacci spiral pattern on the hemisphere, providing uniform angular coverage of the semantic space.
 
 **Claim 7.** The method of Claim 1, wherein multiple rays per query token are generated, each ray representing an independent attention head, analogous to multi-head attention in Transformer models.
 
-**Claim 8.** The method of Claim 1, wherein the hardware-accelerated ray tracing cores of step (f) are NVIDIA RT Cores accessed via the OptiX application programming interface (API), the traversal being performed by OptiX shader programs including a ray generation program, a closest-hit program, and a miss program.
+**Claim 8.** The method of Claim 1, wherein the spatial traversal engine of step (f) comprises dedicated ray tracing cores accessed via the OptiX application programming interface (API), the traversal being performed by OptiX shader programs including a ray generation program, a closest-hit program, and a miss program.
 
-**Claim 9.** The method of Claim 1, wherein the hardware-accelerated ray tracing cores of step (f) are accessed via the Vulkan VK_KHR_ray_tracing_pipeline extension.
+**Claim 9.** The method of Claim 1, wherein the spatial traversal engine of step (f) is accessed via the Vulkan VK_KHR_ray_tracing_pipeline extension.
 
-**Claim 10.** The method of Claim 1, wherein the exponential energy decay function of step (g) is derived by analogy to the Beer-Lambert law of optical absorption, with the semantic absorption coefficient lambda being a learnable parameter optimized during training.
+**Claim 10.** The method of Claim 1, wherein the monotonically decreasing function of step (g) is an exponential energy decay function derived by analogy to the Beer-Lambert law of optical absorption, of the form: attention_weight = E_0 * exp(-lambda * d), where E_0 is the ray's remaining energy, lambda is a semantic absorption coefficient, and d is the distance, with lambda being a learnable parameter optimized during training.
 
 **Claim 11.** The method of Claim 1, wherein ray traversal terminates when the ray's remaining energy falls below a predetermined energy threshold, providing implicit sparse attention.
 
-**Claim 12.** The method of Claim 1, further comprising storing a compressed version of each token's embedding within the BVH node, the compressed embedding being obtained by PCA reduction from D dimensions to a smaller number of dimensions and stored in half-precision (FP16) floating-point format.
+**Claim 12.** The method of Claim 1, further comprising storing a compressed version of each token's embedding within the spatial acceleration structure node, the compressed embedding being obtained by PCA reduction from D dimensions to a smaller number of dimensions and stored in half-precision (FP16) floating-point format.
 
 **Claim 13.** The method of Claim 12, wherein the compressed embedding is 256 dimensions in FP16 format, preserving at least 95% of the cosine dissimilarity variance.
 
@@ -462,67 +462,124 @@ The BVH router (see FIG. 5 for the hierarchical architecture, FIG. 6 for the con
 
 **Claim 15.** The method of Claim 1, wherein the total computational complexity of steps (e) through (h) is O(N log N), where N is the number of tokens in the sequence.
 
-**Claim 16.** A data structure for representing a token of a neural language model in a three-dimensional semantic space for hardware-accelerated attention computation, the data structure comprising:
+**Claim 16.** A data structure for representing a token of a neural language model in a geometric semantic space for attention computation, the data structure comprising:
 (a) a token identity portion comprising a vocabulary index and a sequence position;
-(b) a geometry portion comprising a three-dimensional centroid position, an axis-aligned bounding box minimum corner, an axis-aligned bounding box maximum corner, and a semantic radius;
+(b) a geometry portion comprising a centroid position in a K-dimensional geometric space where K is less than D, a bounding volume minimum corner, a bounding volume maximum corner, and a semantic radius;
 (c) an embedding portion comprising a compressed representation of the token's embedding vector stored in half-precision floating-point format; and
 (d) an attention state portion comprising an accumulated attention weight and a remaining energy value;
-wherein the three-dimensional centroid position is derived from the token's embedding vector by a cosine-similarity-preserving projection.
+wherein the centroid position is derived from the token's embedding vector by a dimensionality-reducing projection.
 
 **Claim 17.** A system for neural language model inference comprising:
-(a) a graphics processing unit (GPU) having dedicated ray tracing cores (RT Cores) and general-purpose compute cores (CUDA Cores);
-(b) a token geometry module configured to project token embeddings into a three-dimensional semantic space;
-(c) a BVH construction module configured to organize the three-dimensional token representations into a Bounding Volume Hierarchy stored in GPU memory;
+(a) a processor having spatial traversal hardware or software and general-purpose compute cores;
+(b) a token geometry module configured to project token embeddings into a geometric semantic space of dimensionality K less than D;
+(c) a spatial structure construction module configured to organize the geometric token representations into a spatial acceleration structure stored in processor-accessible memory;
 (d) a ray generation module configured to emit semantic rays from query token positions;
-(e) an attention computation module configured to use the RT Cores to traverse the BVH and compute attention weights using an exponential energy decay function; and
+(e) an attention computation module configured to use spatial traversal hardware or software to traverse the spatial acceleration structure and compute attention weights using a distance-based decay function; and
 (f) an aggregation module configured to produce attention outputs from the computed weights;
-wherein the RT Cores and CUDA Cores operate concurrently, with the RT Cores performing BVH traversal and the CUDA Cores performing value aggregation.
+wherein the spatial traversal and compute cores operate concurrently, with the spatial traversal performing acceleration structure traversal and the compute cores performing value aggregation.
 
-**Claim 18.** The system of Claim 17, wherein the GPU is an NVIDIA RTX 4090 or RTX 5070 Ti, and the RT Cores perform ray-AABB intersection tests in dedicated hardware at approximately 4 clock cycles per intersection.
+**Claim 18.** The system of Claim 17, wherein the processor is a GPU having dedicated ray tracing acceleration hardware, and the ray tracing acceleration hardware performs ray-bounding volume intersection tests in dedicated hardware.
 
-**Claim 19.** The system of Claim 17, wherein the BVH stored in GPU memory has a memory footprint of less than 100 MB for a sequence of 100,000 tokens, compared to approximately 307 GB for a conventional KV cache of equivalent sequence length.
+**Claim 19.** The system of Claim 17, wherein the spatial acceleration structure stored in memory has a memory footprint of less than 100 MB for a sequence of 100,000 tokens, compared to approximately 307 GB for a conventional KV cache of equivalent sequence length.
 
-**Claim 20.** The system of Claim 17, wherein the attention computation achieves a routing latency of less than 20 microseconds for a batch of 256 tokens, representing at least an 85x speedup over an equivalent PyTorch-based softmax attention computation, with measured speedups ranging from 112x to 218x depending on batch size.
+**Claim 20.** The system of Claim 17, wherein the attention computation achieves at least an order-of-magnitude speedup over an equivalent matrix-multiplication-based softmax attention computation by exploiting sub-linear spatial traversal.
 
-**Claim 21.** The method of Claim 1, wherein the method further comprises a two-phase execution: a Phase A using RT Cores for O(log N) BVH traversal to identify the most relevant semantic region, and a Phase B using Tensor Cores for high-precision matrix multiplication within the identified region, with the total complexity being O(N log N) + O(M^2) where M is much smaller than N.
+**Claim 21.** The method of Claim 1, wherein the method further comprises a two-phase execution: a Phase A using spatial traversal hardware for O(log N) acceleration structure traversal to identify the most relevant semantic region, and a Phase B using matrix computation hardware for high-precision matrix multiplication within the identified region, with the total complexity being O(N log N) + O(M^2) where M is much smaller than N.
 
 **Claim 22.** The method of Claim 21, wherein Phase B uses cuBLAS half-precision (FP16) matrix multiplication on matrices of dimension M, where M is the dimension of a MatrixBlock associated with the identified semantic region.
 
 **Claim 23.** A method for routing tokens to specialized expert sub-networks in a Mixture of Experts (MoE) architecture, the method comprising:
-(a) organizing expert sub-networks as nodes in a hierarchical BVH in a three-dimensional semantic space;
-(b) for each input token, generating a ray from the token's three-dimensional position;
-(c) traversing the BVH using hardware RT Cores to identify the expert sub-network whose region the ray intersects; and
+(a) organizing expert sub-networks as nodes in a hierarchical spatial acceleration structure in a geometric semantic space;
+(b) for each input token, generating a ray from the token's position in the geometric space;
+(c) traversing the spatial acceleration structure using hardware or software spatial traversal to identify the expert sub-network whose region the ray intersects; and
 (d) dispatching the token to the identified expert sub-network for processing;
 wherein the routing achieves O(log N) complexity where N is the number of experts.
 
-**Claim 24.** The method of Claim 23, wherein the BVH organizes experts hierarchically with 4 levels of branching factor 4 (4x4x4x4 = 256 experts), and the hardware RT Core traversal visits at most 4 * log_4(N) nodes.
+**Claim 24.** The method of Claim 23, wherein the spatial acceleration structure organizes experts hierarchically with 4 levels of branching factor 4 (4x4x4x4 = 256 experts), and the traversal visits at most 4 * log_4(N) nodes.
 
-**Claim 25.** The method of Claim 23, further comprising a calibration layer that adjusts the distribution of routing weights output by the BVH router to match the distribution of a reference linear gate, the calibration layer being a linear transformation with fewer than 5,000 learnable parameters.
+**Claim 25.** The method of Claim 23, further comprising a calibration layer that adjusts the distribution of routing weights output by the spatial router to match the distribution of a reference linear gate, the calibration layer being a linear transformation with fewer than 5,000 learnable parameters.
 
-### Confidence-Gated BVH Routing (Claims 26-28)
+### Confidence-Gated Routing (Claims 26-28)
 
 **Claim 26.** The method of Claim 23, further comprising a confidence-gated routing step wherein:
-(a) for each token at each layer, a confidence score is computed from the standard deviation of the top-k BVH routing logits;
-(b) when the confidence score exceeds a threshold T, the token is routed via BVH traversal in O(log N) time;
+(a) for each token at each layer, a confidence score is computed from the standard deviation of the top-k routing logits;
+(b) when the confidence score exceeds a threshold T, the token is routed via spatial acceleration structure traversal in O(log N) time;
 (c) when the confidence score does not exceed the threshold T, the token is routed via a linear gate in O(N) time as fallback;
 whereby the method eliminates accuracy compounding across multiple layers by selectively using exact linear routing for uncertain tokens while maintaining O(log N) efficiency for the majority of tokens.
 
-**Claim 27.** The method of Claim 26, wherein the threshold T is a single scalar parameter shared across all tokens and all layers, adjustable post-deployment without retraining, providing a continuous tradeoff between routing speed (lower T, more BVH usage) and routing accuracy (higher T, more gate fallback).
+**Claim 27.** The method of Claim 26, wherein the threshold T is a single scalar parameter shared across all tokens and all layers, adjustable post-deployment without retraining, providing a continuous tradeoff between routing speed (lower T, more spatial traversal usage) and routing accuracy (higher T, more gate fallback).
 
 **Claim 28.** The method of Claim 26, wherein on a 16-layer Mixture of Experts model with 64 experts per layer:
-(a) at threshold T = 0.90, approximately 69% of token-layer routing decisions use O(log N) BVH traversal and 31% use linear gate fallback, achieving +17.1% perplexity increase over the baseline linear gate;
-(b) at threshold T = 0.95, approximately 48% of token-layer routing decisions use BVH traversal, achieving +10.3% perplexity increase;
-(c) the effective computational speedup is proportional to the BVH usage fraction, with the BVH component achieving 85-170x speedup over the linear gate.
+(a) at threshold T = 0.90, approximately 69% of token-layer routing decisions use O(log N) spatial traversal and 31% use linear gate fallback, achieving +17.1% perplexity increase over the baseline linear gate;
+(b) at threshold T = 0.95, approximately 48% of token-layer routing decisions use spatial traversal, achieving +10.3% perplexity increase;
+(c) the effective computational speedup is proportional to the spatial traversal usage fraction, with the spatial traversal component achieving significant speedup over the linear gate.
+
+### Software-Only and Apparatus Claims (Claims 29-30)
+
+**Claim 29.** A computer-implemented method for computing attention in a neural network without requiring specialized ray tracing hardware, the method comprising:
+(a) receiving a sequence of N input element representations, each representation being a vector in R^D;
+(b) projecting each input element representation from R^D to a position in a K-dimensional geometric space, where K is less than D, using a learned or statistical dimensionality reduction;
+(c) constructing a bounding volume around each projected position;
+(d) building a spatial acceleration structure over the set of bounding volumes;
+(e) for each query element, performing a software-based spatial traversal of the spatial acceleration structure on a general-purpose processor, the general-purpose processor being one or more of a CPU, a GPU using general-purpose compute cores, an FPGA, or an ASIC, to identify input elements whose bounding volumes satisfy a proximity criterion with respect to the query element;
+(f) computing an attention weight for each identified input element using a distance-based decay function that is a monotonically decreasing function of the distance between the query element and the identified input element in the geometric space; and
+(g) aggregating the weighted representations of the identified input elements to produce an attention output for each query element;
+wherein the computational complexity is sub-quadratic in N.
+
+**Claim 30.** A non-transitory computer-readable storage medium storing instructions that, when executed by one or more processors, cause the one or more processors to perform a method comprising:
+(a) receiving a sequence of N input element representations, each representation being a vector in R^D;
+(b) projecting each input element representation from R^D to a position in a K-dimensional geometric space, where K is less than D;
+(c) constructing a bounding volume around each projected position;
+(d) building a spatial acceleration structure over the set of bounding volumes;
+(e) for each query element, traversing the spatial acceleration structure to identify a subset of input elements whose bounding volumes are intersected or otherwise satisfy a proximity criterion, without examining all N input elements;
+(f) computing an attention weight for each identified input element in the subset using a monotonically decreasing function of the distance between the query element and the identified input element in the geometric space; and
+(g) aggregating the weighted representations of the identified input elements to produce an attention output for each query element;
+wherein the computational complexity of steps (e) through (g) is sub-quadratic in N.
+
+### Broad Spatial Attention (Claim 31)
+
+**Claim 31.** A computer-implemented method for computing attention in a neural network, the method comprising:
+(a) mapping each of N input elements to a position in a geometric space of dimensionality K, where K is less than D and D is the dimensionality of the input element's representation;
+(b) organizing the mapped positions into a hierarchical spatial data structure that enables sub-linear search;
+(c) for each query element, performing a spatial search in the hierarchical spatial data structure to identify a subset of relevant input elements without examining all N input elements;
+(d) computing attention weights for the identified relevant input elements based on their spatial proximity to the query element; and
+(e) producing an attention output by aggregating representations of the relevant input elements weighted by the attention weights;
+whereby the computational complexity of the attention computation is sub-quadratic in N.
+
+### Two-Phase Hybrid Attention (Claim 32)
+
+**Claim 32.** A computer-implemented method for neural network inference, the method comprising:
+(a) a first phase using a spatial acceleration structure with sub-linear traversal complexity to identify a relevant subset of M elements from N total elements, where M is less than N; and
+(b) a second phase using matrix multiplication on the identified subset of M elements to compute high-precision attention results;
+wherein the first phase and second phase may execute on different types of processing units, the first phase executing on spatial traversal hardware and the second phase executing on matrix computation hardware, and the total computational complexity is O(N log N) + O(M^2) where M is much less than N.
+
+### Confidence-Gated Expert Routing (Claim 33)
+
+**Claim 33.** A method for routing tokens to expert sub-networks in a neural network having multiple layers, the method comprising:
+(a) at each layer, computing routing scores using a first routing mechanism having sub-linear complexity;
+(b) computing a confidence score indicating reliability of the first routing mechanism's output;
+(c) when the confidence score exceeds a threshold, using the first routing mechanism's result to route the token;
+(d) when the confidence score does not exceed the threshold, computing routing scores using a second routing mechanism having higher accuracy than the first routing mechanism; and
+(e) applying the routing independently per token per layer;
+wherein the threshold is a single scalar parameter adjustable post-deployment without retraining, providing a continuous tradeoff between computational speed and routing accuracy.
+
+### Spatial Acceleration Structure as KV-Cache Replacement (Claim 34)
+
+**Claim 34.** A method for neural language model inference, comprising replacing a key-value cache with a spatial acceleration structure, wherein:
+(a) token representations are stored as geometric primitives in the spatial acceleration structure instead of as key-value pairs in linear memory;
+(b) attention computation retrieves relevant tokens via spatial traversal of the spatial acceleration structure rather than full key-value dot products;
+(c) the memory footprint of the spatial acceleration structure is O(N) with a constant factor at least 100x smaller than the equivalent key-value cache for the same number of tokens N;
+whereby context windows of 100,000 or more tokens are processable on consumer-grade GPUs with less than 16 GB of memory.
 
 ---
 
 ## ABSTRACT
 
-A system and method for computing attention in neural language models that replaces conventional matrix multiplication with hardware-accelerated ray tracing. Token embeddings are projected from high-dimensional space (R^D) into a three-dimensional semantic space preserving cosine similarity. The three-dimensional token representations are organized into a Bounding Volume Hierarchy (BVH). For each query token, rays are emitted into the semantic space and traversed against the BVH using dedicated RT Cores present in modern NVIDIA GPUs. Attention weights are computed at ray-token intersections using an exponential energy decay function analogous to the Beer-Lambert law: w = E_0 * exp(-lambda * d). The method achieves O(N log N) computational complexity versus O(N^2) for standard attention, reduces memory from approximately 307 GB to approximately 50 MB for 100,000-token sequences, and enables inference on consumer-grade GPUs (RTX 4090, RTX 5070 Ti) rather than datacenter hardware. Experimental validation demonstrates 112-218x routing speedup (batch-dependent), 731x VRAM reduction, and less than 1% perplexity degradation when replacing linear gates in a 7-billion-parameter Mixture of Experts model.
+A system and method for computing attention in neural language models that replaces conventional matrix multiplication with spatial acceleration structures, optionally hardware-accelerated. Token embeddings are projected from high-dimensional space (R^D) into a low-dimensional geometric semantic space preserving relative token relationships. The geometric token representations are organized into a spatial acceleration structure such as a Bounding Volume Hierarchy (BVH). For each query token, rays are emitted into the semantic space and traversed against the spatial acceleration structure using dedicated spatial traversal hardware or general-purpose processors. Attention weights are computed at ray-token intersections using a distance-based decay function such as an exponential energy decay analogous to the Beer-Lambert law: w = E_0 * exp(-lambda * d). The method achieves O(N log N) computational complexity versus O(N^2) for standard attention, reduces memory from approximately 307 GB to approximately 50 MB for 100,000-token sequences, and enables inference on consumer-grade GPUs rather than datacenter hardware. Experimental validation demonstrates over two orders of magnitude routing speedup (batch-dependent), 731x VRAM reduction, and less than 1% perplexity degradation when replacing linear gates in a 7-billion-parameter Mixture of Experts model.
 
 ---
 
 **Inventor:** Jordi Silvestre Lopez
 **Filed by:** Jordi Silvestre Lopez (individual inventor)
 **Date of Conception:** March 2026
-**Priority Date:** [Filing date of this provisional application]
+**Priority Date:** [Filing date of this non-provisional application]

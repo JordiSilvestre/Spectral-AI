@@ -576,17 +576,17 @@ A test set of 1,000 polysemous words in context was evaluated:
 ### Core Spectral Routing (Claims 1-10)
 
 **Claim 1.** A computer-implemented method for context-dependent routing of tokens in a neural network, the method comprising:
-(a) encoding a conversational context as a spectral color vector f in R^k by projecting a context embedding through a learned spectral encoding matrix W_spectral;
-(b) emitting a ray from a query token's position in a three-dimensional semantic space, the ray carrying the spectral color vector as metadata;
-(c) traversing a hierarchical structure of semantic nodes, wherein each node is a prismatic sphere having a learned dispersion weight vector W_dispersion;
-(d) at each intersection of the ray with a prismatic sphere, computing a context-dependent refractive index as:
+(a) encoding a conversational context as a spectral color vector or context representation vector f in R^k by projecting a context embedding through a learned spectral encoding matrix W_spectral;
+(b) emitting a ray from a query token's position in a three-dimensional semantic space, the ray carrying the spectral color vector or context representation vector as metadata;
+(c) traversing a hierarchical structure of semantic nodes, wherein each node is a routing node having learned context-dependent parameters including a dispersion weight vector W_dispersion;
+(d) at each intersection of the ray with a routing node, computing a context-dependent routing score as a learned function of the node's parameters and the context representation, wherein in a preferred embodiment the routing score is a refractive index computed as:
     n = n_base + sigmoid(dot(W_dispersion, f))
-where n_base is a base refractive index, sigmoid is the logistic function, and the dot product is between the sphere's dispersion weights and the ray's color vector;
-(e) computing a refracted ray direction using Snell's law in vectorial 3D form:
+where n_base is a base refractive index, sigmoid is the logistic function, and the dot product is between the node's dispersion weights and the ray's context representation vector;
+(e) computing a modified ray direction using a directional modification function that computes an output direction based on the routing score and the input direction, wherein in a preferred embodiment the directional modification function implements Snell's law in vectorial 3D form:
     cos(theta_t) = sqrt(1 - n_ratio^2 * (1 - cos(theta_i)^2))
     d_out = n_ratio * d_in + (n_ratio * cos(theta_i) - cos(theta_t)) * normal
-where n_ratio is the ratio of external to internal refractive indices; and
-(f) selecting a specialized sub-network (matrix block) for the token based on the refraction angle at the leaf sphere of the hierarchy.
+where n_ratio is the ratio of external to internal routing scores; and
+(f) selecting a specialized sub-network (matrix block) for the token based on the routing result at the leaf node of the hierarchy.
 
 **Claim 2.** The method of Claim 1, wherein the spectral color vector has k = 256 dimensions stored in half-precision (FP16) floating-point format, and the spectral encoding matrix W_spectral has dimensions [k x D] where D is the embedding dimension of the neural network.
 
@@ -600,12 +600,12 @@ where n_ratio is the ratio of external to internal refractive indices; and
 
 **Claim 7.** The method of Claim 1, further comprising a wormhole mechanism wherein a prismatic sphere with a wormhole_target_id provides O(1) traversal to a related sphere in a distant semantic region, the wormhole activation being conditioned on the ray's spectral color via a learned activation threshold.
 
-**Claim 8.** A data structure for a prismatic sphere node in a semantic hierarchy, the data structure comprising:
-(a) geometric properties including a center position in R^3, a radius, and a sphere identifier;
-(b) a dispersion weight vector W_dispersion of k half-precision floating-point values;
-(c) a base refractive index;
+**Claim 8.** A data structure for a routing node in a semantic hierarchy, the data structure comprising:
+(a) geometric properties including a center position in R^3, a radius, and a node identifier;
+(b) a dispersion weight vector W_dispersion of k half-precision floating-point values representing learned context-dependent parameters;
+(c) a base routing parameter (base refractive index in a preferred embodiment);
 (d) an array of matrix block identifiers, each corresponding to a specialized sub-network;
-(e) an array of refraction angle thresholds mapping angular ranges to matrix block identifiers; and
+(e) an array of routing decision thresholds mapping routing score ranges to matrix block identifiers; and
 (f) a wormhole target identifier for cross-domain polysemy traversal.
 
 **Claim 9.** The method of Claim 1, wherein the computational overhead of the spectral refraction computation is approximately 0.12% of the total BVH traversal computation, the refraction requiring O(k) operations per sphere intersection where k is the spectral dimension.
@@ -636,11 +636,11 @@ with a straight-through estimator used at the critical angle for total internal 
 ### Pipeline Integration (Claims 16-20)
 
 **Claim 16.** A system for neural language model inference comprising:
-(a) a spectral encoding module that produces a color vector f from the conversational context;
-(b) a ray generation module that emits prismatic rays carrying the color vector;
-(c) a prismatic BVH traversal module that uses RT Cores to navigate a hierarchy of prismatic spheres, applying Snell's law at each intersection to compute refraction angles; and
-(d) a selective computation module that loads and executes the matrix block selected by the final refraction angle;
-wherein the combination of (c) and (d) achieves O(N log N) + O(M^2) total complexity, where N is the number of semantic entities and M is the matrix block dimension.
+(a) a context encoding module that produces a context representation vector f from the conversational context;
+(b) a ray generation module that emits rays carrying the context representation vector;
+(c) a hierarchical traversal module that navigates a hierarchy of routing nodes, computing a context-dependent routing score at each node as a learned function of the node's parameters and the context representation vector, and applying a directional modification function to determine the traversal path, wherein in a preferred embodiment the traversal module uses RT Cores and applies Snell's law at each intersection; and
+(d) a selective computation module that loads and executes the sub-network selected by the final routing decision;
+wherein the combination of (c) and (d) achieves O(N log N) + O(M^2) total complexity, where N is the number of semantic entities and M is the sub-network dimension.
 
 **Claim 17.** The system of Claim 16, wherein the selective computation module of (d) performs lazy loading of matrix blocks from host memory or storage to GPU memory on demand, loading only the matrix block selected by the refraction angle.
 
@@ -651,11 +651,11 @@ E(d) = E_0 * exp(-lambda * d)
 and the ray terminates when energy falls below a threshold, providing implicit sparsity in the routing decision.
 
 **Claim 20.** A method for resolving polysemy in neural language models, the method comprising:
-(a) representing a polysemous token as a single prismatic sphere node in a semantic hierarchy;
-(b) associating the node with multiple matrix blocks, each specialized for a different meaning;
-(c) determining the active meaning by computing the refraction angle of a spectral ray through the node, the refraction angle being a function of the context-dependent refractive index; and
-(d) activating only the matrix block corresponding to the computed refraction angle;
-whereby the same geometric node handles multiple meanings without duplication of node data or position.
+(a) representing a polysemous token as a single routing node in a semantic hierarchy;
+(b) associating the node with multiple specialized sub-networks, each specialized for a different meaning;
+(c) determining the active meaning by computing a routing decision value at the node as a function of context and node parameters, wherein in a preferred embodiment the routing decision value is a refraction angle computed via Snell's law with a context-dependent refractive index; and
+(d) activating only the sub-network corresponding to the computed routing decision value;
+whereby the same routing node handles multiple meanings without duplication of node data or position.
 
 ### Advanced Mechanisms: Chromatic Aberration (Claims 21-25)
 
@@ -749,15 +749,58 @@ whereby the method achieves adaptive routing complexity between O(N log N) and O
 (e) a statistics module tracking the fraction of tokens routed geometrically versus linearly;
 whereby the system combines the speed advantage of geometric routing (112-218x speedup for confident tokens) with the accuracy of linear routing (for uncertain tokens), achieving effective routing speedup proportional to the fraction of confident tokens.
 
+### Generic Context-Dependent Routing (Claims 39-44)
+
+**Claim 39.** A computer-implemented method for context-dependent routing of tokens in a neural network, the method comprising:
+(a) computing a context representation from recent input history;
+(b) at each routing node in a hierarchical structure, computing a routing decision as a learned function of both the node's parameters and the context representation, wherein the same node produces different routing decisions for the same token when the context differs;
+(c) based on the routing decision, selecting one of a plurality of specialized sub-networks associated with the node; and
+(d) processing the token through the selected sub-network;
+whereby polysemous tokens are automatically routed to context-appropriate sub-networks without duplicating routing nodes or sub-network parameters.
+
+**Claim 40.** A method for multi-band context-dependent routing in a neural network, the method comprising:
+(a) decomposing a context representation vector into B sub-vectors (bands), each capturing different aspects of the context;
+(b) for each band, independently computing a routing decision at a routing node using the band's sub-vector and the node's learned parameters;
+(c) obtaining B potentially different sub-network selections from the B bands; and
+(d) combining the B selections using learned combination weights to produce a final routing decision;
+whereby the multi-band decomposition enables finer-grained context sensitivity than single-vector routing.
+
+**Claim 41.** A method for discontinuous routing boundaries in a neural network routing system, the method comprising:
+(a) computing a routing score at a routing node based on input context and node parameters;
+(b) when the routing score satisfies a continuity condition, producing a continuous routing decision that smoothly varies with context;
+(c) when the routing score violates the continuity condition, producing a discontinuous routing decision that completely redirects the routing to a different branch of the hierarchy;
+whereby the system supports both gradual context-dependent routing transitions and sharp domain boundaries within a single framework.
+
+**Claim 42.** A method for confidence-weighted routing in a neural network, the method comprising:
+(a) generating R perturbed copies of a routing query, each with a different perturbation;
+(b) independently routing each perturbed query through the routing hierarchy;
+(c) computing a combined routing decision by aggregating the R individual decisions using a coherence-sensitive combination function;
+(d) when the R decisions agree (high coherence), assigning high confidence to the routing result;
+(e) when the R decisions disagree (low coherence), assigning low confidence;
+whereby the method provides a built-in confidence estimate for routing decisions without requiring a separate confidence network.
+
+**Claim 43.** A method for training context-dependent routing parameters in a neural network, the method comprising optimizing a combined loss function L_total = L_task + alpha * L_routing, where L_task is a task-specific loss and L_routing comprises:
+(a) a smoothness component penalizing large changes in routing decisions for similar contexts;
+(b) a discrimination component encouraging different meanings of the same input to produce different routing decisions; and
+(c) a separation component encouraging well-separated routing decision boundaries;
+wherein all routing parameters are jointly optimized with the neural network's base parameters in end-to-end training.
+
+**Claim 44.** A non-transitory computer-readable storage medium storing instructions that, when executed by a processor, cause the processor to:
+(a) receive tokens and a context representation from a neural network;
+(b) at each node of a hierarchical routing structure, compute a context-dependent routing decision as a function of the node's learned parameters and the context representation;
+(c) select a specialized sub-network based on the routing decision; and
+(d) process the token through the selected sub-network;
+wherein the same routing node selects different sub-networks for identical tokens when the context representation differs.
+
 ---
 
 ## ABSTRACT
 
-A system and method for context-dependent routing in neural language models using spectral encoding and optical refraction principles. Each ray traversing a semantic hierarchy carries a "spectral color" --- a k-dimensional vector (k=256) encoding the conversational context, computed from the context history via a learned spectral encoding matrix. Each node in the hierarchy acts as an optical prism with a learned dispersion weight vector that determines a context-dependent refractive index: n = n_base + sigmoid(dot(W_dispersion, f)). Snell's law of refraction computes the routing angle, which selects a specialized matrix block from among up to 8 candidates per node. The same geometric node routes to different expert sub-networks depending on context, resolving polysemy without weight duplication. Three advanced mechanisms --- chromatic aberration (multi-band spectral decomposition), total internal reflection (discontinuous hard routing boundaries), and phase-coherent multi-ray interference (ensemble-like confidence estimation) --- collectively achieve 88.9% polysemy resolution accuracy with less than 0.12% computational overhead. All spectral parameters (W_spectral, W_dispersion, refractive indices, angle thresholds) are jointly optimized end-to-end with the base language model. The system integrates with the BVH traversal (LBS-2026-001) and nested IAS hierarchy (LBS-2026-002) to provide a complete O(N log N) inference pipeline on consumer GPU hardware.
+A system and method for context-dependent routing in neural language models using spectral encoding and optical refraction principles. Each ray traversing a semantic hierarchy carries a "spectral color" --- a k-dimensional vector (k=256) encoding the conversational context, computed from the context history via a learned spectral encoding matrix. Each node in the hierarchy acts as an optical prism with a learned dispersion weight vector that determines a context-dependent refractive index: n = n_base + sigmoid(dot(W_dispersion, f)). Snell's law of refraction computes the routing angle, which selects a specialized matrix block from among up to 8 candidates per node. The same geometric node routes to different expert sub-networks depending on context, resolving polysemy without weight duplication. Three advanced mechanisms --- chromatic aberration (multi-band spectral decomposition), total internal reflection (discontinuous hard routing boundaries), and phase-coherent multi-ray interference (ensemble-like confidence estimation) --- collectively achieve 88.9% polysemy resolution accuracy with less than 0.12% computational overhead. All spectral parameters (W_spectral, W_dispersion, refractive indices, angle thresholds) are jointly optimized end-to-end with the base language model. The system integrates with the BVH traversal (LBS-2026-001) and nested IAS hierarchy (LBS-2026-002) to provide a complete O(N log N) inference pipeline on consumer GPU hardware. The routing principles are applicable to any hierarchical routing system where context-dependent node-level decisions select among specialized sub-networks, with the spectral-optical formulation being one preferred embodiment.
 
 ---
 
 **Inventor:** Jordi Silvestre Lopez
 **Filed by:** Jordi Silvestre Lopez (individual inventor)
 **Date of Conception:** March 2026
-**Priority Date:** [Filing date of this provisional application]
+**Priority Date:** [Filing date of this non-provisional application]

@@ -34,29 +34,29 @@
 > Standard: 3 independent claims + 20 total claims included in base fee.
 > Extra fees per claim above these thresholds.
 
-**Patent 1 (RT Attention): 28 claims, 4 independent**
+**Patent 1 (RT Attention): 34 claims, 10 independent**
 
 | Fee Type | Qty | Large | Small | Micro |
 |----------|-----|-------|-------|-------|
-| Extra independent claims (>3) | 1 | $460 | $230 | $115 |
-| Extra total claims (>20) | 8 | $100×8=$800 | $50×8=$400 | $25×8=$200 |
-| **Claims subtotal** | | **$1,260** | **$630** | **$315** |
+| Extra independent claims (>3) | 7 | $460×7=$3,220 | $230×7=$1,610 | $115×7=$805 |
+| Extra total claims (>20) | 14 | $100×14=$1,400 | $50×14=$700 | $25×14=$350 |
+| **Claims subtotal** | | **$4,620** | **$2,310** | **$1,155** |
 
-**Patent 2 (Inception Engine): 25 claims, 5 independent**
-
-| Fee Type | Qty | Large | Small | Micro |
-|----------|-----|-------|-------|-------|
-| Extra independent claims (>3) | 2 | $460×2=$920 | $230×2=$460 | $115×2=$230 |
-| Extra total claims (>20) | 5 | $100×5=$500 | $50×5=$250 | $25×5=$125 |
-| **Claims subtotal** | | **$1,420** | **$710** | **$355** |
-
-**Patent 3 (Spectral Routing): 38 claims, 8 independent**
+**Patent 2 (Inception Engine): 30 claims, 10 independent**
 
 | Fee Type | Qty | Large | Small | Micro |
 |----------|-----|-------|-------|-------|
-| Extra independent claims (>3) | 5 | $460×5=$2,300 | $230×5=$1,150 | $115×5=$575 |
-| Extra total claims (>20) | 18 | $100×18=$1,800 | $50×18=$900 | $25×18=$450 |
-| **Claims subtotal** | | **$4,100** | **$2,050** | **$1,025** |
+| Extra independent claims (>3) | 7 | $460×7=$3,220 | $230×7=$1,610 | $115×7=$805 |
+| Extra total claims (>20) | 10 | $100×10=$1,000 | $50×10=$500 | $25×10=$250 |
+| **Claims subtotal** | | **$4,220** | **$2,110** | **$1,055** |
+
+**Patent 3 (Spectral Routing): 44 claims, 14 independent**
+
+| Fee Type | Qty | Large | Small | Micro |
+|----------|-----|-------|-------|-------|
+| Extra independent claims (>3) | 11 | $460×11=$5,060 | $230×11=$2,530 | $115×11=$1,265 |
+| Extra total claims (>20) | 24 | $100×24=$2,400 | $50×24=$1,200 | $25×24=$600 |
+| **Claims subtotal** | | **$7,460** | **$3,730** | **$1,865** |
 
 ---
 
@@ -65,10 +65,10 @@
 | Component | Large | Small | Micro |
 |-----------|-------|-------|-------|
 | Filing fees (3 × base) | $5,460 | $2,730 | $1,365 |
-| Patent 1 claims surcharge | $1,260 | $630 | $315 |
-| Patent 2 claims surcharge | $1,420 | $710 | $355 |
-| Patent 3 claims surcharge | $4,100 | $2,050 | $1,025 |
-| **TOTAL AT FILING** | **$12,240** | **$6,120** | **$3,060** |
+| Patent 1 claims surcharge | $4,620 | $2,310 | $1,155 |
+| Patent 2 claims surcharge | $4,220 | $2,110 | $1,055 |
+| Patent 3 claims surcharge | $7,460 | $3,730 | $1,865 |
+| **TOTAL AT FILING** | **$21,760** | **$10,880** | **$5,440** |
 
 ---
 
@@ -96,21 +96,23 @@
 
 | Phase | Cost | When |
 |-------|------|------|
-| **Filing (3 patents)** | **$3,060** | Now |
+| **Filing (3 patents)** | **$5,440** | Now |
 | Issue fees (3 patents) | $900 | ~2-3 years |
 | Maintenance 3.5yr | $1,500 | ~5-6 years |
 | Maintenance 7.5yr | $2,820 | ~9-10 years |
 | Maintenance 11.5yr | $5,775 | ~13-14 years |
-| **20-year total** | **$14,055** | Over patent lifetime |
+| **20-year total** | **$16,435** | Over patent lifetime |
 
 ---
 
 ## Cost Reduction Options
 
 ### Option A: Reduce Claims Count
-- Patent 3 has 38 claims (8 independent) — the most expensive
-- Reducing to 20 total / 3 independent saves $1,025 (micro) per patent
-- Consider consolidating dependent claims that overlap
+- Patent 3 has 44 claims (14 independent) — the most expensive
+- Patent 1 has 34 claims (10 independent), Patent 2 has 30 claims (10 independent)
+- Reducing to 20 total / 3 independent saves significantly per patent
+- **NOT RECOMMENDED** — the extra claims are critical for preventing design-arounds
+- The broad generic claims (P1-C31, P2-C26, P3-C39) are the most valuable claims in the portfolio
 
 ### Option B: File as Provisional First ($350 × 3 = $1,050)
 - Reserves priority date for 12 months
