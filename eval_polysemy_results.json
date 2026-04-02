@@ -1,0 +1,5825 @@
+{
+  "summary": {
+    "total_words": 80,
+    "total_contexts": 306,
+    "total_pairs": 442,
+    "different_routing_pairs": 435,
+    "polysemy_resolution_pct": 98.41628959276018,
+    "layer": 8,
+    "top_k": 8,
+    "elapsed_seconds": 11.4435453414917
+  },
+  "word_stats": {
+    "bank": {
+      "contexts": 3,
+      "unique_routings": 3,
+      "resolution": 100.0
+    },
+    "bat": {
+      "contexts": 3,
+      "unique_routings": 3,
+      "resolution": 100.0
+    },
+    "bow": {
+      "contexts": 4,
+      "unique_routings": 4,
+      "resolution": 100.0
+    },
+    "bug": {
+      "contexts": 3,
+      "unique_routings": 3,
+      "resolution": 100.0
+    },
+    "cell": {
+      "contexts": 4,
+      "unique_routings": 4,
+      "resolution": 100.0
+    },
+    "chip": {
+      "contexts": 4,
+      "unique_routings": 4,
+      "resolution": 100.0
+    },
+    "cloud": {
+      "contexts": 3,
+      "unique_routings": 3,
+      "resolution": 100.0
+    },
+    "code": {
+      "contexts": 4,
+      "unique_routings": 4,
+      "resolution": 100.0
+    },
+    "compound": {
+      "contexts": 3,
+      "unique_routings": 3,
+      "resolution": 100.0
+    },
+    "conduct": {
+      "contexts": 3,
+      "unique_routings": 3,
+      "resolution": 100.0
+    },
+    "crane": {
+      "contexts": 3,
+      "unique_routings": 1,
+      "resolution": 33.33333333333333
+    },
+    "current": {
+      "contexts": 4,
+      "unique_routings": 3,
+      "resolution": 75.0
+    },
+    "draft": {
+      "contexts": 4,
+      "unique_routings": 4,
+      "resolution": 100.0
+    },
+    "drive": {
+      "contexts": 4,
+      "unique_routings": 4,
+      "resolution": 100.0
+    },
+    "drop": {
+      "contexts": 4,
+      "unique_routings": 4,
+      "resolution": 100.0
+    },
+    "field": {
+      "contexts": 5,
+      "unique_routings": 5,
+      "resolution": 100.0
+    },
+    "fire": {
+      "contexts": 4,
+      "unique_routings": 4,
+      "resolution": 100.0
+    },
+    "float": {
+      "contexts": 3,
+      "unique_routings": 3,
+      "resolution": 100.0
+    },
+    "fork": {
+      "contexts": 3,
+      "unique_routings": 3,
+      "resolution": 100.0
+    },
+    "frame": {
+      "contexts": 4,
+      "unique_routings": 4,
+      "resolution": 100.0
+    },
+    "function": {
+      "contexts": 3,
+      "unique_routings": 3,
+      "resolution": 100.0
+    },
+    "key": {
+      "contexts": 5,
+      "unique_routings": 5,
+      "resolution": 100.0
+    },
+    "lead": {
+      "contexts": 4,
+      "unique_routings": 4,
+      "resolution": 100.0
+    },
+    "light": {
+      "contexts": 4,
+      "unique_routings": 4,
+      "resolution": 100.0
+    },
+    "line": {
+      "contexts": 5,
+      "unique_routings": 5,
+      "resolution": 100.0
+    },
+    "log": {
+      "contexts": 4,
+      "unique_routings": 4,
+      "resolution": 100.0
+    },
+    "match": {
+      "contexts": 4,
+      "unique_routings": 4,
+      "resolution": 100.0
+    },
+    "memory": {
+      "contexts": 3,
+      "unique_routings": 3,
+      "resolution": 100.0
+    },
+    "minor": {
+      "contexts": 4,
+      "unique_routings": 4,
+      "resolution": 100.0
+    },
+    "model": {
+      "contexts": 4,
+      "unique_routings": 4,
+      "resolution": 100.0
+    },
+    "mouse": {
+      "contexts": 3,
+      "unique_routings": 3,
+      "resolution": 100.0
+    },
+    "net": {
+      "contexts": 4,
+      "unique_routings": 4,
+      "resolution": 100.0
+    },
+    "note": {
+      "contexts": 4,
+      "unique_routings": 4,
+      "resolution": 100.0
+    },
+    "operation": {
+      "contexts": 4,
+      "unique_routings": 4,
+      "resolution": 100.0
+    },
+    "organ": {
+      "contexts": 3,
+      "unique_routings": 3,
+      "resolution": 100.0
+    },
+    "patch": {
+      "contexts": 4,
+      "unique_routings": 4,
+      "resolution": 100.0
+    },
+    "pitch": {
+      "contexts": 4,
+      "unique_routings": 4,
+      "resolution": 100.0
+    },
+    "plant": {
+      "contexts": 4,
+      "unique_routings": 4,
+      "resolution": 100.0
+    },
+    "plate": {
+      "contexts": 4,
+      "unique_routings": 4,
+      "resolution": 100.0
+    },
+    "point": {
+      "contexts": 4,
+      "unique_routings": 4,
+      "resolution": 100.0
+    },
+    "port": {
+      "contexts": 4,
+      "unique_routings": 4,
+      "resolution": 100.0
+    },
+    "power": {
+      "contexts": 4,
+      "unique_routings": 4,
+      "resolution": 100.0
+    },
+    "press": {
+      "contexts": 4,
+      "unique_routings": 3,
+      "resolution": 75.0
+    },
+    "prime": {
+      "contexts": 4,
+      "unique_routings": 4,
+      "resolution": 100.0
+    },
+    "race": {
+      "contexts": 3,
+      "unique_routings": 3,
+      "resolution": 100.0
+    },
+    "record": {
+      "contexts": 4,
+      "unique_routings": 4,
+      "resolution": 100.0
+    },
+    "register": {
+      "contexts": 4,
+      "unique_routings": 4,
+      "resolution": 100.0
+    },
+    "resolution": {
+      "contexts": 4,
+      "unique_routings": 4,
+      "resolution": 100.0
+    },
+    "ring": {
+      "contexts": 4,
+      "unique_routings": 4,
+      "resolution": 100.0
+    },
+    "root": {
+      "contexts": 4,
+      "unique_routings": 4,
+      "resolution": 100.0
+    },
+    "round": {
+      "contexts": 4,
+      "unique_routings": 4,
+      "resolution": 100.0
+    },
+    "run": {
+      "contexts": 4,
+      "unique_routings": 4,
+      "resolution": 100.0
+    },
+    "scale": {
+      "contexts": 5,
+      "unique_routings": 5,
+      "resolution": 100.0
+    },
+    "seal": {
+      "contexts": 4,
+      "unique_routings": 4,
+      "resolution": 100.0
+    },
+    "server": {
+      "contexts": 3,
+      "unique_routings": 3,
+      "resolution": 100.0
+    },
+    "sharp": {
+      "contexts": 4,
+      "unique_routings": 4,
+      "resolution": 100.0
+    },
+    "shell": {
+      "contexts": 4,
+      "unique_routings": 4,
+      "resolution": 100.0
+    },
+    "sink": {
+      "contexts": 3,
+      "unique_routings": 3,
+      "resolution": 100.0
+    },
+    "solution": {
+      "contexts": 4,
+      "unique_routings": 4,
+      "resolution": 100.0
+    },
+    "spring": {
+      "contexts": 4,
+      "unique_routings": 4,
+      "resolution": 100.0
+    },
+    "stage": {
+      "contexts": 4,
+      "unique_routings": 4,
+      "resolution": 100.0
+    },
+    "stem": {
+      "contexts": 4,
+      "unique_routings": 4,
+      "resolution": 100.0
+    },
+    "stock": {
+      "contexts": 4,
+      "unique_routings": 4,
+      "resolution": 100.0
+    },
+    "stream": {
+      "contexts": 4,
+      "unique_routings": 3,
+      "resolution": 75.0
+    },
+    "strike": {
+      "contexts": 4,
+      "unique_routings": 4,
+      "resolution": 100.0
+    },
+    "suit": {
+      "contexts": 4,
+      "unique_routings": 4,
+      "resolution": 100.0
+    },
+    "switch": {
+      "contexts": 4,
+      "unique_routings": 4,
+      "resolution": 100.0
+    },
+    "table": {
+      "contexts": 4,
+      "unique_routings": 4,
+      "resolution": 100.0
+    },
+    "terminal": {
+      "contexts": 4,
+      "unique_routings": 4,
+      "resolution": 100.0
+    },
+    "thread": {
+      "contexts": 3,
+      "unique_routings": 3,
+      "resolution": 100.0
+    },
+    "token": {
+      "contexts": 4,
+      "unique_routings": 4,
+      "resolution": 100.0
+    },
+    "train": {
+      "contexts": 4,
+      "unique_routings": 2,
+      "resolution": 50.0
+    },
+    "tree": {
+      "contexts": 4,
+      "unique_routings": 4,
+      "resolution": 100.0
+    },
+    "trunk": {
+      "contexts": 4,
+      "unique_routings": 4,
+      "resolution": 100.0
+    },
+    "valve": {
+      "contexts": 4,
+      "unique_routings": 4,
+      "resolution": 100.0
+    },
+    "vessel": {
+      "contexts": 4,
+      "unique_routings": 4,
+      "resolution": 100.0
+    },
+    "volume": {
+      "contexts": 4,
+      "unique_routings": 4,
+      "resolution": 100.0
+    },
+    "wave": {
+      "contexts": 4,
+      "unique_routings": 3,
+      "resolution": 75.0
+    },
+    "web": {
+      "contexts": 3,
+      "unique_routings": 3,
+      "resolution": 100.0
+    },
+    "window": {
+      "contexts": 4,
+      "unique_routings": 4,
+      "resolution": 100.0
+    }
+  },
+  "results": [
+    {
+      "word": "bank",
+      "context": "I deposited money at the bank this morning.",
+      "expected_domain": "finance",
+      "bvh_experts": [],
+      "gate_experts": [
+        55,
+        12,
+        57,
+        63,
+        34,
+        42,
+        11,
+        6
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "bank",
+      "context": "We sat on the river bank watching the sunset.",
+      "expected_domain": "nature",
+      "bvh_experts": [],
+      "gate_experts": [
+        63,
+        55,
+        57,
+        12,
+        34,
+        42,
+        39,
+        58
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "bank",
+      "context": "The plane made a sharp bank to the left.",
+      "expected_domain": "aviation",
+      "bvh_experts": [],
+      "gate_experts": [
+        34,
+        6,
+        63,
+        42,
+        14,
+        57,
+        56,
+        36
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "bat",
+      "context": "He swung the bat and hit a home run.",
+      "expected_domain": "sports",
+      "bvh_experts": [],
+      "gate_experts": [
+        6,
+        55,
+        34,
+        58,
+        63,
+        12,
+        57,
+        42
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "bat",
+      "context": "A bat flew out of the cave at dusk.",
+      "expected_domain": "nature",
+      "bvh_experts": [],
+      "gate_experts": [
+        6,
+        44,
+        48,
+        32,
+        52,
+        51,
+        24,
+        12
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "bat",
+      "context": "She went to bat for her colleague in the meeting.",
+      "expected_domain": "business",
+      "bvh_experts": [],
+      "gate_experts": [
+        6,
+        46,
+        34,
+        39,
+        5,
+        17,
+        51,
+        36
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "bow",
+      "context": "She tied a beautiful bow on the gift.",
+      "expected_domain": "craft",
+      "bvh_experts": [],
+      "gate_experts": [
+        6,
+        34,
+        42,
+        55,
+        63,
+        39,
+        57,
+        56
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "bow",
+      "context": "The violinist rosined her bow carefully.",
+      "expected_domain": "music",
+      "bvh_experts": [],
+      "gate_experts": [
+        55,
+        63,
+        6,
+        57,
+        52,
+        12,
+        42,
+        34
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "bow",
+      "context": "The ship's bow cut through the waves.",
+      "expected_domain": "nautical",
+      "bvh_experts": [],
+      "gate_experts": [
+        6,
+        55,
+        56,
+        63,
+        14,
+        34,
+        57,
+        12
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "bow",
+      "context": "He took a bow after the performance.",
+      "expected_domain": "performance",
+      "bvh_experts": [],
+      "gate_experts": [
+        6,
+        39,
+        58,
+        34,
+        38,
+        5,
+        56,
+        23
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "bug",
+      "context": "I found a bug in the code last night.",
+      "expected_domain": "code",
+      "bvh_experts": [],
+      "gate_experts": [
+        3,
+        6,
+        38,
+        34,
+        57,
+        62,
+        51,
+        36
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "bug",
+      "context": "A bug landed on the windowsill.",
+      "expected_domain": "nature",
+      "bvh_experts": [],
+      "gate_experts": [
+        6,
+        3,
+        44,
+        38,
+        32,
+        51,
+        62,
+        48
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "bug",
+      "context": "The room was bugged by intelligence agents.",
+      "expected_domain": "military",
+      "bvh_experts": [],
+      "gate_experts": [
+        6,
+        44,
+        39,
+        34,
+        56,
+        51,
+        58,
+        36
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "cell",
+      "context": "The prisoner sat alone in his cell.",
+      "expected_domain": "law",
+      "bvh_experts": [],
+      "gate_experts": [
+        55,
+        6,
+        63,
+        57,
+        12,
+        34,
+        52,
+        58
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "cell",
+      "context": "Observe the cell through the microscope.",
+      "expected_domain": "science",
+      "bvh_experts": [],
+      "gate_experts": [
+        6,
+        14,
+        38,
+        55,
+        49,
+        3,
+        57,
+        44
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "cell",
+      "context": "My cell phone battery is dead.",
+      "expected_domain": "technology",
+      "bvh_experts": [],
+      "gate_experts": [
+        41,
+        6,
+        44,
+        38,
+        32,
+        24,
+        61,
+        45
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "cell",
+      "context": "The terrorist cell was dismantled.",
+      "expected_domain": "military",
+      "bvh_experts": [],
+      "gate_experts": [
+        55,
+        19,
+        57,
+        49,
+        63,
+        5,
+        58,
+        6
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "chip",
+      "context": "The new chip has 50 billion transistors.",
+      "expected_domain": "technology",
+      "bvh_experts": [],
+      "gate_experts": [
+        6,
+        55,
+        52,
+        57,
+        14,
+        63,
+        12,
+        26
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "chip",
+      "context": "She ate a bag of potato chips.",
+      "expected_domain": "cooking",
+      "bvh_experts": [],
+      "gate_experts": [
+        55,
+        63,
+        34,
+        52,
+        12,
+        57,
+        39,
+        42
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "chip",
+      "context": "He placed his chips on the table.",
+      "expected_domain": "gambling",
+      "bvh_experts": [],
+      "gate_experts": [
+        55,
+        6,
+        34,
+        52,
+        42,
+        63,
+        11,
+        57
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "chip",
+      "context": "There's a chip in the windshield.",
+      "expected_domain": "automotive",
+      "bvh_experts": [],
+      "gate_experts": [
+        6,
+        55,
+        42,
+        52,
+        57,
+        38,
+        51,
+        34
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "cloud",
+      "context": "Store your data in the cloud.",
+      "expected_domain": "technology",
+      "bvh_experts": [],
+      "gate_experts": [
+        57,
+        62,
+        63,
+        6,
+        55,
+        42,
+        52,
+        3
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "cloud",
+      "context": "A dark cloud covered the sun.",
+      "expected_domain": "nature",
+      "bvh_experts": [],
+      "gate_experts": [
+        6,
+        34,
+        39,
+        14,
+        55,
+        51,
+        56,
+        63
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "cloud",
+      "context": "His judgment was clouded by emotion.",
+      "expected_domain": "psychology",
+      "bvh_experts": [],
+      "gate_experts": [
+        6,
+        36,
+        46,
+        44,
+        34,
+        51,
+        39,
+        61
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "code",
+      "context": "Write clean code with proper documentation.",
+      "expected_domain": "code",
+      "bvh_experts": [],
+      "gate_experts": [
+        57,
+        3,
+        36,
+        63,
+        42,
+        55,
+        52,
+        49
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "code",
+      "context": "The spy deciphered the secret code.",
+      "expected_domain": "military",
+      "bvh_experts": [],
+      "gate_experts": [
+        55,
+        57,
+        63,
+        34,
+        49,
+        6,
+        58,
+        36
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "code",
+      "context": "The building code requires fire exits.",
+      "expected_domain": "construction",
+      "bvh_experts": [],
+      "gate_experts": [
+        55,
+        57,
+        63,
+        52,
+        49,
+        12,
+        11,
+        5
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "code",
+      "context": "The genetic code determines protein structure.",
+      "expected_domain": "science",
+      "bvh_experts": [],
+      "gate_experts": [
+        14,
+        49,
+        52,
+        55,
+        63,
+        57,
+        51,
+        12
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "compound",
+      "context": "Mix the chemical compound carefully.",
+      "expected_domain": "science",
+      "bvh_experts": [],
+      "gate_experts": [
+        14,
+        49,
+        57,
+        55,
+        62,
+        63,
+        42,
+        60
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "compound",
+      "context": "The military compound was heavily guarded.",
+      "expected_domain": "military",
+      "bvh_experts": [],
+      "gate_experts": [
+        55,
+        57,
+        63,
+        12,
+        49,
+        5,
+        6,
+        52
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "compound",
+      "context": "Compound interest grows exponentially.",
+      "expected_domain": "finance",
+      "bvh_experts": [],
+      "gate_experts": [],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "conduct",
+      "context": "Copper can conduct electricity.",
+      "expected_domain": "science",
+      "bvh_experts": [],
+      "gate_experts": [
+        14,
+        17,
+        18,
+        28,
+        51,
+        34,
+        11,
+        56
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "conduct",
+      "context": "She will conduct the orchestra tonight.",
+      "expected_domain": "music",
+      "bvh_experts": [],
+      "gate_experts": [
+        18,
+        15,
+        28,
+        5,
+        47,
+        17,
+        38,
+        42
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "conduct",
+      "context": "His conduct was unacceptable.",
+      "expected_domain": "law",
+      "bvh_experts": [],
+      "gate_experts": [
+        41,
+        49,
+        6,
+        19,
+        36,
+        61,
+        32,
+        38
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "crane",
+      "context": "The crane lifted the steel beam.",
+      "expected_domain": "construction",
+      "bvh_experts": [],
+      "gate_experts": [],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "crane",
+      "context": "A crane stood motionless in the shallow water.",
+      "expected_domain": "nature",
+      "bvh_experts": [],
+      "gate_experts": [],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "crane",
+      "context": "She craned her neck to see the stage.",
+      "expected_domain": "general",
+      "bvh_experts": [],
+      "gate_experts": [],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "current",
+      "context": "The current in the river was strong.",
+      "expected_domain": "nature",
+      "bvh_experts": [],
+      "gate_experts": [
+        53,
+        32,
+        38,
+        18,
+        3,
+        60,
+        23,
+        2
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "current",
+      "context": "Measure the electrical current in amperes.",
+      "expected_domain": "science",
+      "bvh_experts": [],
+      "gate_experts": [
+        11,
+        14,
+        57,
+        63,
+        55,
+        42,
+        34,
+        52
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "current",
+      "context": "Current events dominate the news cycle.",
+      "expected_domain": "general",
+      "bvh_experts": [],
+      "gate_experts": [
+        22,
+        7,
+        29,
+        32,
+        60,
+        33,
+        1,
+        59
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "current",
+      "context": "The current price of gold is rising.",
+      "expected_domain": "finance",
+      "bvh_experts": [],
+      "gate_experts": [
+        53,
+        32,
+        38,
+        18,
+        3,
+        60,
+        23,
+        2
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "draft",
+      "context": "Write a first draft of the paper.",
+      "expected_domain": "writing",
+      "bvh_experts": [],
+      "gate_experts": [
+        42,
+        57,
+        63,
+        55,
+        34,
+        51,
+        52,
+        38
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "draft",
+      "context": "The cold draft came through the window.",
+      "expected_domain": "general",
+      "bvh_experts": [],
+      "gate_experts": [
+        34,
+        6,
+        55,
+        63,
+        39,
+        56,
+        36,
+        57
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "draft",
+      "context": "He was drafted into the army.",
+      "expected_domain": "military",
+      "bvh_experts": [],
+      "gate_experts": [
+        34,
+        62,
+        15,
+        5,
+        45,
+        17,
+        63,
+        51
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "draft",
+      "context": "The team's draft pick was controversial.",
+      "expected_domain": "sports",
+      "bvh_experts": [],
+      "gate_experts": [
+        55,
+        24,
+        6,
+        57,
+        62,
+        5,
+        45,
+        63
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "drive",
+      "context": "I drive to work every morning.",
+      "expected_domain": "general",
+      "bvh_experts": [],
+      "gate_experts": [
+        41,
+        38,
+        32,
+        61,
+        28,
+        6,
+        59,
+        3
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "drive",
+      "context": "The hard drive stores 2 terabytes.",
+      "expected_domain": "technology",
+      "bvh_experts": [],
+      "gate_experts": [
+        55,
+        57,
+        52,
+        63,
+        12,
+        42,
+        3,
+        24
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "drive",
+      "context": "She has the drive to succeed.",
+      "expected_domain": "psychology",
+      "bvh_experts": [],
+      "gate_experts": [
+        36,
+        39,
+        34,
+        6,
+        58,
+        8,
+        49,
+        46
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "drive",
+      "context": "He hit a long drive off the tee.",
+      "expected_domain": "sports",
+      "bvh_experts": [],
+      "gate_experts": [
+        34,
+        63,
+        55,
+        6,
+        58,
+        57,
+        52,
+        62
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "drop",
+      "context": "A drop of water fell from the ceiling.",
+      "expected_domain": "nature",
+      "bvh_experts": [],
+      "gate_experts": [
+        6,
+        32,
+        38,
+        44,
+        61,
+        48,
+        59,
+        11
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "drop",
+      "context": "Stock prices dropped 5% today.",
+      "expected_domain": "finance",
+      "bvh_experts": [],
+      "gate_experts": [
+        11,
+        34,
+        19,
+        5,
+        17,
+        36,
+        28,
+        8
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "drop",
+      "context": "Drop the database table carefully.",
+      "expected_domain": "code",
+      "bvh_experts": [],
+      "gate_experts": [
+        22,
+        7,
+        29,
+        32,
+        60,
+        33,
+        1,
+        59
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "drop",
+      "context": "The paratrooper prepared for the drop.",
+      "expected_domain": "military",
+      "bvh_experts": [],
+      "gate_experts": [
+        34,
+        55,
+        63,
+        57,
+        42,
+        52,
+        58,
+        12
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "field",
+      "context": "The magnetic field surrounds the wire.",
+      "expected_domain": "science",
+      "bvh_experts": [],
+      "gate_experts": [
+        14,
+        55,
+        57,
+        63,
+        52,
+        51,
+        34,
+        25
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "field",
+      "context": "The farmer plowed the field.",
+      "expected_domain": "agriculture",
+      "bvh_experts": [],
+      "gate_experts": [
+        55,
+        34,
+        63,
+        12,
+        57,
+        6,
+        23,
+        42
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "field",
+      "context": "She is an expert in her field.",
+      "expected_domain": "general",
+      "bvh_experts": [],
+      "gate_experts": [
+        49,
+        57,
+        41,
+        63,
+        36,
+        55,
+        12,
+        34
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "field",
+      "context": "The soccer field was freshly mowed.",
+      "expected_domain": "sports",
+      "bvh_experts": [],
+      "gate_experts": [
+        55,
+        57,
+        63,
+        12,
+        52,
+        34,
+        6,
+        33
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "field",
+      "context": "Add a new field to the database.",
+      "expected_domain": "code",
+      "bvh_experts": [],
+      "gate_experts": [
+        3,
+        6,
+        62,
+        57,
+        54,
+        52,
+        42,
+        55
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "fire",
+      "context": "The fire spread through the forest.",
+      "expected_domain": "nature",
+      "bvh_experts": [],
+      "gate_experts": [
+        6,
+        32,
+        44,
+        61,
+        24,
+        55,
+        16,
+        38
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "fire",
+      "context": "She was fired from her job.",
+      "expected_domain": "business",
+      "bvh_experts": [],
+      "gate_experts": [
+        34,
+        5,
+        19,
+        51,
+        8,
+        6,
+        28,
+        17
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "fire",
+      "context": "Fire the main engines.",
+      "expected_domain": "aviation",
+      "bvh_experts": [],
+      "gate_experts": [
+        22,
+        7,
+        29,
+        32,
+        60,
+        33,
+        1,
+        59
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "fire",
+      "context": "The soldiers opened fire.",
+      "expected_domain": "military",
+      "bvh_experts": [],
+      "gate_experts": [
+        34,
+        5,
+        63,
+        56,
+        58,
+        19,
+        57,
+        55
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "float",
+      "context": "The boat will float on the water.",
+      "expected_domain": "nature",
+      "bvh_experts": [],
+      "gate_experts": [
+        14,
+        34,
+        56,
+        11,
+        42,
+        17,
+        51,
+        36
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "float",
+      "context": "Declare the variable as a float.",
+      "expected_domain": "code",
+      "bvh_experts": [],
+      "gate_experts": [
+        3,
+        54,
+        6,
+        57,
+        63,
+        51,
+        55,
+        37
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "float",
+      "context": "The currency was allowed to float freely.",
+      "expected_domain": "finance",
+      "bvh_experts": [],
+      "gate_experts": [
+        34,
+        63,
+        57,
+        36,
+        20,
+        11,
+        55,
+        52
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "fork",
+      "context": "Eat with a knife and fork.",
+      "expected_domain": "cooking",
+      "bvh_experts": [],
+      "gate_experts": [
+        63,
+        42,
+        57,
+        55,
+        34,
+        12,
+        52,
+        36
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "fork",
+      "context": "Fork the repository on GitHub.",
+      "expected_domain": "code",
+      "bvh_experts": [],
+      "gate_experts": [],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "fork",
+      "context": "Take the left fork in the road.",
+      "expected_domain": "general",
+      "bvh_experts": [],
+      "gate_experts": [
+        42,
+        58,
+        6,
+        55,
+        57,
+        63,
+        34,
+        56
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "frame",
+      "context": "Put the photo in a frame.",
+      "expected_domain": "art",
+      "bvh_experts": [],
+      "gate_experts": [
+        42,
+        57,
+        55,
+        63,
+        6,
+        34,
+        12,
+        52
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "frame",
+      "context": "The frame rate dropped to 30 fps.",
+      "expected_domain": "technology",
+      "bvh_experts": [],
+      "gate_experts": [
+        6,
+        32,
+        38,
+        52,
+        61,
+        3,
+        44,
+        55
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "frame",
+      "context": "He was framed for the crime.",
+      "expected_domain": "law",
+      "bvh_experts": [],
+      "gate_experts": [
+        34,
+        58,
+        19,
+        46,
+        36,
+        8,
+        17,
+        51
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "frame",
+      "context": "The steel frame supports the building.",
+      "expected_domain": "construction",
+      "bvh_experts": [],
+      "gate_experts": [
+        55,
+        57,
+        63,
+        6,
+        52,
+        42,
+        24,
+        34
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "function",
+      "context": "Define a function that returns a list.",
+      "expected_domain": "code",
+      "bvh_experts": [],
+      "gate_experts": [
+        3,
+        54,
+        57,
+        51,
+        49,
+        14,
+        55,
+        63
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "function",
+      "context": "The function of the liver is to filter blood.",
+      "expected_domain": "medicine",
+      "bvh_experts": [],
+      "gate_experts": [
+        3,
+        49,
+        32,
+        6,
+        38,
+        54,
+        16,
+        57
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "function",
+      "context": "We attended a formal function last night.",
+      "expected_domain": "general",
+      "bvh_experts": [],
+      "gate_experts": [
+        55,
+        63,
+        5,
+        57,
+        34,
+        12,
+        6,
+        49
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "key",
+      "context": "I lost my house key.",
+      "expected_domain": "general",
+      "bvh_experts": [],
+      "gate_experts": [
+        42,
+        55,
+        34,
+        63,
+        57,
+        52,
+        6,
+        12
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "key",
+      "context": "The key to success is persistence.",
+      "expected_domain": "general",
+      "bvh_experts": [],
+      "gate_experts": [
+        6,
+        32,
+        53,
+        38,
+        31,
+        3,
+        2,
+        44
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "key",
+      "context": "Press the enter key.",
+      "expected_domain": "technology",
+      "bvh_experts": [],
+      "gate_experts": [
+        3,
+        42,
+        38,
+        54,
+        55,
+        63,
+        52,
+        57
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "key",
+      "context": "The song is in the key of C major.",
+      "expected_domain": "music",
+      "bvh_experts": [],
+      "gate_experts": [
+        62,
+        6,
+        57,
+        63,
+        51,
+        55,
+        34,
+        11
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "key",
+      "context": "The primary key must be unique.",
+      "expected_domain": "code",
+      "bvh_experts": [],
+      "gate_experts": [
+        52,
+        3,
+        62,
+        57,
+        51,
+        49,
+        55,
+        63
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "lead",
+      "context": "Lead is a heavy toxic metal.",
+      "expected_domain": "science",
+      "bvh_experts": [],
+      "gate_experts": [
+        22,
+        7,
+        29,
+        32,
+        60,
+        33,
+        1,
+        59
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "lead",
+      "context": "She will lead the team to victory.",
+      "expected_domain": "sports",
+      "bvh_experts": [],
+      "gate_experts": [
+        28,
+        15,
+        58,
+        19,
+        17,
+        47,
+        38,
+        5
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "lead",
+      "context": "The detective followed every lead.",
+      "expected_domain": "law",
+      "bvh_experts": [],
+      "gate_experts": [
+        34,
+        36,
+        55,
+        57,
+        63,
+        46,
+        5,
+        8
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "lead",
+      "context": "He plays the lead guitar.",
+      "expected_domain": "music",
+      "bvh_experts": [],
+      "gate_experts": [
+        58,
+        6,
+        5,
+        23,
+        55,
+        51,
+        57,
+        24
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "light",
+      "context": "Light travels at 299,792 km/s.",
+      "expected_domain": "science",
+      "bvh_experts": [],
+      "gate_experts": [
+        22,
+        7,
+        29,
+        32,
+        60,
+        1,
+        33,
+        59
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "light",
+      "context": "The room needs more light.",
+      "expected_domain": "general",
+      "bvh_experts": [],
+      "gate_experts": [
+        34,
+        36,
+        57,
+        42,
+        63,
+        6,
+        55,
+        56
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "light",
+      "context": "She prefers light meals.",
+      "expected_domain": "cooking",
+      "bvh_experts": [],
+      "gate_experts": [
+        2,
+        6,
+        36,
+        39,
+        42,
+        56,
+        62,
+        51
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "light",
+      "context": "He made light of the situation.",
+      "expected_domain": "general",
+      "bvh_experts": [],
+      "gate_experts": [
+        6,
+        23,
+        39,
+        51,
+        36,
+        2,
+        14,
+        46
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "line",
+      "context": "Draw a straight line.",
+      "expected_domain": "art",
+      "bvh_experts": [],
+      "gate_experts": [
+        42,
+        14,
+        3,
+        54,
+        51,
+        57,
+        63,
+        6
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "line",
+      "context": "Read line 42 of the code.",
+      "expected_domain": "code",
+      "bvh_experts": [],
+      "gate_experts": [
+        3,
+        54,
+        51,
+        6,
+        38,
+        62,
+        52,
+        16
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "line",
+      "context": "Wait in line at the store.",
+      "expected_domain": "general",
+      "bvh_experts": [],
+      "gate_experts": [
+        42,
+        38,
+        34,
+        57,
+        36,
+        6,
+        63,
+        51
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "line",
+      "context": "The fishing line snapped.",
+      "expected_domain": "sports",
+      "bvh_experts": [],
+      "gate_experts": [
+        55,
+        57,
+        52,
+        63,
+        42,
+        12,
+        6,
+        34
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "line",
+      "context": "The product line was expanded.",
+      "expected_domain": "business",
+      "bvh_experts": [],
+      "gate_experts": [
+        57,
+        55,
+        52,
+        49,
+        63,
+        51,
+        38,
+        36
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "log",
+      "context": "Check the server log for errors.",
+      "expected_domain": "code",
+      "bvh_experts": [],
+      "gate_experts": [
+        3,
+        57,
+        55,
+        6,
+        42,
+        63,
+        52,
+        38
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "log",
+      "context": "He sat on a fallen log.",
+      "expected_domain": "nature",
+      "bvh_experts": [],
+      "gate_experts": [
+        63,
+        55,
+        6,
+        12,
+        34,
+        57,
+        58,
+        52
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "log",
+      "context": "Calculate the natural log of x.",
+      "expected_domain": "science",
+      "bvh_experts": [],
+      "gate_experts": [
+        54,
+        52,
+        3,
+        51,
+        11,
+        57,
+        63,
+        14
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "log",
+      "context": "Log your hours in the timesheet.",
+      "expected_domain": "business",
+      "bvh_experts": [],
+      "gate_experts": [
+        22,
+        7,
+        29,
+        32,
+        60,
+        33,
+        1,
+        59
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "match",
+      "context": "Light a match to start the fire.",
+      "expected_domain": "general",
+      "bvh_experts": [],
+      "gate_experts": [
+        42,
+        6,
+        55,
+        34,
+        63,
+        57,
+        39,
+        52
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "match",
+      "context": "The tennis match lasted three hours.",
+      "expected_domain": "sports",
+      "bvh_experts": [],
+      "gate_experts": [
+        55,
+        58,
+        57,
+        63,
+        52,
+        34,
+        5,
+        38
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "match",
+      "context": "Find a regex match in the string.",
+      "expected_domain": "code",
+      "bvh_experts": [],
+      "gate_experts": [
+        3,
+        51,
+        57,
+        54,
+        6,
+        52,
+        62,
+        63
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "match",
+      "context": "The colors don't match.",
+      "expected_domain": "art",
+      "bvh_experts": [],
+      "gate_experts": [
+        56,
+        36,
+        17,
+        8,
+        38,
+        42,
+        28,
+        3
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "memory",
+      "context": "The GPU has 16 GB of memory.",
+      "expected_domain": "technology",
+      "bvh_experts": [],
+      "gate_experts": [
+        57,
+        11,
+        63,
+        55,
+        34,
+        62,
+        3,
+        45
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "memory",
+      "context": "She has fond memories of childhood.",
+      "expected_domain": "psychology",
+      "bvh_experts": [],
+      "gate_experts": [],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "memory",
+      "context": "Allocate memory for the array.",
+      "expected_domain": "code",
+      "bvh_experts": [],
+      "gate_experts": [
+        3,
+        51,
+        57,
+        54,
+        42,
+        55,
+        6,
+        62
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "minor",
+      "context": "She studied music with a minor in math.",
+      "expected_domain": "education",
+      "bvh_experts": [],
+      "gate_experts": [
+        2,
+        6,
+        15,
+        24,
+        36,
+        34,
+        49,
+        45
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "minor",
+      "context": "It's just a minor injury.",
+      "expected_domain": "medicine",
+      "bvh_experts": [],
+      "gate_experts": [
+        38,
+        2,
+        43,
+        8,
+        58,
+        4,
+        36,
+        46
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "minor",
+      "context": "A minor cannot sign a contract.",
+      "expected_domain": "law",
+      "bvh_experts": [],
+      "gate_experts": [
+        38,
+        2,
+        32,
+        6,
+        24,
+        44,
+        23,
+        51
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "minor",
+      "context": "The symphony is in A minor.",
+      "expected_domain": "music",
+      "bvh_experts": [],
+      "gate_experts": [
+        45,
+        37,
+        52,
+        63,
+        62,
+        12,
+        33,
+        55
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "model",
+      "context": "Train the machine learning model.",
+      "expected_domain": "technology",
+      "bvh_experts": [],
+      "gate_experts": [
+        55,
+        57,
+        3,
+        42,
+        52,
+        63,
+        62,
+        60
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "model",
+      "context": "She works as a fashion model.",
+      "expected_domain": "art",
+      "bvh_experts": [],
+      "gate_experts": [
+        63,
+        57,
+        55,
+        12,
+        49,
+        34,
+        52,
+        5
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "model",
+      "context": "Build a scale model of the building.",
+      "expected_domain": "construction",
+      "bvh_experts": [],
+      "gate_experts": [
+        57,
+        42,
+        63,
+        14,
+        51,
+        52,
+        55,
+        49
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "model",
+      "context": "The Model T revolutionized transportation.",
+      "expected_domain": "general",
+      "bvh_experts": [],
+      "gate_experts": [
+        6,
+        49,
+        32,
+        3,
+        26,
+        52,
+        61,
+        44
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "mouse",
+      "context": "Click with the left mouse button.",
+      "expected_domain": "technology",
+      "bvh_experts": [],
+      "gate_experts": [
+        62,
+        6,
+        3,
+        52,
+        60,
+        24,
+        37,
+        45
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "mouse",
+      "context": "A mouse scurried across the floor.",
+      "expected_domain": "nature",
+      "bvh_experts": [],
+      "gate_experts": [
+        6,
+        3,
+        38,
+        32,
+        24,
+        12,
+        52,
+        14
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "mouse",
+      "context": "She's quiet as a mouse.",
+      "expected_domain": "general",
+      "bvh_experts": [],
+      "gate_experts": [
+        39,
+        6,
+        34,
+        36,
+        63,
+        58,
+        48,
+        52
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "net",
+      "context": "The neural net has 7 billion parameters.",
+      "expected_domain": "technology",
+      "bvh_experts": [],
+      "gate_experts": [
+        52,
+        55,
+        14,
+        57,
+        63,
+        12,
+        24,
+        49
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "net",
+      "context": "Cast the fishing net into the sea.",
+      "expected_domain": "nature",
+      "bvh_experts": [],
+      "gate_experts": [
+        55,
+        6,
+        34,
+        63,
+        42,
+        38,
+        57,
+        51
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "net",
+      "context": "The ball hit the net.",
+      "expected_domain": "sports",
+      "bvh_experts": [],
+      "gate_experts": [
+        34,
+        6,
+        55,
+        62,
+        63,
+        52,
+        12,
+        57
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "net",
+      "context": "Calculate the net profit.",
+      "expected_domain": "finance",
+      "bvh_experts": [],
+      "gate_experts": [
+        6,
+        11,
+        51,
+        14,
+        54,
+        24,
+        62,
+        7
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "note",
+      "context": "Take note of the important details.",
+      "expected_domain": "general",
+      "bvh_experts": [],
+      "gate_experts": [
+        38,
+        32,
+        61,
+        33,
+        3,
+        18,
+        36,
+        48
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "note",
+      "context": "She played a perfect high note.",
+      "expected_domain": "music",
+      "bvh_experts": [],
+      "gate_experts": [
+        34,
+        63,
+        55,
+        58,
+        39,
+        57,
+        14,
+        42
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "note",
+      "context": "A banknote fell from his pocket.",
+      "expected_domain": "finance",
+      "bvh_experts": [],
+      "gate_experts": [
+        52,
+        55,
+        48,
+        12,
+        57,
+        63,
+        51,
+        24
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "note",
+      "context": "The doctor wrote a note to the patient.",
+      "expected_domain": "medicine",
+      "bvh_experts": [],
+      "gate_experts": [
+        42,
+        34,
+        57,
+        55,
+        63,
+        51,
+        5,
+        6
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "operation",
+      "context": "The military operation was classified.",
+      "expected_domain": "military",
+      "bvh_experts": [],
+      "gate_experts": [
+        55,
+        19,
+        5,
+        34,
+        57,
+        63,
+        59,
+        49
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "operation",
+      "context": "She needs a heart operation.",
+      "expected_domain": "medicine",
+      "bvh_experts": [],
+      "gate_experts": [
+        34,
+        63,
+        57,
+        55,
+        52,
+        49,
+        51,
+        12
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "operation",
+      "context": "The bitwise operation flips all bits.",
+      "expected_domain": "code",
+      "bvh_experts": [],
+      "gate_experts": [
+        3,
+        57,
+        54,
+        63,
+        51,
+        49,
+        55,
+        52
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "operation",
+      "context": "The factory resumed operations.",
+      "expected_domain": "business",
+      "bvh_experts": [],
+      "gate_experts": [
+        34,
+        5,
+        63,
+        57,
+        19,
+        55,
+        11,
+        62
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "organ",
+      "context": "The heart is a vital organ.",
+      "expected_domain": "medicine",
+      "bvh_experts": [],
+      "gate_experts": [
+        49,
+        63,
+        57,
+        55,
+        14,
+        12,
+        62,
+        52
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "organ",
+      "context": "She plays the pipe organ at church.",
+      "expected_domain": "music",
+      "bvh_experts": [],
+      "gate_experts": [
+        55,
+        12,
+        63,
+        57,
+        52,
+        6,
+        20,
+        58
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "organ",
+      "context": "The organ of government is inefficient.",
+      "expected_domain": "law",
+      "bvh_experts": [],
+      "gate_experts": [
+        6,
+        49,
+        44,
+        38,
+        32,
+        61,
+        24,
+        51
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "patch",
+      "context": "Apply the security patch immediately.",
+      "expected_domain": "code",
+      "bvh_experts": [],
+      "gate_experts": [
+        3,
+        57,
+        42,
+        55,
+        52,
+        63,
+        62,
+        34
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "patch",
+      "context": "The pirate wore an eye patch.",
+      "expected_domain": "general",
+      "bvh_experts": [],
+      "gate_experts": [
+        63,
+        55,
+        52,
+        34,
+        12,
+        57,
+        6,
+        48
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "patch",
+      "context": "A patch of wildflowers grew in the meadow.",
+      "expected_domain": "nature",
+      "bvh_experts": [],
+      "gate_experts": [
+        6,
+        32,
+        38,
+        3,
+        52,
+        44,
+        48,
+        24
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "patch",
+      "context": "Patch the drywall before painting.",
+      "expected_domain": "construction",
+      "bvh_experts": [],
+      "gate_experts": [
+        22,
+        7,
+        29,
+        32,
+        60,
+        33,
+        1,
+        59
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "pitch",
+      "context": "The singer has perfect pitch.",
+      "expected_domain": "music",
+      "bvh_experts": [],
+      "gate_experts": [
+        63,
+        57,
+        36,
+        52,
+        34,
+        55,
+        14,
+        49
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "pitch",
+      "context": "He made his sales pitch to investors.",
+      "expected_domain": "business",
+      "bvh_experts": [],
+      "gate_experts": [
+        5,
+        34,
+        57,
+        63,
+        55,
+        46,
+        36,
+        41
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "pitch",
+      "context": "The pitch was a fastball inside.",
+      "expected_domain": "sports",
+      "bvh_experts": [],
+      "gate_experts": [
+        6,
+        32,
+        48,
+        52,
+        44,
+        38,
+        61,
+        57
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "pitch",
+      "context": "Apply pitch to waterproof the boat.",
+      "expected_domain": "nautical",
+      "bvh_experts": [],
+      "gate_experts": [
+        6,
+        62,
+        44,
+        51,
+        3,
+        52,
+        60,
+        48
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "plant",
+      "context": "Water the plant every morning.",
+      "expected_domain": "nature",
+      "bvh_experts": [],
+      "gate_experts": [
+        42,
+        55,
+        57,
+        63,
+        12,
+        6,
+        34,
+        49
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "plant",
+      "context": "The manufacturing plant employs 500 people.",
+      "expected_domain": "business",
+      "bvh_experts": [],
+      "gate_experts": [
+        55,
+        57,
+        49,
+        63,
+        12,
+        6,
+        52,
+        33
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "plant",
+      "context": "The spy planted evidence.",
+      "expected_domain": "military",
+      "bvh_experts": [],
+      "gate_experts": [
+        28,
+        42,
+        58,
+        56,
+        17,
+        5,
+        18,
+        8
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "plant",
+      "context": "The power plant generates 500 MW.",
+      "expected_domain": "science",
+      "bvh_experts": [],
+      "gate_experts": [
+        55,
+        52,
+        57,
+        12,
+        63,
+        49,
+        24,
+        14
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "plate",
+      "context": "Put the food on the plate.",
+      "expected_domain": "cooking",
+      "bvh_experts": [],
+      "gate_experts": [
+        42,
+        55,
+        57,
+        63,
+        34,
+        6,
+        12,
+        39
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "plate",
+      "context": "The tectonic plates shifted.",
+      "expected_domain": "science",
+      "bvh_experts": [],
+      "gate_experts": [
+        14,
+        55,
+        63,
+        57,
+        52,
+        12,
+        49,
+        51
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "plate",
+      "context": "The batter stepped up to the plate.",
+      "expected_domain": "sports",
+      "bvh_experts": [],
+      "gate_experts": [
+        34,
+        63,
+        57,
+        58,
+        55,
+        12,
+        52,
+        62
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "plate",
+      "context": "Gold plate the jewelry.",
+      "expected_domain": "art",
+      "bvh_experts": [],
+      "gate_experts": [
+        52,
+        24,
+        51,
+        14,
+        62,
+        6,
+        38,
+        57
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "point",
+      "context": "The point of the argument is clear.",
+      "expected_domain": "general",
+      "bvh_experts": [],
+      "gate_experts": [
+        32,
+        38,
+        6,
+        61,
+        44,
+        37,
+        22,
+        53
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "point",
+      "context": "A floating point number.",
+      "expected_domain": "code",
+      "bvh_experts": [],
+      "gate_experts": [
+        24,
+        3,
+        52,
+        51,
+        57,
+        55,
+        63,
+        54
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "point",
+      "context": "She scored the winning point.",
+      "expected_domain": "sports",
+      "bvh_experts": [],
+      "gate_experts": [
+        34,
+        63,
+        52,
+        58,
+        55,
+        57,
+        5,
+        45
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "point",
+      "context": "The compass points north.",
+      "expected_domain": "general",
+      "bvh_experts": [],
+      "gate_experts": [
+        56,
+        38,
+        14,
+        28,
+        6,
+        58,
+        34,
+        3
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "port",
+      "context": "The ship docked at the port.",
+      "expected_domain": "nautical",
+      "bvh_experts": [],
+      "gate_experts": [
+        6,
+        55,
+        12,
+        34,
+        57,
+        63,
+        58,
+        52
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "port",
+      "context": "Open port 8080 for the web server.",
+      "expected_domain": "code",
+      "bvh_experts": [],
+      "gate_experts": [
+        3,
+        44,
+        6,
+        38,
+        24,
+        42,
+        57,
+        51
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "port",
+      "context": "Port the application to Linux.",
+      "expected_domain": "code",
+      "bvh_experts": [],
+      "gate_experts": [
+        22,
+        7,
+        29,
+        32,
+        60,
+        33,
+        1,
+        59
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "port",
+      "context": "She poured a glass of port wine.",
+      "expected_domain": "cooking",
+      "bvh_experts": [],
+      "gate_experts": [
+        6,
+        55,
+        12,
+        52,
+        63,
+        26,
+        33,
+        57
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "power",
+      "context": "Calculate the power dissipated by the resistor.",
+      "expected_domain": "science",
+      "bvh_experts": [],
+      "gate_experts": [
+        6,
+        11,
+        14,
+        51,
+        62,
+        54,
+        57,
+        3
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "power",
+      "context": "Power corrupts absolutely.",
+      "expected_domain": "general",
+      "bvh_experts": [],
+      "gate_experts": [
+        22,
+        7,
+        29,
+        32,
+        60,
+        33,
+        1,
+        59
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "power",
+      "context": "The power went out during the storm.",
+      "expected_domain": "general",
+      "bvh_experts": [],
+      "gate_experts": [
+        6,
+        32,
+        49,
+        38,
+        44,
+        16,
+        61,
+        3
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "power",
+      "context": "Raise x to the power of n.",
+      "expected_domain": "science",
+      "bvh_experts": [],
+      "gate_experts": [
+        54,
+        3,
+        14,
+        16,
+        51,
+        37,
+        6,
+        57
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "press",
+      "context": "Press the button to start.",
+      "expected_domain": "technology",
+      "bvh_experts": [],
+      "gate_experts": [
+        22,
+        7,
+        29,
+        32,
+        60,
+        33,
+        1,
+        59
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "press",
+      "context": "The press covered the event.",
+      "expected_domain": "general",
+      "bvh_experts": [],
+      "gate_experts": [
+        6,
+        38,
+        5,
+        32,
+        44,
+        49,
+        24,
+        19
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "press",
+      "context": "He can bench press 200 pounds.",
+      "expected_domain": "sports",
+      "bvh_experts": [],
+      "gate_experts": [
+        11,
+        34,
+        62,
+        63,
+        52,
+        28,
+        51,
+        57
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "press",
+      "context": "Press the grapes to make wine.",
+      "expected_domain": "cooking",
+      "bvh_experts": [],
+      "gate_experts": [
+        22,
+        7,
+        29,
+        32,
+        60,
+        33,
+        1,
+        59
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "prime",
+      "context": "7 is a prime number.",
+      "expected_domain": "science",
+      "bvh_experts": [],
+      "gate_experts": [
+        62,
+        14,
+        6,
+        54,
+        24,
+        51,
+        57,
+        49
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "prime",
+      "context": "The prime minister addressed the nation.",
+      "expected_domain": "general",
+      "bvh_experts": [],
+      "gate_experts": [
+        6,
+        32,
+        44,
+        53,
+        54,
+        38,
+        14,
+        24
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "prime",
+      "context": "Prime the pump before starting.",
+      "expected_domain": "construction",
+      "bvh_experts": [],
+      "gate_experts": [
+        22,
+        7,
+        29,
+        32,
+        60,
+        33,
+        1,
+        59
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "prime",
+      "context": "She is in her prime.",
+      "expected_domain": "general",
+      "bvh_experts": [],
+      "gate_experts": [
+        36,
+        41,
+        34,
+        62,
+        2,
+        17,
+        8,
+        39
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "race",
+      "context": "She won the 100 meter race.",
+      "expected_domain": "sports",
+      "bvh_experts": [],
+      "gate_experts": [
+        55,
+        34,
+        63,
+        12,
+        57,
+        5,
+        52,
+        58
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "race",
+      "context": "A race condition in the multithreaded code.",
+      "expected_domain": "code",
+      "bvh_experts": [],
+      "gate_experts": [
+        6,
+        49,
+        32,
+        52,
+        38,
+        57,
+        61,
+        14
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "race",
+      "context": "The human race faces many challenges.",
+      "expected_domain": "general",
+      "bvh_experts": [],
+      "gate_experts": [
+        49,
+        12,
+        55,
+        52,
+        63,
+        14,
+        57,
+        51
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "record",
+      "context": "She broke the world record.",
+      "expected_domain": "sports",
+      "bvh_experts": [],
+      "gate_experts": [
+        34,
+        11,
+        5,
+        63,
+        52,
+        55,
+        57,
+        36
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "record",
+      "context": "Record the meeting for later.",
+      "expected_domain": "technology",
+      "bvh_experts": [],
+      "gate_experts": [
+        22,
+        7,
+        29,
+        32,
+        60,
+        33,
+        1,
+        59
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "record",
+      "context": "Check the patient's medical record.",
+      "expected_domain": "medicine",
+      "bvh_experts": [],
+      "gate_experts": [
+        55,
+        42,
+        57,
+        63,
+        52,
+        49,
+        34,
+        5
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "record",
+      "context": "Insert a record into the database.",
+      "expected_domain": "code",
+      "bvh_experts": [],
+      "gate_experts": [
+        3,
+        6,
+        51,
+        57,
+        42,
+        55,
+        54,
+        62
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "register",
+      "context": "Store the value in a CPU register.",
+      "expected_domain": "technology",
+      "bvh_experts": [],
+      "gate_experts": [
+        3,
+        57,
+        42,
+        63,
+        55,
+        62,
+        54,
+        52
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "register",
+      "context": "Register for the conference online.",
+      "expected_domain": "general",
+      "bvh_experts": [],
+      "gate_experts": [
+        22,
+        7,
+        29,
+        32,
+        60,
+        33,
+        1,
+        59
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "register",
+      "context": "The singer has an impressive vocal register.",
+      "expected_domain": "music",
+      "bvh_experts": [],
+      "gate_experts": [
+        63,
+        62,
+        57,
+        52,
+        36,
+        55,
+        34,
+        49
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "register",
+      "context": "Open the cash register.",
+      "expected_domain": "business",
+      "bvh_experts": [],
+      "gate_experts": [
+        42,
+        55,
+        57,
+        63,
+        12,
+        52,
+        34,
+        51
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "resolution",
+      "context": "The screen resolution is 4K.",
+      "expected_domain": "technology",
+      "bvh_experts": [],
+      "gate_experts": [
+        11,
+        57,
+        52,
+        3,
+        63,
+        55,
+        62,
+        36
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "resolution",
+      "context": "The UN passed a resolution.",
+      "expected_domain": "law",
+      "bvh_experts": [],
+      "gate_experts": [
+        5,
+        19,
+        55,
+        63,
+        57,
+        52,
+        34,
+        12
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "resolution",
+      "context": "New Year's resolutions rarely last.",
+      "expected_domain": "general",
+      "bvh_experts": [],
+      "gate_experts": [
+        52,
+        63,
+        57,
+        55,
+        34,
+        49,
+        45,
+        12
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "resolution",
+      "context": "The conflict reached a peaceful resolution.",
+      "expected_domain": "general",
+      "bvh_experts": [],
+      "gate_experts": [
+        34,
+        19,
+        36,
+        63,
+        57,
+        5,
+        58,
+        20
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "ring",
+      "context": "She wore a diamond ring.",
+      "expected_domain": "general",
+      "bvh_experts": [],
+      "gate_experts": [
+        55,
+        34,
+        63,
+        57,
+        6,
+        12,
+        39,
+        5
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "ring",
+      "context": "The boxing ring was set up.",
+      "expected_domain": "sports",
+      "bvh_experts": [],
+      "gate_experts": [
+        55,
+        52,
+        63,
+        12,
+        57,
+        6,
+        34,
+        58
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "ring",
+      "context": "The phone started to ring.",
+      "expected_domain": "technology",
+      "bvh_experts": [],
+      "gate_experts": [
+        34,
+        39,
+        58,
+        42,
+        57,
+        63,
+        5,
+        55
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "ring",
+      "context": "A ring of satellites orbits Earth.",
+      "expected_domain": "science",
+      "bvh_experts": [],
+      "gate_experts": [
+        6,
+        32,
+        44,
+        38,
+        52,
+        61,
+        48,
+        14
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "root",
+      "context": "The tree's roots go deep.",
+      "expected_domain": "nature",
+      "bvh_experts": [],
+      "gate_experts": [
+        55,
+        34,
+        57,
+        63,
+        14,
+        6,
+        12,
+        51
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "root",
+      "context": "Find the square root of 144.",
+      "expected_domain": "science",
+      "bvh_experts": [],
+      "gate_experts": [
+        54,
+        51,
+        52,
+        14,
+        3,
+        57,
+        63,
+        55
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "root",
+      "context": "Root access is dangerous.",
+      "expected_domain": "code",
+      "bvh_experts": [],
+      "gate_experts": [
+        22,
+        7,
+        29,
+        32,
+        60,
+        33,
+        1,
+        59
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "root",
+      "context": "We must root out corruption.",
+      "expected_domain": "law",
+      "bvh_experts": [],
+      "gate_experts": [
+        38,
+        47,
+        46,
+        19,
+        28,
+        51,
+        6,
+        39
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "round",
+      "context": "The Earth is round.",
+      "expected_domain": "science",
+      "bvh_experts": [],
+      "gate_experts": [
+        14,
+        63,
+        34,
+        55,
+        36,
+        6,
+        57,
+        52
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "round",
+      "context": "He survived the first round of interviews.",
+      "expected_domain": "business",
+      "bvh_experts": [],
+      "gate_experts": [
+        34,
+        45,
+        52,
+        63,
+        37,
+        19,
+        57,
+        58
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "round",
+      "context": "Fire another round.",
+      "expected_domain": "military",
+      "bvh_experts": [],
+      "gate_experts": [
+        34,
+        42,
+        58,
+        57,
+        38,
+        6,
+        55,
+        37
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "round",
+      "context": "Round the number to two decimals.",
+      "expected_domain": "code",
+      "bvh_experts": [],
+      "gate_experts": [
+        22,
+        7,
+        29,
+        32,
+        60,
+        33,
+        1,
+        59
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "run",
+      "context": "Run the program with debug flags.",
+      "expected_domain": "code",
+      "bvh_experts": [],
+      "gate_experts": [
+        22,
+        7,
+        29,
+        32,
+        60,
+        33,
+        1,
+        59
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "run",
+      "context": "She went for a morning run.",
+      "expected_domain": "sports",
+      "bvh_experts": [],
+      "gate_experts": [
+        63,
+        34,
+        55,
+        39,
+        57,
+        42,
+        12,
+        58
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "run",
+      "context": "There was a run on the bank.",
+      "expected_domain": "finance",
+      "bvh_experts": [],
+      "gate_experts": [
+        6,
+        44,
+        58,
+        39,
+        38,
+        34,
+        5,
+        19
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "run",
+      "context": "The play had a long run on Broadway.",
+      "expected_domain": "performance",
+      "bvh_experts": [],
+      "gate_experts": [
+        34,
+        5,
+        36,
+        63,
+        57,
+        11,
+        52,
+        20
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "scale",
+      "context": "Scale the image to 50%.",
+      "expected_domain": "technology",
+      "bvh_experts": [],
+      "gate_experts": [
+        22,
+        7,
+        29,
+        32,
+        60,
+        33,
+        1,
+        59
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "scale",
+      "context": "The fish has beautiful scales.",
+      "expected_domain": "nature",
+      "bvh_experts": [],
+      "gate_experts": [
+        55,
+        63,
+        57,
+        34,
+        14,
+        6,
+        12,
+        52
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "scale",
+      "context": "Practice the C major scale.",
+      "expected_domain": "music",
+      "bvh_experts": [],
+      "gate_experts": [
+        57,
+        63,
+        55,
+        52,
+        12,
+        42,
+        14,
+        51
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "scale",
+      "context": "The scale of the problem is enormous.",
+      "expected_domain": "general",
+      "bvh_experts": [],
+      "gate_experts": [
+        6,
+        38,
+        11,
+        49,
+        52,
+        32,
+        14,
+        51
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "scale",
+      "context": "Step on the bathroom scale.",
+      "expected_domain": "general",
+      "bvh_experts": [],
+      "gate_experts": [
+        11,
+        42,
+        55,
+        57,
+        63,
+        34,
+        52,
+        38
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "seal",
+      "context": "Seal the envelope before mailing.",
+      "expected_domain": "general",
+      "bvh_experts": [],
+      "gate_experts": [],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "seal",
+      "context": "A seal basked on the rocks.",
+      "expected_domain": "nature",
+      "bvh_experts": [],
+      "gate_experts": [
+        6,
+        52,
+        44,
+        48,
+        51,
+        38,
+        32,
+        55
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "seal",
+      "context": "The deal was sealed with a handshake.",
+      "expected_domain": "business",
+      "bvh_experts": [],
+      "gate_experts": [
+        19,
+        34,
+        5,
+        38,
+        17,
+        46,
+        58,
+        36
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "seal",
+      "context": "Break the wax seal on the document.",
+      "expected_domain": "law",
+      "bvh_experts": [],
+      "gate_experts": [
+        42,
+        34,
+        63,
+        57,
+        52,
+        55,
+        56,
+        38
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "server",
+      "context": "The web server handles 10K requests/sec.",
+      "expected_domain": "code",
+      "bvh_experts": [],
+      "gate_experts": [
+        3,
+        62,
+        52,
+        55,
+        57,
+        60,
+        7,
+        22
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "server",
+      "context": "The server brought our drinks.",
+      "expected_domain": "general",
+      "bvh_experts": [],
+      "gate_experts": [
+        6,
+        3,
+        32,
+        55,
+        52,
+        49,
+        57,
+        12
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "server",
+      "context": "She is the best server on the tennis team.",
+      "expected_domain": "sports",
+      "bvh_experts": [],
+      "gate_experts": [
+        57,
+        55,
+        6,
+        63,
+        12,
+        52,
+        34,
+        39
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "sharp",
+      "context": "The knife is very sharp.",
+      "expected_domain": "general",
+      "bvh_experts": [],
+      "gate_experts": [
+        34,
+        36,
+        2,
+        42,
+        63,
+        56,
+        57,
+        17
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "sharp",
+      "context": "Play F sharp on the piano.",
+      "expected_domain": "music",
+      "bvh_experts": [],
+      "gate_experts": [
+        45,
+        37,
+        52,
+        51,
+        24,
+        62,
+        12,
+        48
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "sharp",
+      "context": "She has a sharp mind.",
+      "expected_domain": "general",
+      "bvh_experts": [],
+      "gate_experts": [
+        2,
+        39,
+        58,
+        36,
+        56,
+        23,
+        8,
+        17
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "sharp",
+      "context": "The turn was too sharp.",
+      "expected_domain": "general",
+      "bvh_experts": [],
+      "gate_experts": [
+        34,
+        36,
+        56,
+        58,
+        63,
+        17,
+        8,
+        14
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "shell",
+      "context": "Open a bash shell.",
+      "expected_domain": "code",
+      "bvh_experts": [],
+      "gate_experts": [
+        3,
+        42,
+        57,
+        63,
+        55,
+        6,
+        52,
+        38
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "shell",
+      "context": "She collected shells on the beach.",
+      "expected_domain": "nature",
+      "bvh_experts": [],
+      "gate_experts": [
+        55,
+        63,
+        6,
+        57,
+        34,
+        12,
+        14,
+        42
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "shell",
+      "context": "The artillery shell exploded.",
+      "expected_domain": "military",
+      "bvh_experts": [],
+      "gate_experts": [
+        55,
+        6,
+        57,
+        63,
+        12,
+        52,
+        34,
+        24
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "shell",
+      "context": "The building was just a shell.",
+      "expected_domain": "construction",
+      "bvh_experts": [],
+      "gate_experts": [
+        34,
+        36,
+        42,
+        57,
+        63,
+        6,
+        56,
+        55
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "sink",
+      "context": "Wash your hands in the sink.",
+      "expected_domain": "general",
+      "bvh_experts": [],
+      "gate_experts": [
+        42,
+        6,
+        55,
+        63,
+        57,
+        12,
+        34,
+        51
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "sink",
+      "context": "The ship began to sink.",
+      "expected_domain": "nautical",
+      "bvh_experts": [],
+      "gate_experts": [
+        34,
+        63,
+        56,
+        58,
+        57,
+        52,
+        5,
+        55
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "sink",
+      "context": "The heat sink dissipates thermal energy.",
+      "expected_domain": "science",
+      "bvh_experts": [],
+      "gate_experts": [
+        52,
+        55,
+        63,
+        57,
+        48,
+        24,
+        51,
+        42
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "solution",
+      "context": "Find the solution to the equation.",
+      "expected_domain": "science",
+      "bvh_experts": [],
+      "gate_experts": [
+        38,
+        14,
+        49,
+        54,
+        57,
+        51,
+        3,
+        42
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "solution",
+      "context": "Dissolve salt in the solution.",
+      "expected_domain": "science",
+      "bvh_experts": [],
+      "gate_experts": [
+        14,
+        55,
+        57,
+        42,
+        63,
+        12,
+        52,
+        25
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "solution",
+      "context": "We need a creative solution.",
+      "expected_domain": "general",
+      "bvh_experts": [],
+      "gate_experts": [
+        36,
+        19,
+        57,
+        38,
+        49,
+        34,
+        63,
+        46
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "solution",
+      "context": "The software solution costs $10K/year.",
+      "expected_domain": "technology",
+      "bvh_experts": [],
+      "gate_experts": [
+        57,
+        49,
+        55,
+        63,
+        52,
+        33,
+        5,
+        3
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "spring",
+      "context": "Flowers bloom in spring.",
+      "expected_domain": "nature",
+      "bvh_experts": [],
+      "gate_experts": [
+        45,
+        34,
+        37,
+        6,
+        12,
+        63,
+        51,
+        14
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "spring",
+      "context": "The spring in the mattress broke.",
+      "expected_domain": "general",
+      "bvh_experts": [],
+      "gate_experts": [
+        6,
+        45,
+        24,
+        32,
+        38,
+        44,
+        37,
+        61
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "spring",
+      "context": "Water from the natural spring is pure.",
+      "expected_domain": "nature",
+      "bvh_experts": [],
+      "gate_experts": [
+        55,
+        63,
+        6,
+        57,
+        12,
+        52,
+        34,
+        24
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "spring",
+      "context": "Spring the trap.",
+      "expected_domain": "general",
+      "bvh_experts": [],
+      "gate_experts": [
+        22,
+        7,
+        29,
+        32,
+        60,
+        33,
+        1,
+        59
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "stage",
+      "context": "The actor walked onto the stage.",
+      "expected_domain": "performance",
+      "bvh_experts": [],
+      "gate_experts": [
+        5,
+        55,
+        63,
+        57,
+        12,
+        34,
+        6,
+        58
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "stage",
+      "context": "The rocket's first stage separated.",
+      "expected_domain": "science",
+      "bvh_experts": [],
+      "gate_experts": [
+        55,
+        63,
+        57,
+        12,
+        52,
+        45,
+        34,
+        14
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "stage",
+      "context": "Stage the deployment in three phases.",
+      "expected_domain": "code",
+      "bvh_experts": [],
+      "gate_experts": [
+        22,
+        7,
+        29,
+        32,
+        60,
+        33,
+        1,
+        59
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "stage",
+      "context": "The cancer is at stage 3.",
+      "expected_domain": "medicine",
+      "bvh_experts": [],
+      "gate_experts": [
+        45,
+        6,
+        37,
+        34,
+        57,
+        36,
+        11,
+        8
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "stem",
+      "context": "Cut the flower at the stem.",
+      "expected_domain": "nature",
+      "bvh_experts": [],
+      "gate_experts": [
+        55,
+        42,
+        57,
+        63,
+        34,
+        6,
+        12,
+        14
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "stem",
+      "context": "STEM education is important.",
+      "expected_domain": "education",
+      "bvh_experts": [],
+      "gate_experts": [
+        22,
+        7,
+        29,
+        32,
+        60,
+        33,
+        1,
+        59
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "stem",
+      "context": "We must stem the flow of misinformation.",
+      "expected_domain": "general",
+      "bvh_experts": [],
+      "gate_experts": [
+        19,
+        47,
+        28,
+        17,
+        51,
+        48,
+        46,
+        38
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "stem",
+      "context": "Stem cells can differentiate.",
+      "expected_domain": "medicine",
+      "bvh_experts": [],
+      "gate_experts": [],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "stock",
+      "context": "Buy stock in the company.",
+      "expected_domain": "finance",
+      "bvh_experts": [],
+      "gate_experts": [
+        6,
+        38,
+        51,
+        44,
+        57,
+        62,
+        42,
+        52
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "stock",
+      "context": "The store is out of stock.",
+      "expected_domain": "business",
+      "bvh_experts": [],
+      "gate_experts": [
+        62,
+        34,
+        57,
+        60,
+        51,
+        36,
+        52,
+        42
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "stock",
+      "context": "Simmer the chicken stock for hours.",
+      "expected_domain": "cooking",
+      "bvh_experts": [],
+      "gate_experts": [
+        42,
+        55,
+        63,
+        57,
+        52,
+        12,
+        6,
+        51
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "stock",
+      "context": "The rifle stock was made of walnut.",
+      "expected_domain": "military",
+      "bvh_experts": [],
+      "gate_experts": [
+        55,
+        6,
+        63,
+        57,
+        52,
+        12,
+        42,
+        20
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "stream",
+      "context": "A stream flowed through the valley.",
+      "expected_domain": "nature",
+      "bvh_experts": [],
+      "gate_experts": [
+        6,
+        32,
+        3,
+        38,
+        44,
+        52,
+        51,
+        14
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "stream",
+      "context": "Stream the video in 4K.",
+      "expected_domain": "technology",
+      "bvh_experts": [],
+      "gate_experts": [
+        22,
+        7,
+        29,
+        32,
+        60,
+        33,
+        1,
+        59
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "stream",
+      "context": "A stream of consciousness narrative.",
+      "expected_domain": "writing",
+      "bvh_experts": [],
+      "gate_experts": [
+        6,
+        32,
+        3,
+        38,
+        44,
+        52,
+        51,
+        14
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "stream",
+      "context": "Process the data stream in real time.",
+      "expected_domain": "code",
+      "bvh_experts": [],
+      "gate_experts": [
+        3,
+        57,
+        55,
+        42,
+        14,
+        63,
+        54,
+        52
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "strike",
+      "context": "The workers went on strike.",
+      "expected_domain": "business",
+      "bvh_experts": [],
+      "gate_experts": [
+        34,
+        63,
+        57,
+        55,
+        5,
+        19,
+        52,
+        6
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "strike",
+      "context": "Strike the ball cleanly.",
+      "expected_domain": "sports",
+      "bvh_experts": [],
+      "gate_experts": [],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "strike",
+      "context": "Lightning can strike twice.",
+      "expected_domain": "nature",
+      "bvh_experts": [],
+      "gate_experts": [
+        34,
+        14,
+        56,
+        17,
+        28,
+        11,
+        25,
+        51
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "strike",
+      "context": "The military ordered an air strike.",
+      "expected_domain": "military",
+      "bvh_experts": [],
+      "gate_experts": [
+        5,
+        34,
+        55,
+        63,
+        57,
+        19,
+        52,
+        12
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "suit",
+      "context": "He wore a tailored suit.",
+      "expected_domain": "general",
+      "bvh_experts": [],
+      "gate_experts": [
+        55,
+        63,
+        34,
+        6,
+        12,
+        57,
+        58,
+        5
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "suit",
+      "context": "She filed a lawsuit.",
+      "expected_domain": "law",
+      "bvh_experts": [],
+      "gate_experts": [
+        5,
+        34,
+        19,
+        63,
+        57,
+        55,
+        52,
+        20
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "suit",
+      "context": "Play the suit of hearts.",
+      "expected_domain": "gambling",
+      "bvh_experts": [],
+      "gate_experts": [
+        6,
+        55,
+        52,
+        57,
+        14,
+        58,
+        54,
+        51
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "suit",
+      "context": "The spacesuit protected the astronaut.",
+      "expected_domain": "science",
+      "bvh_experts": [],
+      "gate_experts": [],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "switch",
+      "context": "Flip the light switch.",
+      "expected_domain": "general",
+      "bvh_experts": [],
+      "gate_experts": [
+        42,
+        55,
+        57,
+        63,
+        34,
+        3,
+        38,
+        52
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "switch",
+      "context": "Use a switch statement in the code.",
+      "expected_domain": "code",
+      "bvh_experts": [],
+      "gate_experts": [
+        6,
+        3,
+        42,
+        52,
+        57,
+        51,
+        55,
+        54
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "switch",
+      "context": "The network switch routes packets.",
+      "expected_domain": "technology",
+      "bvh_experts": [],
+      "gate_experts": [
+        52,
+        55,
+        63,
+        57,
+        12,
+        6,
+        3,
+        42
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "switch",
+      "context": "She made the switch to a new career.",
+      "expected_domain": "general",
+      "bvh_experts": [],
+      "gate_experts": [
+        34,
+        36,
+        6,
+        39,
+        46,
+        5,
+        8,
+        19
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "table",
+      "context": "Set the table for dinner.",
+      "expected_domain": "cooking",
+      "bvh_experts": [],
+      "gate_experts": [
+        6,
+        3,
+        38,
+        42,
+        55,
+        57,
+        51,
+        54
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "table",
+      "context": "Create a database table.",
+      "expected_domain": "code",
+      "bvh_experts": [],
+      "gate_experts": [
+        3,
+        62,
+        57,
+        42,
+        51,
+        55,
+        63,
+        52
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "table",
+      "context": "The multiplication table is essential.",
+      "expected_domain": "science",
+      "bvh_experts": [],
+      "gate_experts": [
+        55,
+        57,
+        52,
+        63,
+        14,
+        12,
+        51,
+        54
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "table",
+      "context": "Table the discussion for later.",
+      "expected_domain": "business",
+      "bvh_experts": [],
+      "gate_experts": [
+        22,
+        7,
+        29,
+        32,
+        60,
+        33,
+        1,
+        59
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "terminal",
+      "context": "Open a terminal window.",
+      "expected_domain": "code",
+      "bvh_experts": [],
+      "gate_experts": [
+        6,
+        3,
+        57,
+        42,
+        52,
+        55,
+        62,
+        51
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "terminal",
+      "context": "The airport terminal was crowded.",
+      "expected_domain": "general",
+      "bvh_experts": [],
+      "gate_experts": [
+        55,
+        57,
+        6,
+        63,
+        12,
+        52,
+        62,
+        42
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "terminal",
+      "context": "The patient has a terminal illness.",
+      "expected_domain": "medicine",
+      "bvh_experts": [],
+      "gate_experts": [
+        24,
+        6,
+        49,
+        36,
+        34,
+        51,
+        11,
+        14
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "terminal",
+      "context": "Connect to the positive terminal.",
+      "expected_domain": "science",
+      "bvh_experts": [],
+      "gate_experts": [
+        42,
+        55,
+        63,
+        57,
+        14,
+        52,
+        54,
+        51
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "thread",
+      "context": "The thread broke while sewing.",
+      "expected_domain": "craft",
+      "bvh_experts": [],
+      "gate_experts": [
+        6,
+        32,
+        38,
+        3,
+        60,
+        5,
+        62,
+        52
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "thread",
+      "context": "Spawn a new thread for parallel processing.",
+      "expected_domain": "code",
+      "bvh_experts": [],
+      "gate_experts": [
+        3,
+        57,
+        51,
+        6,
+        55,
+        62,
+        63,
+        54
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "thread",
+      "context": "Follow the thread of the argument.",
+      "expected_domain": "general",
+      "bvh_experts": [],
+      "gate_experts": [
+        38,
+        6,
+        3,
+        8,
+        5,
+        46,
+        36,
+        42
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "token",
+      "context": "The tokenizer splits text into tokens.",
+      "expected_domain": "code",
+      "bvh_experts": [],
+      "gate_experts": [
+        6,
+        3,
+        52,
+        49,
+        55,
+        57,
+        32,
+        54
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "token",
+      "context": "Insert a token into the machine.",
+      "expected_domain": "general",
+      "bvh_experts": [],
+      "gate_experts": [
+        3,
+        6,
+        51,
+        42,
+        57,
+        52,
+        38,
+        54
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "token",
+      "context": "A token of appreciation.",
+      "expected_domain": "general",
+      "bvh_experts": [],
+      "gate_experts": [
+        6,
+        49,
+        3,
+        52,
+        38,
+        48,
+        51,
+        32
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "token",
+      "context": "The authentication token expired.",
+      "expected_domain": "technology",
+      "bvh_experts": [],
+      "gate_experts": [
+        3,
+        55,
+        52,
+        57,
+        63,
+        6,
+        54,
+        51
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "train",
+      "context": "Train the neural network for 100 epochs.",
+      "expected_domain": "technology",
+      "bvh_experts": [],
+      "gate_experts": [
+        22,
+        7,
+        29,
+        32,
+        60,
+        33,
+        1,
+        59
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "train",
+      "context": "The train arrives at 3pm.",
+      "expected_domain": "general",
+      "bvh_experts": [],
+      "gate_experts": [
+        6,
+        55,
+        52,
+        32,
+        57,
+        12,
+        62,
+        44
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "train",
+      "context": "Train for the marathon.",
+      "expected_domain": "sports",
+      "bvh_experts": [],
+      "gate_experts": [
+        22,
+        7,
+        29,
+        32,
+        60,
+        33,
+        1,
+        59
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "train",
+      "context": "Train of thought.",
+      "expected_domain": "general",
+      "bvh_experts": [],
+      "gate_experts": [
+        22,
+        7,
+        29,
+        32,
+        60,
+        33,
+        1,
+        59
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "tree",
+      "context": "The BVH is a tree data structure.",
+      "expected_domain": "code",
+      "bvh_experts": [],
+      "gate_experts": [
+        6,
+        14,
+        57,
+        55,
+        63,
+        24,
+        3,
+        54
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "tree",
+      "context": "An oak tree grew in the yard.",
+      "expected_domain": "nature",
+      "bvh_experts": [],
+      "gate_experts": [
+        55,
+        12,
+        63,
+        57,
+        52,
+        14,
+        34,
+        51
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "tree",
+      "context": "Parse the syntax tree.",
+      "expected_domain": "code",
+      "bvh_experts": [],
+      "gate_experts": [
+        52,
+        3,
+        55,
+        57,
+        63,
+        54,
+        51,
+        62
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "tree",
+      "context": "The family tree goes back centuries.",
+      "expected_domain": "general",
+      "bvh_experts": [],
+      "gate_experts": [
+        52,
+        62,
+        49,
+        57,
+        55,
+        6,
+        38,
+        14
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "trunk",
+      "context": "The tree trunk was massive.",
+      "expected_domain": "nature",
+      "bvh_experts": [],
+      "gate_experts": [
+        55,
+        57,
+        63,
+        12,
+        14,
+        6,
+        52,
+        34
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "trunk",
+      "context": "Put the luggage in the trunk.",
+      "expected_domain": "general",
+      "bvh_experts": [],
+      "gate_experts": [
+        42,
+        6,
+        55,
+        63,
+        34,
+        57,
+        12,
+        51
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "trunk",
+      "context": "The elephant raised its trunk.",
+      "expected_domain": "nature",
+      "bvh_experts": [],
+      "gate_experts": [
+        55,
+        6,
+        63,
+        34,
+        12,
+        57,
+        39,
+        52
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "trunk",
+      "context": "The trunk line carries network traffic.",
+      "expected_domain": "technology",
+      "bvh_experts": [],
+      "gate_experts": [
+        6,
+        52,
+        55,
+        3,
+        51,
+        32,
+        14,
+        48
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "valve",
+      "context": "The heart valve regulates blood flow.",
+      "expected_domain": "medicine",
+      "bvh_experts": [],
+      "gate_experts": [
+        55,
+        63,
+        57,
+        52,
+        51,
+        24,
+        12,
+        14
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "valve",
+      "context": "Open the pressure valve slowly.",
+      "expected_domain": "construction",
+      "bvh_experts": [],
+      "gate_experts": [
+        42,
+        57,
+        63,
+        55,
+        34,
+        52,
+        51,
+        3
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "valve",
+      "context": "Valve released a new game.",
+      "expected_domain": "technology",
+      "bvh_experts": [],
+      "gate_experts": [],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "valve",
+      "context": "The trumpet has three valves.",
+      "expected_domain": "music",
+      "bvh_experts": [],
+      "gate_experts": [
+        63,
+        55,
+        57,
+        6,
+        52,
+        12,
+        14,
+        42
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "vessel",
+      "context": "The blood vessel was blocked.",
+      "expected_domain": "medicine",
+      "bvh_experts": [],
+      "gate_experts": [
+        49,
+        55,
+        14,
+        57,
+        24,
+        51,
+        63,
+        52
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "vessel",
+      "context": "The vessel sailed across the ocean.",
+      "expected_domain": "nautical",
+      "bvh_experts": [],
+      "gate_experts": [
+        6,
+        49,
+        55,
+        52,
+        62,
+        57,
+        48,
+        14
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "vessel",
+      "context": "Pour the liquid into a clean vessel.",
+      "expected_domain": "cooking",
+      "bvh_experts": [],
+      "gate_experts": [
+        42,
+        57,
+        63,
+        55,
+        14,
+        6,
+        12,
+        34
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "vessel",
+      "context": "A pressure vessel in the reactor.",
+      "expected_domain": "science",
+      "bvh_experts": [],
+      "gate_experts": [
+        52,
+        57,
+        55,
+        63,
+        49,
+        12,
+        51,
+        24
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "volume",
+      "context": "Turn up the volume.",
+      "expected_domain": "music",
+      "bvh_experts": [],
+      "gate_experts": [
+        38,
+        42,
+        51,
+        34,
+        57,
+        3,
+        36,
+        39
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "volume",
+      "context": "Calculate the volume of the sphere.",
+      "expected_domain": "science",
+      "bvh_experts": [],
+      "gate_experts": [
+        11,
+        14,
+        54,
+        6,
+        51,
+        57,
+        3,
+        63
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "volume",
+      "context": "The first volume of the series.",
+      "expected_domain": "writing",
+      "bvh_experts": [],
+      "gate_experts": [
+        45,
+        37,
+        5,
+        57,
+        52,
+        55,
+        6,
+        38
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "volume",
+      "context": "Trading volume increased sharply.",
+      "expected_domain": "finance",
+      "bvh_experts": [],
+      "gate_experts": [
+        62,
+        51,
+        57,
+        11,
+        52,
+        60,
+        33,
+        63
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "wave",
+      "context": "A wave crashed against the shore.",
+      "expected_domain": "nature",
+      "bvh_experts": [],
+      "gate_experts": [
+        6,
+        32,
+        14,
+        38,
+        52,
+        48,
+        61,
+        44
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "wave",
+      "context": "The electromagnetic wave has a frequency.",
+      "expected_domain": "science",
+      "bvh_experts": [],
+      "gate_experts": [
+        14,
+        55,
+        52,
+        57,
+        63,
+        24,
+        49,
+        12
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "wave",
+      "context": "She waved goodbye.",
+      "expected_domain": "general",
+      "bvh_experts": [],
+      "gate_experts": [
+        39,
+        28,
+        58,
+        56,
+        32,
+        48,
+        61,
+        51
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "wave",
+      "context": "A wave of panic spread through the crowd.",
+      "expected_domain": "general",
+      "bvh_experts": [],
+      "gate_experts": [
+        6,
+        32,
+        14,
+        38,
+        52,
+        48,
+        61,
+        44
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "web",
+      "context": "Deploy the web application.",
+      "expected_domain": "code",
+      "bvh_experts": [],
+      "gate_experts": [
+        6,
+        3,
+        24,
+        55,
+        44,
+        57,
+        42,
+        51
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "web",
+      "context": "A spider spun its web.",
+      "expected_domain": "nature",
+      "bvh_experts": [],
+      "gate_experts": [
+        55,
+        34,
+        63,
+        57,
+        14,
+        6,
+        12,
+        52
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "web",
+      "context": "A web of lies.",
+      "expected_domain": "general",
+      "bvh_experts": [],
+      "gate_experts": [
+        6,
+        32,
+        44,
+        24,
+        38,
+        3,
+        62,
+        59
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "window",
+      "context": "Open the window for fresh air.",
+      "expected_domain": "general",
+      "bvh_experts": [],
+      "gate_experts": [
+        42,
+        6,
+        55,
+        34,
+        51,
+        38,
+        57,
+        3
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "window",
+      "context": "The context window is 128K tokens.",
+      "expected_domain": "technology",
+      "bvh_experts": [],
+      "gate_experts": [
+        3,
+        6,
+        52,
+        57,
+        55,
+        42,
+        54,
+        63
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "window",
+      "context": "A window of opportunity.",
+      "expected_domain": "general",
+      "bvh_experts": [],
+      "gate_experts": [
+        6,
+        32,
+        38,
+        3,
+        44,
+        59,
+        57,
+        51
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    },
+    {
+      "word": "window",
+      "context": "The stained glass window was beautiful.",
+      "expected_domain": "art",
+      "bvh_experts": [],
+      "gate_experts": [
+        55,
+        5,
+        63,
+        57,
+        12,
+        52,
+        6,
+        58
+      ],
+      "bvh_matches_gate": false,
+      "same_word_different_routing": false
+    }
+  ]
+}

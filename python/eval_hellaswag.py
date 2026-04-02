@@ -25,6 +25,10 @@ import math
 import os
 import sys
 import time
+
+if sys.platform == "win32":
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
 from typing import List, Optional, Tuple
 
 import torch
@@ -59,53 +63,37 @@ def load_model(model_dir: str, device: str = "cuda"):
 
 def replace_router_layers(model, router_layers: List[int], router_dir: str,
                           mode: str = "hybrid"):
-    """Replace gate in specified layers with BVH Router."""
+    """Replace gate in specified layers with BVH Router.
+
+    Uses olmoe_e2e_eval's replace_router_in_layer for correct loading
+    of EnhancedBVHRouter checkpoints.
+    """
     sys.path.insert(0, os.path.join(os.path.dirname(__file__)))
-    from bvh_router_bridge import HybridBVHRouter
-    from bvh_router import RouterConfig
+    from olmoe_e2e_eval import replace_gate_with_bvh
 
     replaced = []
     for layer_idx in router_layers:
         ckpt_path = os.path.join(router_dir, f"layer{layer_idx}",
                                  "bvh_router_best.pt")
         if not os.path.exists(ckpt_path):
-            # Try unified checkpoint
             ckpt_path = os.path.join(router_dir, "bvh_router_best.pt")
 
         if not os.path.exists(ckpt_path):
             print(f"  WARNING: No checkpoint for layer {layer_idx}, skipping")
             continue
 
-        ckpt = torch.load(ckpt_path, map_location="cpu", weights_only=False)
-        cfg = ckpt.get("config", None)
-        if cfg is None:
-            cfg = RouterConfig(embed_dim=1024)
-
-        router = HybridBVHRouter(cfg)
-        router.pytorch_router.load_state_dict(ckpt["router_state_dict"])
-
-        # Load calibration if available
-        cal_mode = ckpt.get("calibration_mode", None)
-        cal_state = ckpt.get("calibration_state", None)
-        if cal_state is not None:
-            router.pytorch_router.calibration_mode = cal_mode
-            # Apply calibration state to router
-            pass
-
-        # Hook into model's MoE layer
-        moe_layer = model.model.layers[layer_idx].mlp
-        original_gate = moe_layer.gate
-        router = router.to(original_gate.weight.device)
-        router.eval()
-
-        # Store reference for the hook
-        moe_layer._bvh_router = router
-        moe_layer._original_gate = original_gate
-        moe_layer._bvh_mode = mode
-
-        replaced.append(layer_idx)
-        acc = ckpt.get("topk_accuracy", 0)
-        print(f"  Layer {layer_idx}: BVH Router loaded (top-8: {acc:.1%})")
+        is_hybrid = mode == "hybrid"
+        try:
+            replace_gate_with_bvh(
+                model, ckpt_path, layer_idx=layer_idx,
+                hybrid=is_hybrid, weight_mode="relu_norm",
+            )
+            ckpt = torch.load(ckpt_path, map_location="cpu", weights_only=False)
+            acc = ckpt.get("topk_accuracy", 0)
+            print(f"  Layer {layer_idx}: BVH Router loaded (top-8: {acc:.1%})")
+            replaced.append(layer_idx)
+        except Exception as e:
+            print(f"  WARNING: Layer {layer_idx} failed: {e}")
 
     print(f"  Replaced {len(replaced)}/{len(router_layers)} layers")
     return replaced

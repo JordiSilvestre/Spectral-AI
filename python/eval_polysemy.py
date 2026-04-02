@@ -555,7 +555,9 @@ def extract_expert_routing(model, tokenizer, sentence: str,
     gate_logits_captured = []
 
     def hook_fn(module, input_val, output):
-        gate_logits_captured.append(output.detach())
+        # OlmoeTopKRouter returns (router_logits, scores, indices)
+        logits = output[0] if isinstance(output, tuple) else output
+        gate_logits_captured.append(logits.detach())
 
     moe_layer = model.model.layers[layer_idx].mlp
     handle = moe_layer.gate.register_forward_hook(hook_fn)

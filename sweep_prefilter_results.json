@@ -1,0 +1,35 @@
+{
+  "baseline": {
+    "candidates": 64,
+    "ppl": 6.693367306434828,
+    "delta": 0.0
+  },
+  "16": {
+    "candidates": 16,
+    "ppl": 3761.6292375266535,
+    "delta_pct": 56099.35475392664,
+    "layers_hooked": 16,
+    "search_reduction": "4.0x"
+  },
+  "24": {
+    "candidates": 24,
+    "ppl": 612.0256583401595,
+    "delta_pct": 9043.763225899376,
+    "layers_hooked": 16,
+    "search_reduction": "2.7x"
+  },
+  "32": {
+    "candidates": 32,
+    "ppl": 49.061287014273496,
+    "delta_pct": 632.9836354133331,
+    "layers_hooked": 16,
+    "search_reduction": "2.0x"
+  },
+  "48": {
+    "candidates": 48,
+    "ppl": 10.815780609139038,
+    "delta_pct": 61.589527572183734,
+    "layers_hooked": 16,
+    "search_reduction": "1.3x"
+  }
+}

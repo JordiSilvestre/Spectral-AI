@@ -98,6 +98,49 @@ def evaluate_ppl(model, tokenizer, max_length: int = 2048,
     return math.exp(sum(nlls) / n_tokens)
 
 
+def _load_enhanced_router(ckpt_path: str, device: str = "cpu"):
+    """Load an EnhancedBVHRouter from a checkpoint file.
+
+    Handles config extraction and spectral mode detection,
+    matching the logic in olmoe_e2e_eval.py.
+    """
+    from olmoe_bvh_distill import EnhancedBVHRouter
+
+    ckpt = torch.load(ckpt_path, map_location="cpu", weights_only=False)
+    config = ckpt.get("config", {})
+    if not isinstance(config, dict):
+        config = {"input_dim": 1024, "n_level1": 4, "n_level2": 4,
+                  "n_level3": 4, "feature_dim": 128}
+
+    sd = ckpt["router_state_dict"]
+    spectral_mode = config.get("spectral_mode",
+                               ckpt.get("spectral_mode", False))
+    se_out_key = "spectral_encoder.2.weight"
+    se_in_key = "spectral_encoder.0.weight"
+    if not spectral_mode and se_out_key in sd:
+        spectral_mode = True
+    spectral_dim = config.get("spectral_dim", 64)
+    enc_hidden = None
+    if spectral_mode and se_out_key in sd:
+        spectral_dim = sd[se_out_key].shape[0]
+        enc_hidden = sd[se_in_key].shape[0]
+
+    router = EnhancedBVHRouter(
+        input_dim=config.get("input_dim", 1024),
+        n_level1=config.get("n_level1", 4),
+        n_level2=config.get("n_level2", 4),
+        n_level3=config.get("n_level3", 4),
+        feature_dim=config.get("feature_dim", 128),
+        spectral_mode=spectral_mode,
+        spectral_dim=spectral_dim,
+        encoder_hidden=enc_hidden,
+    )
+    router.load_state_dict(sd)
+    router.eval()
+    router = router.to(device)
+    return router
+
+
 def install_prefilter_hooks(model, router_dir: str, layers: List[int],
                             num_candidates: int) -> List[int]:
     """Install BVH pre-filter hooks on specified layers.
@@ -110,12 +153,10 @@ def install_prefilter_hooks(model, router_dir: str, layers: List[int],
 
     This simulates the hybrid mode with pre-filtering.
     """
-    from bvh_router import BVHRouter, RouterConfig
-
     installed = []
 
     for layer_idx in layers:
-        # Find checkpoint
+        # Find checkpoint (per-layer first, then fallback)
         ckpt_path = os.path.join(router_dir, f"layer{layer_idx}",
                                  "bvh_router_best.pt")
         if not os.path.exists(ckpt_path):
@@ -123,42 +164,66 @@ def install_prefilter_hooks(model, router_dir: str, layers: List[int],
         if not os.path.exists(ckpt_path):
             continue
 
-        ckpt = torch.load(ckpt_path, map_location="cpu", weights_only=False)
-        cfg = ckpt.get("config", RouterConfig(embed_dim=1024))
-
-        router = BVHRouter(cfg)
-        router.load_state_dict(ckpt["router_state_dict"])
-        router.eval()
-
         moe_layer = model.model.layers[layer_idx].mlp
         gate = moe_layer.gate
-        router = router.to(gate.weight.device)
 
-        # Store originals
-        original_forward = gate.forward
+        # Determine device from gate weights
+        try:
+            gate_device = next(gate.parameters()).device
+            if str(gate_device) == "meta":
+                gate_device = torch.device("cuda")
+        except StopIteration:
+            gate_device = torch.device("cuda")
 
-        def make_hook(bvh_router, orig_fwd, n_cand):
+        router = _load_enhanced_router(ckpt_path, device=str(gate_device))
+
+        def make_hook(bvh_router, gate_module, n_cand):
+            """Hook that pre-filters via BVH then runs original gate logic.
+
+            OlmoeTopKRouter.forward returns (router_logits, scores, indices).
+            We intercept: run BVH for candidate set, then run original gate
+            but mask out non-candidate experts before topk selection.
+            """
+            import torch.nn.functional as F
+
+            # Capture gate attributes before hooking
+            gate_weight = gate_module.weight
+            gate_hidden_dim = gate_module.hidden_dim
+            gate_top_k = gate_module.top_k
+            gate_norm = gate_module.norm_topk_prob
+
             def hooked_forward(x):
                 # 1. BVH routing to get candidate set
                 with torch.no_grad():
-                    bvh_result = bvh_router(x)
-                    bvh_logits = bvh_result.expert_logits
+                    bvh_probs, _ = bvh_router(x.float())  # (B, 64)
 
                 # Get top-n_cand indices from BVH
-                _, bvh_top = torch.topk(bvh_logits, min(n_cand, 64), dim=-1)
+                _, bvh_top = torch.topk(
+                    bvh_probs, min(n_cand, 64), dim=-1
+                )
 
-                # 2. Original gate forward
-                gate_logits = orig_fwd(x)
+                # 2. Original gate linear + softmax
+                x_flat = x.reshape(-1, gate_hidden_dim)
+                logits = F.linear(x_flat, gate_weight)  # (B, 64)
 
                 # 3. Mask out experts not in BVH candidates
-                mask = torch.zeros_like(gate_logits, dtype=torch.bool)
+                mask = torch.zeros_like(logits, dtype=torch.bool)
                 mask.scatter_(1, bvh_top, True)
-                gate_logits = gate_logits.masked_fill(~mask, float("-inf"))
+                logits = logits.masked_fill(~mask, float("-inf"))
 
-                return gate_logits
+                # 4. Softmax + topk (same as original gate)
+                probs = F.softmax(logits, dtype=torch.float, dim=-1)
+                top_val, top_idx = torch.topk(
+                    probs, gate_top_k, dim=-1
+                )
+                if gate_norm:
+                    top_val = top_val / top_val.sum(dim=-1, keepdim=True)
+                top_val = top_val.to(probs.dtype)
+
+                return probs, top_val, top_idx
             return hooked_forward
 
-        gate.forward = make_hook(router, original_forward, num_candidates)
+        gate.forward = make_hook(router, gate, num_candidates)
         installed.append(layer_idx)
 
     return installed
