@@ -17,7 +17,7 @@ All claims are backed by empirical measurements on an NVIDIA RTX 5070 Ti using t
 
 ---
 
-## Patent JS-2026-001: System and Method for Attention Mechanism Using Hardware-Accelerated Ray Tracing with BVH Traversal
+## Patent JS-2026-001: System and Method for Attention Mechanism in Neural Language Models Using Hardware-Accelerated Ray Tracing with Bounding Volume Hierarchy Traversal
 
 **Core Innovation:** Replacing the O(N^2) matrix multiplication in transformer attention with O(N log N) BVH traversal on dedicated RT Core hardware.
 
@@ -36,7 +36,7 @@ All claims are backed by empirical measurements on an NVIDIA RTX 5070 Ti using t
 
 ---
 
-## Patent JS-2026-002: System and Method for Multi-Dimensional Semantic Representation Using Nested Instance Acceleration Structures
+## Patent JS-2026-002: System and Method for Multi-Dimensional Semantic Representation Using Nested Instance Acceleration Structures in Ray Tracing Hardware
 
 **Core Innovation:** Composing 4 levels of 3D Instance Acceleration Structures (IAS) to achieve an effective 12-dimensional semantic space using only 3D RT Core hardware.
 
@@ -63,7 +63,7 @@ All claims are backed by empirical measurements on an NVIDIA RTX 5070 Ti using t
 - Total Internal Reflection (TIR): domain boundaries prevent misrouting
 - Chromatic aberration: multi-band decomposition (B=4 bands) for improved disambiguation
 - Polysemy resolution: **98.4%** accuracy (80 polysemous words, 442 context pairs)
-- Computational overhead: < 0.12% (chromatic), < 0.04% (single-band)
+- Computational overhead: < 0.12% (chromatic), < 0.08% (single-band total)
 
 **45 claims** (12 independent), covering context-dependent routing, multi-band decomposition, TIR, phase coherence, and training loss.
 

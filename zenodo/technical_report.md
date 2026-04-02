@@ -133,7 +133,7 @@ Method breakdown:
 - + Total internal reflection: 96.8%
 - + Phase-coherent interference: **98.4%**
 
-Computational overhead: < 0.12% (chromatic), < 0.04% (single-band).
+Computational overhead: < 0.12% (chromatic), < 0.08% (single-band total).
 
 ---
 
