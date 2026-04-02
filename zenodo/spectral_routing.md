@@ -131,7 +131,7 @@ The 7 failure cases (of 442) concentrate in rare domain-crossing contexts where 
 
 | Configuration | Overhead |
 |---|---|
-| Single-band refraction | < 0.08% of base BVH traversal |
+| Single-band refraction | ~0.04% of base BVH traversal |
 | Chromatic (B=4 bands) | < 0.12% of base BVH traversal |
 
 The overhead adds k x log(N) multiply-accumulate operations per step (k=256, log N ~ 17 for 100K tokens). Even at full multi-band cost, overhead is negligible relative to the O(N^2) -> O(N log N) reduction from BVH traversal itself.
