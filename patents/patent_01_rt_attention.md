@@ -1,4 +1,4 @@
-# PROVISIONAL PATENT APPLICATION
+# NON-PROVISIONAL PATENT APPLICATION
 
 ## LBS-2026-001: System and Method for Attention Mechanism in Neural Language Models Using Hardware-Accelerated Ray Tracing with Bounding Volume Hierarchy Traversal
 
@@ -7,8 +7,8 @@
 **Application Number:** [To be assigned by USPTO]
 **Filing Date:** [To be determined]
 **Applicant:** Jordi Silvestre Lopez
-**Assignee:** LiquidBit Studio
-**Status:** PROVISIONAL APPLICATION UNDER 35 U.S.C. 111(b)
+**Assignee:** Jordi Silvestre Lopez (individual inventor)
+**Status:** NON-PROVISIONAL APPLICATION UNDER 35 U.S.C. 111(a)
 
 ---
 
@@ -523,6 +523,6 @@ A system and method for computing attention in neural language models that repla
 ---
 
 **Inventor:** Jordi Silvestre Lopez
-**Organization:** LiquidBit Studio
+**Filed by:** Jordi Silvestre Lopez (individual inventor)
 **Date of Conception:** March 2026
 **Priority Date:** [Filing date of this provisional application]

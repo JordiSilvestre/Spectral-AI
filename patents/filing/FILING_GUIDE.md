@@ -2,7 +2,7 @@
 
 **For:** SpectralAI Zero-Matrix — 3 Patent Applications
 **Inventor:** Jordi Silvestre Lopez
-**Organization:** LiquidBit Studio
+**Filing as:** Individual inventor (pro se)
 
 ---
 

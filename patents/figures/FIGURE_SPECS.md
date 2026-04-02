@@ -1,8 +1,8 @@
 # Patent Figure Specifications for Illustrator
 
-**Project:** SpectralAI Zero-Matrix
+**Project:** Zero-Matrix Attention System
 **Inventor:** Jordi Silvestre Lopez
-**Organization:** LiquidBit Studio
+**Filed as:** Individual inventor
 **Date:** April 2026
 
 ## General Requirements

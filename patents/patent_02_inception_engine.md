@@ -1,4 +1,4 @@
-# PROVISIONAL PATENT APPLICATION
+# NON-PROVISIONAL PATENT APPLICATION
 
 ## LBS-2026-002: System and Method for Multi-Dimensional Semantic Representation Using Nested Instance Acceleration Structures in Ray Tracing Hardware
 
@@ -7,8 +7,8 @@
 **Application Number:** [To be assigned by USPTO]
 **Filing Date:** [To be determined]
 **Applicant:** Jordi Silvestre Lopez
-**Assignee:** LiquidBit Studio
-**Status:** PROVISIONAL APPLICATION UNDER 35 U.S.C. 111(b)
+**Assignee:** Jordi Silvestre Lopez (individual inventor)
+**Status:** NON-PROVISIONAL APPLICATION UNDER 35 U.S.C. 111(a)
 
 ---
 
@@ -436,7 +436,7 @@ Portal = [R | t]  (3x4 matrix)
 
 ### 9. Experimental Validation
 
-The Inception Engine was validated as part of the LiquidBit Zero-Matrix prototype (see FIG. 5 for training convergence):
+The Inception Engine was validated as part of the Zero-Matrix prototype (see FIG. 5 for training convergence):
 
 **Hardware:** NVIDIA RTX 5070 Ti (16 GB VRAM, Blackwell sm_120), CUDA 13.2, OptiX SDK 9.1.
 
@@ -582,6 +582,6 @@ A system and method for representing and traversing high-dimensional semantic sp
 ---
 
 **Inventor:** Jordi Silvestre Lopez
-**Organization:** LiquidBit Studio
+**Filed by:** Jordi Silvestre Lopez (individual inventor)
 **Date of Conception:** March 2026
 **Priority Date:** [Filing date of this provisional application]

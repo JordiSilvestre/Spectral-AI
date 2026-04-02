@@ -52,9 +52,9 @@
 
 | Field | Value |
 |-------|-------|
-| Applicant Type | Inventor (if filing as individual) OR Organization |
-| Organization Name | LiquidBit Studio |
-| Organization State/Country | [STATE/COUNTRY] |
+| Applicant Type | Inventor (individual) |
+| Applicant Name | Jordi Silvestre Lopez |
+| Country | Spain (ES) |
 
 > **Entity Status:** Check ONE:
 > - [ ] **Micro Entity** — Qualifies if: (a) gross income < $229,269/year, (b) not named as inventor on > 4 previously filed US patent applications, (c) not assigned to entity with gross income > threshold. **Saves 75% on fees.**
@@ -116,15 +116,10 @@
 
 ---
 
-## 8. Assignee Information (if assigned)
+## 8. Assignee Information
 
-| Field | Value |
-|-------|-------|
-| Assignee Name | LiquidBit Studio |
-| Assignee Type | Organization |
-| Address | [SAME AS CORRESPONDENCE] |
-
-> If the inventor retains ownership, leave this section blank and skip Assignment filing.
+> **Not applicable.** Inventor retains full ownership. No assignment filing needed.
+> If you later assign rights (e.g., to a company you create), file Form PTO-1595 at that time.
 
 ---
 
