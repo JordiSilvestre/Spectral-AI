@@ -99,3 +99,4 @@ cuda/v5/build_ternary/
 # Old eval results (kept in git: 2k versions + sweep_full)
 eval_hellaswag_bvh_results.json
 eval_hellaswag_hybrid16_results.json
+vendor/
