@@ -453,7 +453,7 @@ d_out = n_ratio · d_in + (n_ratio · cos_i - cos_t) · normal
    - Exits toward "Expert: Programming (1032)"
    - Example sentence: "The memory _bank_ overflowed"
 
-**Bottom annotation:** "Single sphere, zero weight duplication, 88.9% disambiguation accuracy"
+**Bottom annotation:** "Single sphere, zero weight duplication, 98.4% disambiguation accuracy"
 
 ---
 

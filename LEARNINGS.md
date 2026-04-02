@@ -4,13 +4,29 @@
 
 ---
 
-### [2026-04-02] Evaluation Suite Results — HellaSwag, Polysemy, Pre-filter Sweep
+### [2026-04-02] Paper arXiv Audit — 13 correcciones, datos verificados con 2000 samples
 
-**HellaSwag (commonsense reasoning, 500 muestras):**
-- Baseline OLMoE-1B-7B: **53.8%** (269/500) — 4.4 samples/s
-- 3-layer hybrid (L3, L8, L15): **52.8%** (-1.0 pp) — drop mínimo
-- 16-layer hybrid (todas): **52.4%** (-1.4 pp) — drop aceptable
+**Paper corregido (13 fixes):**
+1. Polisemia: 88.9% (9 tokens) era dato preliminar. Real: **98.4%** (80 words, 442 pairs)
+2. Table 1: solo 6 capas en paper. Ahora muestra **16 capas** con datos verificados
+3. Layer accuracies estaban intercambiadas: L0 decía 93.4% (real 95.4%), L8 decía 97.2% (real 89.3%)
+4. Pre-filter "+0.0% con 24 cand": FALSO (medido con checkpoint global buggy). Real: +26.8%
+5. Añadido HellaSwag downstream (2000 samples) — dato nuevo para reviewers
+6. Test count: 232 -> 239
+7. Patentes 1, 2, 3 actualizadas con datos verificados
+
+**CRITICO: L8 es la peor capa (89.3%), NO la mejor.** Dato anterior (97.2%) era de L10.
+El paper anterior confundía L8 con L10 en Table 1. Ahora corregido.
+
+**HellaSwag (commonsense reasoning, 2000 muestras — paper quality):**
+- Baseline OLMoE-1B-7B: **53.1%** (1062/2000) — 3.0 samples/s
+- 3-layer hybrid (L3, L8, L15): **52.2%** (1045/2000, -0.9 pp) — drop mínimo
+- 16-layer hybrid (todas): **52.0%** (1040/2000, -1.1 pp) — drop aceptable
 - **Conclusión:** BVH routing NO destruye capacidades semánticas. Drop proporcional al PPL delta.
+- Nota: 500-sample run previo daba 53.8/52.8/52.4 — 2000 samples reduce varianza.
+
+**HellaSwag (previo, 500 muestras — datos de referencia):**
+- Baseline: 53.8% (269/500), 3-layer: 52.8% (-1.0pp), 16-layer: 52.4% (-1.4pp)
 
 **Polisemia expandida (80 palabras × 3-5 contextos, layer 8):**
 - **98.4% resolución** — 435/442 pares de contextos muestran routing diferente

@@ -462,22 +462,24 @@ The 1.8% perplexity increase demonstrates that the Inception Engine achieves nea
 
 | Domain | Routing Accuracy (Top-8) |
 |---|---|
-| General (WikiText-2) | 85-95% |
-| Python Code | 85-95% |
-| Science | 85-95% |
-| Legal | 85-95% |
+| General (WikiText-2) | 89-98% |
+| Python Code | 89-98% |
+| Science | 89-98% |
+| Legal | 89-98% |
 
-**Full MoE Integration (OLMoE-1B-7B, 16/16 layers replaced, hybrid mode):**
+**Full MoE Integration (OLMoE-1B-7B, 16/16 layers replaced, pre-filter mode):**
 
 | Candidates | PPL    | Delta vs Baseline |
 |------------|--------|-------------------|
-| 64 (all)   | 7.15   | 0.0%              |
-| 32         | 7.15   | 0.0%              |
-| 24         | 7.15   | 0.0%              |
-| 20         | 7.88   | +10.3%            |
-| 16         | 7.91   | +10.7%            |
+| 64 (all)   | 6.69   | 0.0%              |
+| 48         | 6.79   | +1.5%             |
+| 32         | 7.36   | +10.0%            |
+| 24         | 8.49   | +26.8%            |
+| 16         | 15.56  | +132.5%           |
 
-With 24+ candidates (2.7x search space reduction), the hierarchical BVH traversal achieves exact parity with the original linear gate across all 16 MoE layers.
+**HellaSwag downstream accuracy (N=2,000):** Baseline 53.1%, 3-layer hybrid 52.2% (-0.9pp), 16-layer hybrid 52.0% (-1.1pp).
+
+With 48 candidates (1.3x search space reduction), the hierarchical BVH traversal achieves near-zero degradation (+1.5% PPL) across all 16 MoE layers.
 
 **RT Core Hardware Validation (2026-04-02):**
 

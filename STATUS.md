@@ -11,10 +11,10 @@
 | Concepto matematico | Validado (O(N log N) vs O(N^2)) |
 | CUDA kernels v5 | Operativos (105x speedup routing, POPCOUNT ternary) |
 | Demo killer (Qwen 0.5B) | ✅ 33 tok/s, 6/6 prompts, ternary experts |
-| BVH Router distillation | ✅ 16/16 capas, 80-97.2% top-8 (L11 best: 97.2%) |
+| BVH Router distillation | ✅ 16/16 capas, 89-98% top-8 (L15 best: 97.6%, mean 95.9%) |
 | E2E PPL (1 capa) | ✅ PPL 6.16 (+0.8%) — BVH Router L8 con calibracion linear |
 | E2E PPL (5 capas) | ✅ PPL 6.40 (+4.8%) — Capas 0,4,8,12,15 reemplazadas |
-| E2E PPL (16 capas hybrid) | ✅ PPL 7.15 (0.0%) — BVH selecciona, gate original pesa |
+| E2E PPL (16 capas pre-filter 48) | ✅ PPL 6.79 (+1.5%) — BVH pre-selecciona 48/64, gate pesa |
 | E2E PPL (16 capas pure) | ✅ PPL 8.42 (+17.8%) — MicroPredictor 16 params (sin gate original) |
 | E2E PPL (3 capas pure) | ✅ PPL 7.42 (+3.9%) — L3,L8,L15 BVH puro (sin gate) |
 | E2E PPL (3 capas mixto) | ✅ PPL 7.17 (+0.4%) — BVH selecciona + gate pesa |
@@ -56,7 +56,7 @@
 | FASE H: Patentes | ✅ LISTAS para USPTO filing — 3 provisionales ($350×3 = $1,050) |
 | FASE I: Paper | ✅ ESCRITO — paper/spectral_ai_zero_matrix.md (516 líneas, 9 secciones, 16 refs) |
 | Paper Review | ✅ 10 discrepancias encontradas y corregidas por code-reviewer |
-| Reproducibility Scripts | ✅ integration_test_v2.py: 21/23 tests, 88.9% polysemy (match exacto) |
+| Reproducibility Scripts | ✅ integration_test_v2.py + eval_polysemy.py: 98.4% polysemy (80 words, 442 pairs) |
 | OptiX 9.0 CoopVec Build | ✅ Build 100%: 6 .optixir + 4 ejecutables. CoopVec=ON, --optix-ir mode |
 | OptiX WSL2 Runtime | ❌ optixInit falla — libnvoptix.so.1 stub sin optixQueryFunctionTable (driver 595.79) |
 | OptiX Windows Build | ✅ Build 100% MSVC 19.44 + CUDA 13.2 + OptiX 9.1 |
@@ -64,7 +64,7 @@
 
 ---
 
-## RESUMEN EJECUTIVO (2026-04-01)
+## RESUMEN EJECUTIVO (2026-04-02)
 
 ### Que tenemos HOY
 
@@ -80,20 +80,24 @@ ROUTING SPEED (RTX 5070 Ti, batch=256):
   Speedup vs PyTorch:             48x (RT Core) / 85-170x (CUDA kernel)
 
 PPL (Perplexity — menor = mejor):
-  Baseline OLMoE (gate original):     7.15
+  Baseline OLMoE (gate original):     6.69  (20K tokens)
+  Pre-filter 48 cand (16 capas):      6.79  (+1.5%)  ← MEJOR modo, casi sin degradacion
+  Pre-filter 32 cand (16 capas):      7.36  (+10.0%) ← 2x reduccion busqueda
   Modo PURO 3 capas (render_eq):      7.33  (+2.5%)  ← SIN gate original
   Modo PURO 6 capas (render_eq):      7.51  (+5.0%)
   Modo MIXTO 3 capas (hybrid):        7.17  (+0.4%)  ← USA gate original
-  ConfGate@0.90 16 capas:             8.37  (+17.1%) ← 69% BVH + 31% gate adaptativo
-  ConfGate@0.95 16 capas:             7.88  (+10.3%) ← 48% BVH + 52% gate adaptativo
-  Modo MIXTO 16 capas (hybrid):       7.66  (+7.2%)  ← BVH preselects + gate re-ranks
-  Modo PURO 16 capas (relu_norm):     9.11  (+27.4%) ← accuracy compounding 0.96^16
+  Modo PURO 16 capas (relu_norm):     9.11  (+27.4%) ← accuracy compounding 0.959^16
+
+HELLASWAG (downstream, N=2000):
+  Baseline:                           53.1% (1062/2000)
+  3-layer hybrid (L3,L8,L15):         52.2% (-0.9pp)
+  16-layer hybrid (all layers):       52.0% (-1.1pp)  ← minima degradacion
 
 ACCURACY por capa (top-8 overlap con gate original):
-  Promedio FASE F (6 capas, 200ep):   96.1%
-  Promedio FASE D (10 capas, 100ep):  96.5%
-  Peor capa: L1 = 93.4%  ← cuello de botella
+  Media 16 capas (spectral mode):     95.9%
+  Peor capa: L8 = 89.3%  ← cuello de botella
   Mejor capa: L15 = 97.6%
+  15/16 capas > 93%
 ```
 
 ### Descubrimiento del dia: Cross-disciplinary weight modes
@@ -110,14 +114,14 @@ Combinar logits + distancia geometrica baja PPL de 7.42 a 7.33 en modo puro.
 ### Mapa de capas (accuracy top-8)
 
 ```
-L0  [##########----] 95.4%  FASE F     L8  [##########----] 95.9%  FASE D
-L1  [########------] 93.4%  DEBIL !!   L9  [###########---] 96.8%  FASE D OK
-L2  [##########----] 96.1%  FASE F     L10 [###########---] 97.2%  FASE D OK
-L3  [##########----] 96.2%  FASE F     L11 [###########---] 97.2%  FASE D OK
-L4  [##########----] 95.1%  FASE D     L12 [###########---] 97.4%  FASE D OK
-L5  [##########----] 96.1%  FASE F     L13 [###########---] 97.0%  FASE D OK
-L6  [##########----] 96.4%  FASE F     L14 [###########---] 97.5%  FASE D OK
-L7  [##########----] 96.6%  FASE F     L15 [############--] 97.6%  FASE D OK
+L0  [##########----] 95.4%  OK         L8  [########------] 89.3%  DEBIL !!
+L1  [#########-----] 93.4%  DEBIL      L9  [###########---] 96.8%  OK
+L2  [##########----] 96.1%  OK         L10 [###########---] 97.2%  OK
+L3  [##########----] 96.2%  OK         L11 [###########---] 97.2%  OK
+L4  [##########----] 95.2%  OK         L12 [###########---] 97.4%  OK
+L5  [##########----] 96.1%  OK         L13 [###########---] 97.0%  OK
+L6  [##########----] 96.4%  OK         L14 [###########---] 97.5%  OK
+L7  [##########----] 96.6%  OK         L15 [############--] 97.6%  BEST
 ```
 
 ### Descubrimiento: Expert Analysis Deep (16 capas)
@@ -151,11 +155,11 @@ Analisis exhaustivo de los 64 expertos de OLMoE revela:
 
 ### Que falta — PROXIMO PASO
 
-**1. Reentrenar L1 (PRIORIDAD ALTA)**
-- L1 es 93.4% — la unica capa < 95%. Cuello de botella para 16 capas.
-- Comando: `python3 olmoe_bvh_distill.py --layer 1 --epochs 200 --spectral --topk-weight 0.3`
-- Estimado: ~35 min. Objetivo: subir a 96%+
-- Opcional: L4 (95.1%) y L8 (95.9%)
+**1. Reentrenar L8 y L1 (PRIORIDAD ALTA)**
+- L8 es 89.3% — peor capa, cuello de botella para 16 capas.
+- L1 es 93.4% — segunda peor.
+- Comando: `python3 olmoe_bvh_distill.py --layer 8 --epochs 200 --spectral --topk-weight 0.3`
+- Estimado: ~35 min cada una. Objetivo: subir a 96%+
 
 **2. BVH semantico per-layer (basado en expert analysis)**
 - Usar clusters de co-activacion de cada capa para organizar el arbol BVH

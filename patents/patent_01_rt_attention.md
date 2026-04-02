@@ -445,11 +445,11 @@ Triangle async achieves the best performance by using octahedral triangle meshes
 - Routing speedup is measured as PyTorch `BVHRouter.forward()` vs `bvh_router_ext.route()` CUDA kernel, both on GPU. The conservative lower bound of ≥85x accounts for measurement variance across configurations; measured speedups range from 112x (batch=1) to 218x (batch=1024).
 
 The BVH router (see FIG. 5 for the hierarchical architecture, FIG. 6 for the confidence-gated routing mechanism) was validated against the OLMoE-1B-7B model (7 billion parameters, 64 experts, 16 MoE layers), achieving:
-- Top-8 expert selection accuracy: 85-95% across all 16 layers (with Spectral Techniques)
-- **Full 16/16 layer replacement (hybrid mode, 24+ candidates):** PPL 7.15 vs baseline 7.15 — **0.0% degradation**
-- Full 16/16 layer replacement (hybrid mode, 16 candidates): PPL 7.91 vs baseline 7.15 — +10.7% degradation
-- Single-layer perplexity (layer 8): 7.19 (vs baseline 7.15, a delta of +0.6%)
-- The hybrid mode uses BVH for O(log N) candidate pre-selection, then the original gate weight matrix computes exact routing weights via softmax. With 24+ candidates out of 64 experts (2.7x search reduction), zero quality loss is achieved.
+- Top-8 expert selection accuracy: 89-98% across all 16 layers (mean 95.9%, with Spectral Techniques)
+- **Full 16/16 layer replacement (pre-filter mode, 48 candidates):** PPL 6.79 vs baseline 6.69 — **+1.5% degradation**
+- Full 16/16 layer replacement (pre-filter mode, 32 candidates): PPL 7.36 vs baseline 6.69 — +10.0% degradation
+- HellaSwag downstream accuracy: 52.0% vs baseline 53.1% — only -1.1 percentage point loss (16-layer hybrid, N=2000)
+- The hybrid mode uses BVH for O(log N) candidate pre-selection, then the original gate weight matrix computes exact routing weights via softmax. With 48 candidates out of 64 experts (1.3x search reduction), near-zero quality loss is achieved (+1.5% PPL).
 
 **Note:** All perplexity measurements use WikiText-2 with transformers 5.4.0 (baseline PPL 7.15). Earlier measurements with transformers 4.46.3 (baseline 6.11) produced equivalent deltas.
 
