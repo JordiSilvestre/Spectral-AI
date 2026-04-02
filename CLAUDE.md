@@ -1,9 +1,9 @@
-# SpectralAI Zero-Matrix — CLAUDE.md
+# SpectralAI — CLAUDE.md
 > Guía de arquitectura y contexto para agentes de IA trabajando en este proyecto.
 
 ## 🎯 Visión del Proyecto
 
-**SpectralAI Zero-Matrix** es un prototipo de modelo de lenguaje de nueva generación que **elimina completamente la multiplicación de matrices (MatMul)** del mecanismo de atención, sustituyéndolo por **geometría espacial acelerada por hardware** usando los RT Cores de NVIDIA (OptiX / Vulkan RT).
+**SpectralAI** es un prototipo de modelo de lenguaje de nueva generación que **elimina completamente la multiplicación de matrices (MatMul)** del mecanismo de atención, sustituyéndolo por **geometría espacial acelerada por hardware** usando los RT Cores de NVIDIA (OptiX / Vulkan RT).
 
 ### El Problema que Resuelve
 

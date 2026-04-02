@@ -1,4 +1,4 @@
-# STATUS.md — SpectralAI Zero-Matrix
+# STATUS.md — SpectralAI
 > Estado real del proyecto, inventario de archivos, y roadmap por fases.
 > Ultima actualizacion: 2026-04-02
 

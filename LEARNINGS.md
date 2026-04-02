@@ -1,4 +1,4 @@
-# LEARNINGS.md — SpectralAI Zero-Matrix
+# LEARNINGS.md — SpectralAI
 > Registro vivo de decisiones de diseño, fallos encontrados y lecciones aprendidas.
 > **SIEMPRE actualizar este archivo cuando algo sale mal o se toma una decisión importante.**
 

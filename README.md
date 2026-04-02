@@ -1,4 +1,4 @@
-# SpectralAI Zero-Matrix
+# SpectralAI
 
 **Attention without matrix multiplication.** RT Cores replace MatMul with O(N log N) ray tracing.
 
@@ -6,7 +6,7 @@
 
 ## What is this?
 
-SpectralAI Zero-Matrix is a research prototype that replaces the O(N^2) Transformer attention mechanism with O(N log N) ray tracing operations, using the RT Cores already present in consumer NVIDIA GPUs (RTX 4090, RTX 5070 Ti).
+SpectralAI is a research prototype that replaces the O(N^2) Transformer attention mechanism with O(N log N) ray tracing operations, using the RT Cores already present in consumer NVIDIA GPUs (RTX 4090, RTX 5070 Ti).
 
 Instead of computing a dense attention matrix (Query x Key), tokens are projected into a 3D geometric space organized as a BVH (Bounding Volume Hierarchy). A "ray" from the query token traverses the tree, finding semantically relevant tokens in O(log N) steps -- the same way a video game finds which objects a bullet hits.
 

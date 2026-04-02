@@ -1,4 +1,4 @@
-# ROADMAP.md — SpectralAI Zero-Matrix
+# ROADMAP.md — SpectralAI
 > Roadmap completo: fases completadas, en curso y pendientes.
 > Ultima actualizacion: 2026-03-30
 

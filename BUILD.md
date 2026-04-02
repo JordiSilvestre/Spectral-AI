@@ -1,4 +1,4 @@
-# SpectralAI Zero-Matrix — Build Instructions
+# SpectralAI — Build Instructions
 
 ## Requisitos
 
@@ -161,7 +161,7 @@ cmake --version
 
 # Salida esperada:
 # ╔══════════════════════════════════════════════════╗
-# ║ SpectralAI Zero-Matrix: Ray Tracing vs MatMul    ║
+# ║ SpectralAI: Ray Tracing vs MatMul    ║
 # ║ Benchmark Suite                                 ║
 # ╚══════════════════════════════════════════════════╝
 #
