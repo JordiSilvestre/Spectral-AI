@@ -485,7 +485,7 @@ With 24+ candidates (2.7x search space reduction), the hierarchical BVH traversa
 (a) defining a hierarchy of L levels, each level being a separate three-dimensional coordinate space;
 (b) at each level, organizing semantic entities as bounding volumes in the local three-dimensional coordinate space;
 (c) defining an affine transformation matrix (dimensional portal) for each transition between adjacent levels, the transformation mapping from the parent level's coordinate system to the child level's coordinate system;
-(d) constructing a nested Instance Acceleration Structure (IAS) where each level's acceleration structure references the next level's acceleration structure through OptixInstance records containing the affine transformation matrices; and
+(d) constructing a nested Instance Acceleration Structure (IAS) where each level's acceleration structure references the next level's acceleration structure through instance records of a ray tracing acceleration structure API containing the affine transformation matrices; and
 (e) traversing the entire hierarchy in a single ray trace operation, wherein the ray tracing hardware automatically applies the inverse affine transformation at each level boundary;
 whereby the effective dimensionality of the semantic space is L x 3.
 
@@ -510,7 +510,7 @@ whereby the effective dimensionality of the semantic space is L x 3.
 **Claim 9.** A system for neural language model inference using a hierarchical semantic space, the system comprising:
 (a) a GPU with dedicated ray tracing hardware supporting nested Instance Acceleration Structures;
 (b) a root IAS representing the top level of a semantic hierarchy;
-(c) one or more child IAS at each subsequent level, each referenced by an OptixInstance in the parent IAS with an associated affine transformation matrix;
+(c) one or more child IAS at each subsequent level, each referenced by an instance record in the parent IAS with an associated affine transformation matrix;
 (d) a Geometry Acceleration Structure (GAS) at the leaf level containing bounding volume primitives for individual semantic entities; and
 (e) a ray tracing pipeline comprising a ray generation program, a closest-hit program, and a miss program;
 wherein a single invocation of the ray tracing pipeline traverses all levels of the hierarchy, with the ray tracing hardware applying affine transformations at each level boundary.
@@ -526,12 +526,12 @@ where omega is a frequency parameter encoding conversational context.
 **Claim 13.** The system of Claim 9, further comprising a frequency bias value at each non-leaf sphere that shifts the base frequency omega as the ray traverses deeper levels of the hierarchy, providing hierarchical frequency modulation.
 
 **Claim 14.** A method for constructing a hierarchical semantic organization from token embeddings for use with ray tracing hardware, the method comprising:
-(a) applying hierarchical K-Means clustering to L2-normalized token embeddings to identify clusters at multiple levels of granularity;
-(b) for each level, computing a three-dimensional projection of the cluster members using PCA;
-(c) computing an affine transformation matrix for each parent-child cluster transition based on the PCA rotation of the child cluster;
-(d) assigning fuzzy membership probabilities to tokens that belong to multiple clusters, the probability being computed as a softmax over negative squared distances;
+(a) applying hierarchical clustering to L2-normalized token embeddings to identify clusters at multiple levels of granularity;
+(b) for each level, computing a three-dimensional projection of the cluster members using a dimensionality reduction technique;
+(c) computing an affine transformation matrix for each parent-child cluster transition based on the rotation derived from the dimensionality reduction of the child cluster;
+(d) assigning fuzzy membership probabilities to tokens that belong to multiple clusters, the probability being computed as a distance-based probability function;
 (e) identifying polysemous tokens as those with high membership entropy across multiple clusters; and
-(f) constructing a nested IAS from the resulting hierarchy.
+(f) constructing a nested acceleration structure hierarchy from the resulting hierarchy.
 
 **Claim 15.** The method of Claim 14, further comprising a decision process for polysemous tokens that determines whether to duplicate the token's data across multiple clusters or to create a wormhole pointer between clusters, based on a score that considers the token's access frequency, relevance, inter-cluster distance, and memory cost.
 
@@ -564,24 +564,59 @@ wherein M is the number of Fourier modes.
 
 **Claim 23.** A computer-readable storage medium containing instructions that, when executed by a processor having ray tracing hardware, cause the processor to:
 (a) receive token embeddings from a neural language model;
-(b) construct a nested Instance Acceleration Structure hierarchy of L levels, each level operating in a local 3D coordinate system;
+(b) construct a nested acceleration structure hierarchy of L levels using a ray tracing acceleration structure API, each level operating in a local 3D coordinate system;
 (c) define affine transformations between levels that collectively span an L x 3 dimensional semantic space;
-(d) trace rays through the nested hierarchy using hardware RT Cores; and
+(d) trace rays through the nested hierarchy using hardware ray tracing cores; and
 (e) return semantic entity identifiers based on ray intersections at the leaf level.
 
 **Claim 24.** The method of Claim 1, wherein each non-leaf node in the hierarchy contains a SemanticSphere defining a center position and bounding radius in its local coordinate system, and a child IAS handle referencing the next-level acceleration structure.
 
 **Claim 25.** The method of Claim 1, wherein the hierarchy supports a maximum of INCEPTION_MAX_DOMAINS (64) domains at Level 0, INCEPTION_MAX_SUBDOMAINS (64) subdomains per domain at Level 1, INCEPTION_MAX_CONCEPTS (256) concepts per subdomain at Level 2, and INCEPTION_MAX_STRINGS (1024) leaves per concept at Level 3, enabling representation of up to 64 x 64 x 256 x 1024 = approximately 1 billion semantic entities.
 
+**Claim 26.** A computer-implemented method for representing and traversing a semantic space of effective dimensionality greater than three using hardware that operates in three dimensions, the method comprising:
+(a) defining a hierarchy of L levels, each level being a separate coordinate space of dimensionality K_level;
+(b) at each level, organizing semantic entities as geometric primitives in the local coordinate space;
+(c) defining a learned coordinate transformation for each transition between adjacent levels;
+(d) constructing a nested hierarchical spatial data structure wherein each level references the next level through instance records containing the coordinate transformations; and
+(e) traversing the hierarchy to identify relevant semantic entities;
+whereby the effective dimensionality of the semantic space is the sum of dimensionalities across levels.
+
+**Claim 27.** A method for context-dependent encoding of semantic entities in a neural network, the method comprising:
+(a) associating each semantic entity with a set of learnable Fourier parameters comprising M pairs of coefficients (a_k, b_k);
+(b) computing a context-dependent frequency parameter omega from the current conversational or input context;
+(c) computing a resonance response as a weighted sum of sinusoidal basis functions evaluated at the frequency parameter; and
+(d) using the resonance response to modulate the entity's output representation;
+whereby the same entity produces different output representations for different contexts without duplicating entity data or parameters.
+
+**Claim 28.** A method for handling polysemous entities in a hierarchical semantic structure, the method comprising:
+(a) identifying entities that belong to multiple semantic clusters based on membership entropy;
+(b) for each polysemous entity, computing a score that considers access frequency, relevance across clusters, inter-cluster distance, and memory cost;
+(c) based on the score, either:
+    (i) duplicating the entity's data across relevant clusters when the score exceeds a threshold, or
+    (ii) creating a traversal shortcut between clusters when the score is below the threshold;
+whereby polysemous entities are accessible from multiple semantic regions with optimized memory usage.
+
+**Claim 29.** A computer-implemented method for traversing a hierarchical semantic space without requiring dedicated ray tracing hardware, the method comprising:
+(a) constructing a nested hierarchy of spatial data structures with learned coordinate transformations between levels;
+(b) for each query, performing software-based hierarchical traversal by recursively applying the coordinate transformations and searching within each level's spatial data structure;
+(c) identifying relevant semantic entities at the leaf level;
+wherein the method executes on general-purpose processors including CPUs, GPU compute cores, or programmable accelerators.
+
+**Claim 30.** A method for incrementally updating a hierarchical semantic structure during inference, comprising:
+(a) modifying leaf-level entities without reconstructing upper levels of the hierarchy;
+(b) maintaining the coordinate transformations between levels while updating only the affected leaf spatial data structure;
+(c) optionally triggering a partial rebuild of the parent level when the number of leaf modifications exceeds a threshold;
+whereby the structure supports online learning and adaptation with amortized O(log N) update cost.
+
 ---
 
 ## ABSTRACT
 
-A system and method for representing and traversing high-dimensional semantic spaces using nested Instance Acceleration Structures (IAS) in ray tracing hardware. The invention defines a hierarchy of L levels (typically L=4), each operating in its own local three-dimensional coordinate system. Transitions between levels are mediated by learnable affine transformation matrices called "dimensional portals", stored as OptixInstance transform fields. The RT Core hardware automatically applies these transformations during traversal, enabling navigation of an effective L x 3 = 12 dimensional semantic space using only 3D ray tracing primitives. The hierarchy organizes semantic entities from broad domains (Level 0) through subdomains (Level 1) and concepts (Level 2) to individual token-level SemanticStrings (Level 3), each equipped with learnable Fourier resonance parameters for context-dependent encoding. An Overlapping Hierarchical Bounding Sphere Clustering (OHBSC) algorithm constructs the hierarchy with fuzzy membership for polysemous tokens and wormhole pointers for cross-domain traversal. The system achieves O(log N) traversal complexity, 12-dimensional effective semantic representation, and near-parity perplexity (+2.1%) with standard Transformer attention on WikiText-2 benchmarks, while enabling inference on consumer GPUs.
+A system and method for representing and traversing high-dimensional semantic spaces using nested Instance Acceleration Structures (IAS) in ray tracing hardware. The invention defines a hierarchy of L levels (typically L=4), each operating in its own local three-dimensional coordinate system. Transitions between levels are mediated by learnable affine transformation matrices called "dimensional portals", stored as instance record transform fields of a ray tracing acceleration structure. The RT Core hardware automatically applies these transformations during traversal, enabling navigation of an effective L x 3 = 12 dimensional semantic space using only 3D ray tracing primitives. The hierarchy organizes semantic entities from broad domains (Level 0) through subdomains (Level 1) and concepts (Level 2) to individual token-level SemanticStrings (Level 3), each equipped with learnable Fourier resonance parameters for context-dependent encoding. An Overlapping Hierarchical Bounding Sphere Clustering (OHBSC) algorithm constructs the hierarchy with fuzzy membership for polysemous tokens and wormhole pointers for cross-domain traversal. The system achieves O(log N) traversal complexity, 12-dimensional effective semantic representation, and near-parity perplexity (+1.8%) with standard Transformer attention on WikiText-2 benchmarks, while enabling inference on consumer GPUs.
 
 ---
 
 **Inventor:** Jordi Silvestre Lopez
 **Filed by:** Jordi Silvestre Lopez (individual inventor)
 **Date of Conception:** March 2026
-**Priority Date:** [Filing date of this provisional application]
+**Priority Date:** [Filing date of this non-provisional application]
