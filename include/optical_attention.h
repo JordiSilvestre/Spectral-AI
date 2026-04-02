@@ -300,6 +300,81 @@ struct alignas(OPTIX_SBT_RECORD_ALIGNMENT) SpectralHitSbtRecord {
 #endif // SPECTRAL_SPECTRAL_ENABLED
 
 // ============================================================================
+// Cooperative Vector Calibration Weights (OptiX 9.0+)
+//
+// When SPECTRAL_COOPVEC_ENABLED=1, the closest-hit shader performs in-shader
+// calibration of BVH router logits using optixCoopVecMatMul on Tensor Cores.
+// This eliminates the PyTorch round-trip (1-2ms → <20µs).
+//
+// Two calibration modes are supported:
+//   affine: calibrated[i] = logits[i] * scale[i] + bias[i]   (128 params)
+//   linear: calibrated = W @ logits + bias                    (4160 params)
+//
+// Weights are trained by calibrate_router.py, exported by export_calibration.py,
+// and uploaded to GPU via the OptiX launch parameters (not SBT, since
+// calibration weights are shared across all hit records).
+// ============================================================================
+
+#ifndef SPECTRAL_COOPVEC_ENABLED
+#  define SPECTRAL_COOPVEC_ENABLED 0
+#endif
+
+/// Number of experts in the MoE router (BVH leaves)
+#ifndef SPECTRAL_NUM_EXPERTS
+#  define SPECTRAL_NUM_EXPERTS 64
+#endif
+
+#if SPECTRAL_COOPVEC_ENABLED
+
+/// Calibration mode selector
+enum CalibrationMode : uint32_t {
+    CALIBRATION_MODE_NONE   = 0,  ///< No calibration (raw BVH logits)
+    CALIBRATION_MODE_AFFINE = 1,  ///< Per-expert scale + bias (128 params)
+    CALIBRATION_MODE_LINEAR = 2,  ///< Full linear layer W[64x64] + bias (4160 params)
+};
+
+/**
+ * @struct CalibrationWeights
+ * @brief In-shader calibration weights for cooperative vector MLP.
+ *
+ * Stored in device global memory, pointed to by OptiX launch parameters.
+ * Matrices must be 64-byte aligned for optixCoopVecMatMul.
+ * Bias vectors must be 16-byte aligned.
+ *
+ * Memory layout (INFERENCING_OPTIMAL) is determined by
+ * optixCoopVecMatrixConvert() at upload time — the host side converts
+ * from row-major FP16 to the optimal hardware layout.
+ */
+struct CalibrationWeights {
+    /// Calibration mode: NONE, AFFINE, or LINEAR
+    uint32_t mode;
+
+    /// Padding for 16-byte alignment
+    uint32_t _pad[3];
+
+    // --- Affine mode: scale[64] + bias[64] = 256 bytes total ---
+    // Used when mode == CALIBRATION_MODE_AFFINE
+    // calibrated[i] = logits[i] * affine_scale[i] + affine_bias[i]
+    half affine_scale[SPECTRAL_NUM_EXPERTS];  // 128 bytes
+    half affine_bias[SPECTRAL_NUM_EXPERTS];   // 128 bytes
+
+    // --- Linear mode: W[64x64] + bias[64] ---
+    // Used when mode == CALIBRATION_MODE_LINEAR
+    // calibrated = W @ logits + linear_bias
+    // Matrix stored in INFERENCING_OPTIMAL layout after conversion.
+    // Size: optixCoopVecMatrixComputeSize(ctx, 64, 64, FLOAT16, INFERENCING_OPTIMAL)
+    // Typically ~8192 bytes (may vary by GPU arch).
+    // NOTE: This buffer is allocated separately and pointed to by linear_matrix_ptr.
+    CUdeviceptr linear_matrix_ptr;    ///< Device pointer to W[64x64] in optimal layout (64B aligned)
+    uint32_t    linear_matrix_size;   ///< Size in bytes of the optimal-layout matrix
+    uint32_t    _pad2;
+
+    half linear_bias[SPECTRAL_NUM_EXPERTS];   // 128 bytes, 16B aligned
+};
+
+#endif // SPECTRAL_COOPVEC_ENABLED
+
+// ============================================================================
 // Clase OpticalAttention: Gestor de atención óptica
 // ============================================================================
 

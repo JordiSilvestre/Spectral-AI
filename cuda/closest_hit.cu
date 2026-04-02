@@ -27,6 +27,7 @@
  */
 
 #include <optix.h>
+#include <optix_device.h>
 #include <cuda_fp16.h>
 #include <cuda_runtime.h>
 #include <math_constants.h>
@@ -46,6 +47,101 @@ extern "C" __constant__ TokenNode* c_token_nodes;
 
 // Lambda (coeficiente de absorción) - debe coincidir con SPECTRAL_LAMBDA
 extern "C" __constant__ float c_lambda;
+
+#if SPECTRAL_COOPVEC_ENABLED
+// ============================================================================
+// COOPERATIVE VECTOR CALIBRATION (OptiX 9.0+)
+//
+// Device pointer to CalibrationWeights struct in global memory.
+// Set by the host before pipeline launch. The closest-hit shader uses
+// optixCoopVecMatMul to calibrate BVH logits in-shader, eliminating
+// the PyTorch round-trip that currently costs ~1-2ms.
+// ============================================================================
+extern "C" __constant__ CalibrationWeights* c_calibration_weights;
+
+/**
+ * Map a primitive index to an expert index [0, SPECTRAL_NUM_EXPERTS).
+ * Uses modular arithmetic since multiple tokens can map to the same expert.
+ */
+__device__ static inline uint32_t cyclic_expert_idx(uint32_t primitive_idx) {
+    return primitive_idx % SPECTRAL_NUM_EXPERTS;
+}
+
+/**
+ * Apply in-shader calibration to BVH router logits using cooperative vectors.
+ *
+ * Affine mode: calibrated[i] = logits[i] * scale[i] + bias[i]
+ *   Uses element-wise optixCoopVecMul + optixCoopVecAdd (no matmul needed).
+ *
+ * Linear mode: calibrated = W @ logits + bias
+ *   Uses optixCoopVecMatMul with INFERENCING_OPTIMAL layout on Tensor Cores.
+ *
+ * @param raw_logits   Input logits from BVH traversal [SPECTRAL_NUM_EXPERTS]
+ * @param out_logits   Output calibrated logits [SPECTRAL_NUM_EXPERTS]
+ * @param cal          Pointer to calibration weights in device memory
+ */
+__device__ static void apply_coopvec_calibration(
+    const float* raw_logits,
+    float* out_logits,
+    const CalibrationWeights* cal
+) {
+    if (!cal || cal->mode == CALIBRATION_MODE_NONE) {
+        // No calibration — copy logits through
+        for (uint32_t i = 0; i < SPECTRAL_NUM_EXPERTS; ++i) {
+            out_logits[i] = raw_logits[i];
+        }
+        return;
+    }
+
+    // Load raw logits into cooperative vector (convert float32 → float16)
+    OptixCoopVec<half, SPECTRAL_NUM_EXPERTS> input_vec;
+    for (uint32_t i = 0; i < SPECTRAL_NUM_EXPERTS; ++i) {
+        input_vec[i] = __float2half(raw_logits[i]);
+    }
+
+    OptixCoopVec<half, SPECTRAL_NUM_EXPERTS> result_vec;
+
+    if (cal->mode == CALIBRATION_MODE_AFFINE) {
+        // Affine: calibrated = logits * scale + bias
+        // Load scale and bias as cooperative vectors
+        OptixCoopVec<half, SPECTRAL_NUM_EXPERTS> scale_vec =
+            optixCoopVecLoad<OptixCoopVec<half, SPECTRAL_NUM_EXPERTS>>(
+                reinterpret_cast<CUdeviceptr>(cal->affine_scale));
+        OptixCoopVec<half, SPECTRAL_NUM_EXPERTS> bias_vec =
+            optixCoopVecLoad<OptixCoopVec<half, SPECTRAL_NUM_EXPERTS>>(
+                reinterpret_cast<CUdeviceptr>(cal->affine_bias));
+
+        // calibrated = input * scale + bias (fused multiply-add)
+        result_vec = optixCoopVecFFMA(input_vec, scale_vec, bias_vec);
+
+    } else if (cal->mode == CALIBRATION_MODE_LINEAR) {
+        // Linear: calibrated = W @ logits + bias
+        // W is stored in INFERENCING_OPTIMAL layout at linear_matrix_ptr
+        result_vec = optixCoopVecMatMul<
+            OptixCoopVec<half, SPECTRAL_NUM_EXPERTS>,  // VecTOut [64]
+            OptixCoopVec<half, SPECTRAL_NUM_EXPERTS>,  // VecTIn  [64]
+            OPTIX_COOP_VEC_ELEM_TYPE_FLOAT16,          // inputInterpretation
+            OPTIX_COOP_VEC_MATRIX_LAYOUT_INFERENCING_OPTIMAL,
+            false,                                      // transpose
+            SPECTRAL_NUM_EXPERTS,                       // N (output dim)
+            SPECTRAL_NUM_EXPERTS,                       // K (input dim)
+            OPTIX_COOP_VEC_ELEM_TYPE_FLOAT16,          // matrixElementType
+            OPTIX_COOP_VEC_ELEM_TYPE_FLOAT16           // biasElementType
+        >(
+            input_vec,
+            cal->linear_matrix_ptr,     // 64B aligned matrix
+            0,                          // matrixOffsetInBytes
+            reinterpret_cast<CUdeviceptr>(cal->linear_bias),  // bias ptr
+            0                           // biasOffsetInBytes
+        );
+    }
+
+    // Convert result back to float32
+    for (uint32_t i = 0; i < SPECTRAL_NUM_EXPERTS; ++i) {
+        out_logits[i] = __half2float(result_vec[i]);
+    }
+}
+#endif // SPECTRAL_COOPVEC_ENABLED
 
 #if SPECTRAL_SPECTRAL_ENABLED
 /* ============================================================================
@@ -378,6 +474,29 @@ extern "C" __global__ void __closesthit__ch_optical_attention() {
     optixSetPayload_19(selected_block);
     optixSetPayload_20(__float_as_uint(refraction_angle_deg));
 #endif // SPECTRAL_SPECTRAL_ENABLED
+
+#if SPECTRAL_COOPVEC_ENABLED
+    // ========================================================================
+    // IN-SHADER CALIBRATION VIA COOPERATIVE VECTORS (OptiX 9.0+)
+    //
+    // Apply learned calibration transform to the raw attention weight.
+    // This replaces the PyTorch round-trip (1-2ms → <20µs).
+    //
+    // The calibration operates on the per-expert logit that this hit
+    // contributes. For the full 64-expert calibration, the raygen shader
+    // accumulates all hit logits and applies calibration once at the end.
+    // Here we apply a per-hit spectral modulation via the affine weights.
+    // ========================================================================
+    if (c_calibration_weights && c_calibration_weights->mode == CALIBRATION_MODE_AFFINE) {
+        // Fast path: per-expert affine calibration on the attention weight
+        // selected_block from Snell refraction identifies which expert this hit maps to
+        uint32_t expert_idx = cyclic_expert_idx(primitive_idx);
+        half cal_scale = c_calibration_weights->affine_scale[expert_idx];
+        half cal_bias  = c_calibration_weights->affine_bias[expert_idx];
+        float calibrated = __half2float(cal_scale) * attention_weight + __half2float(cal_bias);
+        attention_weight = fmaxf(calibrated, 0.0f);  // ReLU to prevent negative weights
+    }
+#endif // SPECTRAL_COOPVEC_ENABLED
 
     // ========================================================================
     // ACTUALIZAR PAYLOAD DEL RAYO

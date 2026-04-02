@@ -452,6 +452,65 @@ class HybridBVHRouter(nn.Module):
     def spectral(self):
         return self.pytorch_router.spectral
 
+    # ── OptiX 9.0 Cooperative Vector Calibration ─────────────────
+    # Loads calibration weights exported by export_calibration.py
+    # for in-shader MLP execution via optixCoopVecMatMul.
+
+    def load_calibration_weights(self, bin_path: str) -> dict:
+        """
+        Load exported calibration weights (.bin) for OptiX cooperative vectors.
+
+        The binary blob is read into a CPU buffer and stored for later upload
+        to GPU constant memory when the OptiX pipeline is initialized.
+
+        Args:
+            bin_path: Path to calibration_affine.bin or calibration_linear.bin
+                      (produced by export_calibration.py)
+
+        Returns:
+            dict with mode, n_params, and raw_bytes for status reporting
+        """
+        import struct as _struct
+
+        data = Path(bin_path).read_bytes()
+        if len(data) < 16:
+            raise ValueError(f"Calibration binary too small: {len(data)} bytes")
+
+        mode_id = _struct.unpack_from("<I", data, 0)[0]
+
+        mode_names = {0: "none", 1: "affine", 2: "linear"}
+        mode_name = mode_names.get(mode_id, f"unknown({mode_id})")
+
+        if mode_id == 1:  # affine
+            expected = 16 + 128 + 128  # header + scale[64]*2B + bias[64]*2B = 272
+            if len(data) < expected:
+                raise ValueError(f"Affine blob too small: {len(data)} < {expected}")
+            n_params = 128
+        elif mode_id == 2:  # linear
+            expected = 16 + 64*64*2 + 64*2  # header + W[64x64]*2B + bias[64]*2B = 8336
+            if len(data) < expected:
+                raise ValueError(f"Linear blob too small: {len(data)} < {expected}")
+            n_params = 64*64 + 64
+        else:
+            raise ValueError(f"Unknown calibration mode: {mode_id}")
+
+        self._calibration_blob = data
+        self._calibration_mode = mode_name
+        print(f"  Calibration loaded: mode={mode_name}, "
+              f"params={n_params}, size={len(data)} bytes")
+
+        return {
+            "mode": mode_name,
+            "mode_id": mode_id,
+            "n_params": n_params,
+            "size_bytes": len(data),
+        }
+
+    @property
+    def has_calibration(self) -> bool:
+        """Check if calibration weights are loaded."""
+        return hasattr(self, "_calibration_blob") and self._calibration_blob is not None
+
     def is_cuda_active(self) -> bool:
         """Check if any CUDA kernel is being used for routing."""
         if self.training:
@@ -463,12 +522,16 @@ class HybridBVHRouter(nn.Module):
 
     def status(self) -> str:
         """Return human-readable status of the router."""
+        cal_suffix = ""
+        if self.has_calibration:
+            cal_suffix = f" + CoopVec calibration ({self._calibration_mode})"
+
         if self.training:
             return "TRAINING (PyTorch Gumbel-Softmax)"
         if self._torch_ext_synced and HAS_TORCH_EXT:
-            return "INFERENCE (PyTorch zero-copy ext — fastest, no numpy)"
+            return f"INFERENCE (PyTorch zero-copy ext — fastest){cal_suffix}"
         if self._cuda_synced and self._cuda_router is not None:
-            return "INFERENCE (CUDA kernel ctypes — 105x optimized)"
+            return f"INFERENCE (CUDA kernel ctypes — 105x optimized){cal_suffix}"
         if HAS_TORCH_EXT:
             return "INFERENCE (PyTorch fallback — call sync_to_torch_ext())"
         if HAS_CUDA_ROUTER and self._lib_path:
