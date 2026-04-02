@@ -59,3 +59,43 @@ data/liquidbit_lm_checkpoint.pt
 
 # Environment
 .env
+
+# Build artifacts (Windows)
+build_win/
+build_win.bat
+build_ptx_win.bat
+*.optixir
+
+# Temp scripts (underscore prefix = scratch)
+_*.py
+_*.bat
+_*.txt
+
+# Logs
+*.log
+build_bench_log.txt
+fase_f_log.txt
+
+# Large binaries / installers
+*.exe
+!build_win/**/*.exe
+
+# Cached datasets
+wikitext2_*.npy
+
+# Chat exports / misc docs
+*.docx
+
+# Checkpoint backups and experiments
+checkpoints/olmoe_distill_perm/
+checkpoints/ternary/
+checkpoints/ternary_1.5b/
+checkpoints/inception_best.pt
+
+# CUDA extension build dirs
+cuda/v5/build_bvh/
+cuda/v5/build_ternary/
+
+# Old eval results (kept in git: 2k versions + sweep_full)
+eval_hellaswag_bvh_results.json
+eval_hellaswag_hybrid16_results.json
