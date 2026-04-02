@@ -59,6 +59,8 @@
 | Reproducibility Scripts | ✅ integration_test_v2.py: 21/23 tests, 88.9% polysemy (match exacto) |
 | OptiX 9.0 CoopVec Build | ✅ Build 100%: 6 .optixir + 4 ejecutables. CoopVec=ON, --optix-ir mode |
 | OptiX WSL2 Runtime | ❌ optixInit falla — libnvoptix.so.1 stub sin optixQueryFunctionTable (driver 595.79) |
+| OptiX Windows Build | ✅ Build 100% MSVC 19.44 + CUDA 13.2 + OptiX 9.1 |
+| RT Core Benchmark (Win) | ✅ Triangle async: 19.1µs/batch, 13.4M q/s, 100% accuracy, ~48x vs PyTorch gate |
 
 ---
 
@@ -71,10 +73,11 @@ Probado en OLMoE-1B-7B (64 expertos, 16 capas).
 
 **Resultados clave:**
 ```
-ROUTING SPEED (CUDA kernel, RTX 5070 Ti):
-  BVH Router:   10.4 us/batch (batch=256) → 24.7M tok/s
-  Gate lineal: ~927 us/batch (PyTorch)    → 94x mas lento
-  Speedup:      85-170x segun batch size
+ROUTING SPEED (RTX 5070 Ti, batch=256):
+  RT Core (OptiX triangle async): 19.1 us/batch → 13.4M q/s (100% accuracy)
+  BVH Router (CUDA kernel):       10.4 us/batch → 24.7M tok/s
+  Gate lineal (PyTorch):         ~927  us/batch → 48-94x mas lento
+  Speedup vs PyTorch:             48x (RT Core) / 85-170x (CUDA kernel)
 
 PPL (Perplexity — menor = mejor):
   Baseline OLMoE (gate original):     7.15

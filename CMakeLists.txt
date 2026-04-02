@@ -209,7 +209,10 @@ target_include_directories(spectral_core PUBLIC
 )
 
 # Compilación con C++17
-target_compile_features(spectral_core PUBLIC cxx_std_17)
+set_target_properties(spectral_core PROPERTIES
+    CXX_STANDARD 17
+    CXX_STANDARD_REQUIRED ON
+)
 
 # Enlazar CUDA runtime
 target_link_libraries(spectral_core PUBLIC
