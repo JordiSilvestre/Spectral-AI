@@ -27,12 +27,28 @@
 2. **`-lineinfo` vs `--lineinfo`:** Doble guión causa que gcc lo interprete como flag propio. Un solo guión funciona con nvcc en Linux/WSL.
 3. **`optix_function_table_definition.h`:** Solo incluir UNA VEZ por ejecutable. Incluirlo en lib + main causa `multiple definition of g_optixFunctionTable`.
 
-**Limitación WSL2:** OptiX runtime (RT Cores) NO funciona en WSL2 con driver 595.79. La lib `/usr/lib/wsl/lib/libnvoptix.so.1` es un stub sin `optixQueryFunctionTable`. Los shaders `.optixir` compilados son correctos — necesitan ejecutarse en Windows nativo o con driver WSL actualizado.
+**Limitación WSL2:** OptiX runtime (RT Cores) NO funciona en WSL2 con driver 595.79. La lib `/usr/lib/wsl/lib/libnvoptix.so.1` es un stub sin `optixQueryFunctionTable`. Los shaders `.optixir` compilados son correctos — necesitan ejecutarse en Windows nativo.
+
+**Build Windows nativo (Visual Studio 2022 + CUDA 13.2 + OptiX 9.1):**
+- ✅ Build 100% exitoso con MSVC 19.44
+- Fix: `target_compile_features(cxx_std_17)` → `set_target_properties(CXX_STANDARD 17)` (CMake 4.2 + MSVC compat)
+
+**RT Core Router Benchmark — RTX 5070 Ti (Windows nativo):**
+```
+AABB sync:      28.5 µs/batch  →  9.0M queries/s  (100% accuracy)
+AABB async:     37.2 µs/batch  →  6.9M queries/s  (100% accuracy)
+Triangle sync:  32.5 µs/batch  →  7.9M queries/s  (100% accuracy)
+Triangle async: 19.1 µs/batch  → 13.4M queries/s  (100% accuracy)  ← BEST
+```
+- **Triangle async = 19.1 µs con 100% accuracy** usando RT Cores reales
+- **~48x speedup** vs gate lineal PyTorch (~927 µs)
+- GAS size: 11 KB (triangles) vs 3 KB (AABB) — ambos despreciables
+- Con CoopVec calibración in-shader, el round-trip PyTorch (1-2ms) se elimina
 
 **Próximos pasos:**
-- Probar pipeline OptiX completo en Windows nativo (Visual Studio)
-- O esperar driver NVIDIA con soporte OptiX completo en WSL2
-- Latencia target: <20µs total (BVH 10µs + calibración CoopVec ~5µs)
+- Integrar calibración CoopVec end-to-end con pipeline RT en Windows
+- Benchmark latencia total: RT routing (19µs) + CoopVec calibración (~5µs) = ~24µs target
+- Probar con batch sizes mayores (512, 1024) para saturar RT Cores
 
 ---
 
