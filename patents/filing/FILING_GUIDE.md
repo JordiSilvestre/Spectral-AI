@@ -262,16 +262,36 @@ You have a duty to disclose all known prior art to USPTO. File Form SB/08 with t
 **Foreign Documents:**
 - None known
 
-**Non-Patent Literature:**
+**Non-Patent Literature (Attention & Transformers):**
 1. Vaswani et al., "Attention Is All You Need," NeurIPS 2017
 2. Dao et al., "FlashAttention: Fast and Memory-Efficient Exact Attention," NeurIPS 2022
+
+**Non-Patent Literature (Mixture of Experts):**
 3. Fedus et al., "Switch Transformers: Scaling to Trillion Parameter Models," JMLR 2022
 4. Jiang et al., "Mixtral of Experts," arXiv:2401.04088, 2024
 5. Muennighoff et al., "OLMoE: Open Mixture-of-Experts Language Models," arXiv:2409.02060, 2024
-6. NVIDIA, "OptiX Programming Guide," Version 8.0+
-7. Karras, "Maximizing Parallelism in the Construction of BVHs," HPG 2012
-8. Meneses et al., "RT Cores for Scientific Computing: A Survey," arXiv:2603.28771, 2026
-9. Your own arXiv paper (if published before examination) — file supplemental IDS
+6. EAC-MoE, "Expert-Selection Aware Compression for MoE," ACL 2025 — addresses expert-shift problem after routing changes
+7. SiDA-MoE, "Hash-based routing for MoE," MLSys 2024 — approximate routing via hashing (NOT ray tracing)
+
+**Non-Patent Literature (RT Cores for Non-Graphics):**
+8. Zhu et al., "RTNN: Accelerating Neighbor Search Using Hardware Ray Tracing," PPoPP 2022 — RT Cores for kNN search (2.2-65× speedup), does NOT address attention or MoE routing
+9. Zhu et al., "RT-kNNS Unbound: Using RT Cores for kNN Search," IEEE TPDS 2023 — extension of RTNN
+10. Meneses et al., "RT Cores for General-Purpose Computing: A Literature Review," arXiv:2603.28771, January 2026 — surveys 59 papers across 32 problems; NONE use RT Cores for LLM attention or MoE routing
+11. Yin et al., "RTCUDB: Building Databases with RT Processors," arXiv:2412.09337, December 2024 — maps SQL queries to ray tracing (18.3× speedup), validates concept of non-graphics RT Core usage
+12. Purdue AALP, "Extending GPU RT Units for Hierarchical Search," MICRO 2024 — proposes generalized hierarchical search unit (HSU) supporting Euclidean + cosine similarity in hardware; open-source RTL: github.com/purdue-aalp/rayflex
+
+**Non-Patent Literature (Hardware & APIs):**
+13. NVIDIA, "OptiX Programming Guide," Version 8.0+
+14. NVIDIA, "OptiX 9.0 Cooperative Vectors," 2025 — enables MLP execution inside OptiX shaders via Tensor Cores (optixCoopVecMatMul)
+15. Karras, "Maximizing Parallelism in the Construction of BVHs," HPG 2012
+
+**Non-Patent Literature (MatMul-Free / Ternary):**
+16. Zhu et al., "Scalable MatMul-free Language Modeling," NeurIPS 2024 — ternary {-1,0,+1} weights with POPCOUNT, 4.57× inference speedup, models up to 2.7B params; github.com/ridgerchu/matmulfreellm
+
+**Own Publications:**
+17. Your own arXiv paper (if published before examination) — file supplemental IDS
+
+> **Why cite all of this?** USPTO requires disclosure of ALL known material prior art (37 CFR 1.56). Failure to disclose can invalidate the patent. These references STRENGTHEN our position because none of them combine RT Cores + attention computation + MoE routing — they validate individual components but not the novel combination.
 
 > **Important:** File the IDS **within 3 months of the non-provisional filing** or **before first Office Action** to avoid additional fees.
 

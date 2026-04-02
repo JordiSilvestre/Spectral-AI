@@ -4,6 +4,40 @@
 
 ---
 
+### [2026-04-02] Prior art research + Patent hardening + Provisional filing prep
+
+**Prior Art encontrado (NINGUNO invalida las patentes):**
+
+1. **RTNN (PPoPP 2022)** — RT Cores para kNN search, 2.2-65× speedup. Valida el premise pero NO hace atención ni MoE routing. github.com/horizon-research/rtnn
+   - **Aplicable:** Query reordering y query partitioning podrían mejorar nuestro OptiX de 39µs
+
+2. **OptiX 9.0 Cooperative Vectors (NVIDIA, 2025)** — MLPs dentro de shaders OptiX via Tensor Cores
+   - **OPORTUNIDAD ENORME:** `optixCoopVecMatMul` permite hacer calibración de pesos en el shader de closest-hit. BVH selecciona experto (RT Cores) → MLP corrige pesos (Tensor Cores) → un solo kernel, sin round-trip a PyTorch
+   - **Podría cerrar el gap de PPL Y reducir latencia simultáneamente**
+
+3. **MatMul-Free LLM (NeurIPS 2024)** — Pesos ternarios {-1,0,+1} + POPCOUNT, idéntico a nuestra idea. 4.57× speedup, 61% menos memoria. github.com/ridgerchu/matmulfreellm
+   - **Comparar:** Sus fused Triton kernels vs nuestro CUDA POPCOUNT
+
+4. **Survey RT Cores (Jan 2026)** — 59 papers, 32 problemas. **NINGUNO usa RT Cores para LLM atención o MoE routing** → confirma novedad
+
+5. **Purdue HSU (MICRO 2024)** — Hardware search unit generalizado, RTL open-source con cosine similarity en hardware
+   - **Futuro:** Exactamente lo que SpectralAI necesitaría en hardware dedicado
+
+6. **EAC-MoE (ACL 2025)** — Expert-shift problem: cuando cambias routing, pesos ya no calibrados. Técnica de calibración post-routing aplicable a nuestro pipeline
+
+7. **SiDA-MoE (MLSys 2024)** — Hash-based routing. Hallazgo: degradación PPL disminuye con modelos más grandes → nuestro +2.1% en OLMoE 1B probablemente sería menor en modelos 7B+
+
+**Patent hardening (108 claims, 33 independientes):**
+- Patent 1: 28 → 34 claims (10 indep). Añadidos: software-only, CRM, broadest spatial attention, two-phase, confidence-gated, KV-cache replacement
+- Patent 2: 25 → 30 claims (11 indep). Eliminado OptiX lock-in, añadidos: generic hierarchical, Fourier standalone, wormhole, software-only, incremental update
+- Patent 3: 38 → 44 claims (14 indep). Broadened optical terms, añadidos: generic context-dependent routing, multi-band, TIR, phase coherence, training loss, CRM
+
+**Decisión: Provisional primero ($195) → arXiv → sponsors → non-provisional (mes 9-10)**
+
+**Próxima oportunidad técnica:** Integrar OptiX 9.0 Cooperative Vectors para eliminar round-trip PyTorch en hybrid mode
+
+---
+
 ### [2026-04-01] Paper académico escrito + Patent audit completo
 
 **Archivos:** `paper/spectral_ai_zero_matrix.md` (NUEVO), `tests/test_patent_claims.py` (NUEVO)
