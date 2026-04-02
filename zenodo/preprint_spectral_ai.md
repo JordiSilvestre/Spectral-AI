@@ -11,7 +11,7 @@ Independent Researcher
 
 ## Abstract
 
-We present SpectralAI, a system that replaces the O(N^2) matrix multiplication in transformer attention mechanisms with O(N log N) Bounding Volume Hierarchy (BVH) traversal accelerated by dedicated ray tracing hardware (NVIDIA RT Cores). Our approach makes three contributions: (1) *RT Attention* -- a method that projects token embeddings into 3D geometric space and uses hardware-accelerated BVH traversal for expert routing in Mixture-of-Experts models, achieving 112--218x routing speedup over PyTorch baselines and 731x VRAM reduction; (2) *Inception Engine* -- a nested Instance Acceleration Structure (IAS) architecture that composes four levels of 3D spaces into an effective 12-dimensional semantic representation, bypassing the hardware's native 3D limitation (PPL within 1.8% of GPT-2 baseline); and (3) *Spectral Routing* -- a context-dependent routing mechanism inspired by optical refraction (Snell's law), where semantic nodes act as prisms with learned refractive indices, resolving token polysemy with 98.4% accuracy (80 polysemous words, 442 context pairs) at less than 0.12% computational overhead. We validate our system on OLMoE-1B-7B (7B parameters, 64 experts, 16 MoE layers) using an NVIDIA RTX 5070 Ti.
+We present SpectralAI, a system that replaces the O(N^2) matrix multiplication in transformer attention mechanisms with O(N log N) Bounding Volume Hierarchy (BVH) traversal accelerated by dedicated ray tracing hardware (NVIDIA RT Cores). Our approach makes three contributions: (1) *RT Attention* -- a method that projects token embeddings into 3D geometric space and uses hardware-accelerated BVH traversal for expert routing in Mixture-of-Experts models, achieving 113--218x routing speedup over PyTorch baselines and 731x VRAM reduction; (2) *Inception Engine* -- a nested Instance Acceleration Structure (IAS) architecture that composes four levels of 3D spaces into an effective 12-dimensional semantic representation, bypassing the hardware's native 3D limitation (PPL within 1.8% of GPT-2 baseline); and (3) *Spectral Routing* -- a context-dependent routing mechanism inspired by optical refraction (Snell's law), where semantic nodes act as prisms with learned refractive indices, resolving token polysemy with 98.4% accuracy (80 polysemous words, 442 context pairs) at less than 0.12% computational overhead. We validate our system on OLMoE-1B-7B (7B parameters, 64 experts, 16 MoE layers) using an NVIDIA RTX 5070 Ti.
 
 ---
 
@@ -21,12 +21,15 @@ We present SpectralAI, a system that replaces the O(N^2) matrix multiplication i
 
 | Configuration | PPL | Delta | Mode |
 |---|---|---|---|
-| Baseline (linear gate) | 6.69 | -- | Reference |
-| Pre-filter 48 candidates (16 layers) | 6.79 | +1.5% | Pre-filter |
-| 3-layer hybrid (L3, L8, L15) | 7.17 | +0.4% | Hybrid |
-| 16-layer hybrid (all layers) | 7.30 | +2.1% | Hybrid |
-| 3-layer pure (render_eq) | 7.33 | +2.5% | Pure |
-| Pre-filter 32 candidates (16 layers) | 7.36 | +10.0% | Pre-filter |
+| Baseline (linear gate) | 6.69 | -- | Reference (20K tokens) |
+| Pre-filter 48 candidates (16 layers) | 6.79 | +1.5%† | Pre-filter |
+| Pre-filter 32 candidates (16 layers) | 7.36 | +10.0%† | Pre-filter |
+| Baseline (linear gate) | 7.15 | -- | Reference (50K tokens) |
+| 3-layer hybrid (L3, L8, L15) | 7.17 | +0.4%* | Hybrid |
+| 16-layer hybrid (all layers) | 7.30 | +2.1%* | Hybrid |
+| 3-layer pure (render_eq) | 7.33 | +2.5%* | Pure |
+
+*†Pre-filter deltas computed against 20K-token baseline (PPL 6.69). Entries marked \* use 50K-token baseline (PPL 7.15). Different evaluation windows produce different absolute PPL values but consistent relative ordering.*
 
 ### HellaSwag (Downstream Accuracy, N=2,000)
 
@@ -59,7 +62,7 @@ We present SpectralAI, a system that replaces the O(N^2) matrix multiplication i
 | Triangle sync | 32.5 | 7.9 | 100% |
 | **Triangle async** | **19.1** | **13.4** | **100%** |
 
-Routing speedup: **112--218x** vs PyTorch linear gate (batch-dependent).
+Routing speedup: **113--218x** vs PyTorch linear gate (batch-dependent).
 VRAM reduction: **731x** (4.03 MB active vs 2,944 MB dense baseline).
 
 ### Polysemy Resolution

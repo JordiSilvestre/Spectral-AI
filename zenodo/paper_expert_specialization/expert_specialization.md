@@ -165,7 +165,7 @@ These expert analysis findings complement the main SpectralAI results:
 | Worst layer accuracy | L8: 89.3% |
 | Pre-filter 48 cand. PPL | 6.79 (+1.5%) |
 | RT Core latency | 19.1 us, 13.4M q/s, 100% accuracy |
-| Routing speedup | 112--218x |
+| Routing speedup | 113--218x |
 | VRAM reduction | 731x |
 | HellaSwag: baseline | 53.1% (N=2,000) |
 | HellaSwag: 3-layer | 52.2% (N=2,000) |

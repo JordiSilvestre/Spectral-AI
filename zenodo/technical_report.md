@@ -29,7 +29,7 @@ This technical report documents the complete validated results of the SpectralAI
 
 ## 3. BVH Router Accuracy (All 16 Layers)
 
-Distilled from OLMoE linear gate. Training: 30 epochs/layer, KL divergence + topk_matching_loss (weight 0.3), DualLR optimizer.
+Distilled from OLMoE linear gate. Training: 100 epochs/layer (FASE D), KL divergence + topk_matching_loss (weight 0.3), DualLR optimizer.
 
 | Layer | Top-8 Accuracy | Layer | Top-8 Accuracy |
 |---|---|---|---|
@@ -53,12 +53,15 @@ L15 is the best layer (97.6%). L8 is the most challenging (89.3%). 15/16 layers 
 
 | Configuration | PPL | Delta | Layers Replaced | Mode |
 |---|---|---|---|---|
-| Baseline (linear gate) | 6.69 | -- | 0/16 | -- |
-| Pre-filter 48 cand. (16 layers) | 6.79 | **+1.5%** | 16/16 | Pre-filter |
-| 3-layer hybrid (L3, L8, L15) | 7.17 | +0.4% | 3/16 | Hybrid |
-| 16-layer hybrid (all layers) | 7.30 | +2.1% | 16/16 | Hybrid |
-| 3-layer pure (render_eq) | 7.33 | +2.5% | 3/16 | Pure |
-| Pre-filter 32 cand. (16 layers) | 7.36 | +10.0% | 16/16 | Pre-filter |
+| Baseline (linear gate) | 6.69 | -- | 0/16 | -- (20K tokens) |
+| Pre-filter 48 cand. (16 layers) | 6.79 | **+1.5%**† | 16/16 | Pre-filter |
+| Pre-filter 32 cand. (16 layers) | 7.36 | +10.0%† | 16/16 | Pre-filter |
+| Baseline (linear gate) | 7.15 | -- | 0/16 | -- (50K tokens) |
+| 3-layer hybrid (L3, L8, L15) | 7.17 | +0.4%* | 3/16 | Hybrid |
+| 16-layer hybrid (all layers) | 7.30 | +2.1%* | 16/16 | Hybrid |
+| 3-layer pure (render_eq) | 7.33 | +2.5%* | 3/16 | Pure |
+
+*†Pre-filter deltas computed against 20K-token baseline (PPL 6.69). Entries marked \* use 50K-token baseline (PPL 7.15). Different evaluation windows produce different absolute PPL values but consistent relative ordering.*
 
 ### 4.2 Pre-Filter Candidate Sweep (16 layers, 20K tokens)
 
@@ -105,7 +108,7 @@ BVH routing preserves downstream task accuracy with minimal degradation.
 | 256 | 1,412 | 10 | 139x |
 | 1024 | 2,371 | 10.9 | 218x |
 
-Overall range: **112--218x** (batch-dependent).
+Overall range: **113--218x** (batch-dependent).
 
 ### 6.3 Memory
 
@@ -159,7 +162,7 @@ Three independently-motivated modes converge at PPL 7.33, suggesting a per-layer
 
 ## 10. Negative Results
 
-1. **Ternary POPCOUNT:** 7--10x *slower* than FP16 Tensor Cores. Discarded for datacenter use.
+1. **Ternary POPCOUNT:** ~10x *slower* than FP16 Tensor Cores. Discarded for datacenter use.
 2. **Selectivity-modulated routing:** PPL 9.75 (multiplicative), 9.14 (additive) vs 9.11 baseline. No improvement.
 3. **Multi-ray ensemble:** PPL 7.43 vs 7.42 (single-ray). No improvement.
 
@@ -170,7 +173,7 @@ Three independently-motivated modes converge at PPL 7.33, suggesting a per-layer
 Scripts and commands:
 ```bash
 # Train BVH Router (per layer)
-python3 olmoe_bvh_distill.py --layer 8 --real-data data/real_hiddens_layer8.pt --epochs 50
+python3 olmoe_bvh_distill.py --layer 8 --real-data data/real_hiddens_layer8.pt --epochs 100
 
 # Evaluate PPL
 python3 olmoe_e2e_eval.py --model-dir /path/to/olmoe-1b-7b --max-tokens 50000

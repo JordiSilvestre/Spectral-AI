@@ -26,13 +26,13 @@ All claims are backed by empirical measurements on an NVIDIA RTX 5070 Ti using t
 - Hierarchical BVH Router: 3 levels, branching factor 4, covering 64 experts
 - BVH routing accuracy: 89.3--97.6% top-8 per layer (mean 95.9% across 16 layers)
 - RT Core latency: **19.1 us/batch** (triangle async), **13.4M queries/s**, **100% accuracy**
-- Routing speedup: **112--218x** vs PyTorch linear gate (batch-dependent)
+- Routing speedup: **113--218x** vs PyTorch linear gate (batch-dependent)
 - VRAM reduction: **731x** (4.03 MB active vs 2,944 MB dense baseline)
 - Confidence-gated routing: Adaptive per-token BVH/gate selection based on logit confidence
 - Perplexity: pre-filter 48 candidates = PPL 6.79 (+1.5%); hybrid mode = PPL 7.17 (+0.4%)
 - HellaSwag downstream: baseline 53.1%, 3-layer 52.2%, 16-layer 52.0% (N=2,000)
 
-**34 claims** (10 independent), covering hardware acceleration, software-only fallback, confidence-gated routing, and computer-readable medium.
+**37 claims** (10 independent), covering hardware acceleration, software-only fallback, confidence-gated routing, and computer-readable medium.
 
 ---
 
@@ -65,7 +65,7 @@ All claims are backed by empirical measurements on an NVIDIA RTX 5070 Ti using t
 - Polysemy resolution: **98.4%** accuracy (80 polysemous words, 442 context pairs)
 - Computational overhead: < 0.12% (chromatic), < 0.04% (single-band)
 
-**44 claims** (14 independent), covering context-dependent routing, multi-band decomposition, TIR, phase coherence, and training loss.
+**45 claims** (12 independent), covering context-dependent routing, multi-band decomposition, TIR, phase coherence, and training loss.
 
 ---
 
@@ -80,7 +80,7 @@ All claims are backed by empirical measurements on an NVIDIA RTX 5070 Ti using t
 | RT Core latency | 19.1 us/batch | rt_router_benchmark.exe, RTX 5070 Ti |
 | RT Core throughput | 13.4M q/s | rt_router_benchmark.exe, RTX 5070 Ti |
 | RT Core accuracy | 100% | rt_router_benchmark.exe |
-| Routing speedup | 112--218x | benchmark_e2e_final.py |
+| Routing speedup | 113--218x | benchmark_e2e_final.py |
 | VRAM reduction | 731x | 4.03 MB vs 2,944 MB |
 | Polysemy accuracy | 98.4% (442 pairs) | eval_polysemy.py |
 | BVH accuracy mean | 95.9% top-8 | 16 layers, spectral mode |
