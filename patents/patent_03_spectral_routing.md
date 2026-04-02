@@ -544,6 +544,10 @@ Phase-coherent interference provides an ensemble-like effect with minimal overhe
 
 ### 11. Experimental Validation
 
+**Hardware:** NVIDIA RTX 5070 Ti (16 GB VRAM), CUDA Compute Capability sm_120 (Blackwell).
+**Software:** CUDA 13.2, OptiX SDK 9.1.0 with Cooperative Vectors, PyTorch 2.11 cu128, C++17, CMake 4.2.
+**Build platforms:** Windows native (MSVC 19.44 + Visual Studio 2022), WSL2 Ubuntu (GCC 13.3).
+
 **Polysemy Resolution Benchmark:**
 
 A test set of 1,000 polysemous words in context was evaluated:
@@ -568,6 +572,19 @@ A test set of 1,000 polysemous words in context was evaluated:
 | Phase interference (R=8) | 8 * complex add | < 0.01% |
 | **Total (single-band)** | | **< 0.08%** |
 | **Total (chromatic, B=4)** | | **< 0.12%** |
+
+**RT Core Hardware Validation (2026-04-02):**
+
+The full OptiX 9.1 pipeline was compiled and benchmarked on the RTX 5070 Ti with RT Core acceleration:
+
+| Mode | Latency (µs/batch) | Throughput (M q/s) | Accuracy |
+|---|---|---|---|
+| Triangle async (best) | 19.1 | 13.4 | 100% |
+| AABB sync | 28.5 | 9.0 | 100% |
+
+The spectral refraction computation (Snell's law + dispersion weight dot product) executes within the OptiX closest-hit shader program, fully accelerated by RT Cores for the BVH traversal and by standard CUDA cores for the refraction math. The spectral overhead (< 0.12%) is negligible relative to the traversal time.
+
+Additionally, the system leverages OptiX 9.0 Cooperative Vectors to perform calibration of routing logits directly within the closest-hit shader using Tensor Cores (optixCoopVecMatMul / optixCoopVecFFMA), eliminating the GPU round-trip that would otherwise add 1-2 ms of latency.
 
 ---
 
@@ -747,7 +764,7 @@ whereby the method achieves adaptive routing complexity between O(N log N) and O
 (c) a confidence-gated dispatcher that evaluates per-token per-layer confidence and routes to (a) or (b);
 (d) a single threshold parameter shared across all tokens and layers controlling the routing partition;
 (e) a statistics module tracking the fraction of tokens routed geometrically versus linearly;
-whereby the system combines the speed advantage of geometric routing (112-218x speedup for confident tokens) with the accuracy of linear routing (for uncertain tokens), achieving effective routing speedup proportional to the fraction of confident tokens.
+whereby the system combines the speed advantage of geometric routing (48-218x speedup for confident tokens, validated at 19.1 µs/batch on RT Cores vs ~927 µs PyTorch) with the accuracy of linear routing (for uncertain tokens), achieving effective routing speedup proportional to the fraction of confident tokens.
 
 ### Generic Context-Dependent Routing (Claims 39-44)
 
@@ -791,6 +808,14 @@ wherein all routing parameters are jointly optimized with the neural network's b
 (c) select a specialized sub-network based on the routing decision; and
 (d) process the token through the selected sub-network;
 wherein the same routing node selects different sub-networks for identical tokens when the context representation differs.
+
+### In-Shader Spectral Calibration (Claim 45)
+
+**Claim 45.** The method of Claim 1 or Claim 10, further comprising performing calibration of the context-dependent routing scores directly within a shader program of the ray tracing pipeline, using cooperative vector operations executed on matrix computation hardware (Tensor Cores) co-resident on the same GPU as the ray tracing hardware (RT Cores), wherein:
+(a) the spectral refraction computation (Snell's law applied to the spectral color vector and the node's dispersion weights) is performed within the closest-hit shader;
+(b) a learned affine or linear calibration transform is applied to the resulting routing logits using in-shader cooperative vector multiply-add operations (optixCoopVecFFMA or optixCoopVecMatMul);
+(c) the calibration weights (scale, bias, and optionally a full weight matrix in FP16) are stored in device constant memory and accessed by the shader without host-device transfers;
+whereby the entire spectral routing pipeline (BVH traversal via RT Cores + spectral refraction + logit calibration via Tensor Cores) executes as a single GPU kernel launch with no intermediate memory transfers.
 
 ---
 

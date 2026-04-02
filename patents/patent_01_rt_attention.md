@@ -376,10 +376,25 @@ The system targets NVIDIA GPUs with dedicated RT Cores, specifically:
 - **NVIDIA RTX 5070 Ti (Blackwell, sm_120):** Fourth-generation RT Cores with approximately 2x throughput improvement over Ada Lovelace. Contains dedicated BVH traversal hardware with support for multi-level Instance Acceleration Structures (IAS).
 
 The OptiX 8.x/9.x API provides the programming model:
-- **optixModuleCreate():** Compiles CUDA source to PTX and then to hardware-specific microcode for the RT Cores.
+- **optixModuleCreate():** Compiles CUDA source to OptiX IR (Intermediate Representation) for OptiX 9.0+ or PTX for earlier versions, then to hardware-specific microcode for the RT Cores.
 - **optixPipelineCreate():** Links the ray generation, closest-hit, any-hit, and miss programs into a complete pipeline.
 - **optixLaunch():** Dispatches the ray tracing workload to the RT Cores.
 - **OptixTraversableHandle:** References the BVH in GPU memory for traversal.
+
+**OptiX 9.0+ Cooperative Vectors (In-Shader Calibration):**
+
+The system further leverages OptiX 9.0 Cooperative Vectors to perform calibration of routing logits directly within the closest-hit shader program, using Tensor Cores for matrix operations without leaving the RT pipeline. This eliminates the GPU-to-host round-trip that would otherwise add 1-2 milliseconds of latency per routing decision.
+
+- **optixCoopVecMatMul():** Performs cooperative matrix multiplication using Tensor Cores inside the OptiX shader. Used for linear calibration mode (W[64×64] · logits + bias).
+- **optixCoopVecFFMA():** Fused multiply-add for affine calibration (scale ⊙ logits + bias). Requires only 128 parameters (64 scale + 64 bias weights in FP16).
+- **OptixCoopVec<half, N>:** Cooperative vector template class that enables Tensor Core operations on N-dimensional FP16 vectors within shader programs.
+- **optixCoopVecMatrixConvert():** Host-side function to convert row-major FP16 weight matrices to INFERENCING_OPTIMAL layout for maximum Tensor Core throughput.
+
+The calibration weights are stored in device constant memory and accessed by the closest-hit shader. Two calibration modes are supported:
+1. **Affine mode:** 128 parameters (scale[64] + bias[64] in FP16, 272 bytes total). Applied as: calibrated_logits = scale ⊙ raw_logits + bias.
+2. **Linear mode:** 4,160 parameters (W[64×64] + bias[64] in FP16, 8,336 bytes total). Applied as: calibrated_logits = W · raw_logits + bias.
+
+This in-shader calibration is a key differentiator: the entire routing pipeline (BVH traversal via RT Cores + logit calibration via Tensor Cores) executes as a single GPU kernel launch with no intermediate memory transfers.
 
 An alternative implementation path uses the Vulkan ray tracing extension (VK_KHR_ray_tracing_pipeline) for cross-vendor compatibility.
 
@@ -387,10 +402,11 @@ An alternative implementation path uses the Vulkan ray tracing extension (VK_KHR
 
 A prototype implementation was constructed and validated on the following hardware and software:
 
-**Hardware:** NVIDIA RTX 5070 Ti (16 GB VRAM), CUDA Compute Capability sm_120.
-**Software:** CUDA 13.2, PyTorch 2.11 cu128, C++17, pybind11 bindings, WSL2 Ubuntu.
+**Hardware:** NVIDIA RTX 5070 Ti (16 GB VRAM), CUDA Compute Capability sm_120 (Blackwell).
+**Software:** CUDA 13.2, OptiX SDK 9.1.0, PyTorch 2.11 cu128, C++17, pybind11 bindings, CMake 4.2.
+**Build platforms:** Windows native (MSVC 19.44 + Visual Studio 2022), WSL2 Ubuntu (GCC 13.3).
 
-**Key Results (Certified 2026-03-30):**
+**Key Results (Certified 2026-03-30, updated 2026-04-02):**
 
 | Metric | Measurement | Method |
 |---|---|---|
@@ -399,10 +415,29 @@ A prototype implementation was constructed and validated on the following hardwa
 | Routing Latency (batch=256, PyTorch) | 1,412 microseconds | `benchmark_e2e_final.py` |
 | Routing Latency (batch=256, CUDA Extension) | 10 microseconds | `benchmark_e2e_final.py` |
 | Speedup (CUDA Extension vs PyTorch) | 112-218x (batch dependent) | `benchmark_e2e_final.py` |
+| **RT Core Routing (batch=256, AABB sync)** | **28.5 microseconds** | `rt_router_benchmark.exe` (OptiX, Windows) |
+| **RT Core Routing (batch=256, Triangle async)** | **19.1 microseconds** | `rt_router_benchmark.exe` (OptiX, Windows) |
+| **RT Core Throughput (Triangle async)** | **13.4 M queries/second** | `rt_router_benchmark.exe` |
+| **RT Core Routing Accuracy** | **100% (256/256)** | `rt_router_benchmark.exe` |
+| **RT Core Speedup vs PyTorch gate** | **~48x** | 19.1 µs vs ~927 µs |
+| **GAS Memory (Triangle, 64 experts)** | **11 KB** | 512 triangles (octahedrons) |
 | End-to-End Latency (routing + expert, batch=1) | 690 microseconds | `patent_benchmark.py` |
 | Token Generation Rate (full model baseline) | 55.4 tokens/second (peak) | `patent_benchmark.py`, `model.generate()` |
 | Active VRAM Usage (router + 1 expert) | 4.03 MB | Router 890 KB + Expert 3,234 KB |
 | VRAM Reduction vs Full Model | 731x less | 2,944 MB / 4.03 MB |
+
+**RT Core Benchmark Details (2026-04-02):**
+
+The OptiX RT Core router benchmark was validated on Windows native with the full OptiX 9.1 pipeline. Four geometry/execution modes were tested:
+
+| Mode | Latency (µs/batch) | Throughput (M q/s) | Accuracy | GAS Size |
+|---|---|---|---|---|
+| AABB sync | 28.5 | 9.0 | 100% | 3 KB |
+| AABB async | 37.2 | 6.9 | 100% | 3 KB |
+| Triangle sync | 32.5 | 7.9 | 100% | 11 KB |
+| **Triangle async** | **19.1** | **13.4** | **100%** | **11 KB** |
+
+Triangle async achieves the best performance by using octahedral triangle meshes (8 triangles per expert, 512 total) with asynchronous ray tracing launch. The GAS (Geometry Acceleration Structure) for 64 experts occupies only 11 KB of VRAM.
 
 **Measurement methodology:**
 - Active VRAM counts only the MoE routing overhead: projection layer (1536->128, 768 KB), BVH router (128-dim, 122 KB), and one active ternary expert (3,234 KB packed 2-bit). The attention backbone is shared infrastructure and is excluded from both the numerator and denominator.
@@ -570,6 +605,21 @@ wherein the threshold is a single scalar parameter adjustable post-deployment wi
 (b) attention computation retrieves relevant tokens via spatial traversal of the spatial acceleration structure rather than full key-value dot products;
 (c) the memory footprint of the spatial acceleration structure is O(N) with a constant factor at least 100x smaller than the equivalent key-value cache for the same number of tokens N;
 whereby context windows of 100,000 or more tokens are processable on consumer-grade GPUs with less than 16 GB of memory.
+
+### In-Shader Calibration via Cooperative Vectors (Claims 35-37)
+
+**Claim 35.** The method of Claim 1 or Claim 33, further comprising performing calibration of routing logits directly within a shader program of the ray tracing pipeline, using cooperative vector operations executed on matrix computation hardware (Tensor Cores) co-resident on the same GPU as the ray tracing hardware (RT Cores), wherein:
+(a) the ray tracing hardware computes raw routing logits via BVH traversal and ray-geometry intersection;
+(b) calibration weights are stored in device constant memory accessible by the shader program;
+(c) the shader program applies a calibration transform to the raw routing logits using cooperative vector operations (matrix multiplication, fused multiply-add, or element-wise affine transform) without transferring data between GPU kernels or between GPU and host memory;
+whereby the entire routing pipeline (BVH traversal + logit calibration) executes as a single GPU kernel launch with no intermediate memory transfers, achieving end-to-end routing latency of less than 25 microseconds per batch.
+
+**Claim 36.** The method of Claim 35, wherein the calibration transform is one of:
+(a) an affine transform: calibrated_logits = scale ⊙ raw_logits + bias, where scale and bias are learned FP16 vectors of dimension equal to the number of experts, requiring 2×E parameters total (E = number of experts); or
+(b) a linear transform: calibrated_logits = W · raw_logits + bias, where W is a learned FP16 matrix of dimensions E×E and bias is a learned FP16 vector of dimension E, requiring E² + E parameters total;
+and the calibration weights are exported from a training framework (PyTorch) as a binary blob in hardware-optimal memory layout for maximum Tensor Core throughput.
+
+**Claim 37.** The method of Claim 35, wherein the cooperative vector operations are implemented using the OptiX Cooperative Vectors API (optixCoopVecMatMul, optixCoopVecFFMA) or equivalent hardware-accelerated in-shader matrix operation API, and the calibration weights are converted to INFERENCING_OPTIMAL layout using a host-side matrix format conversion function (optixCoopVecMatrixConvert or equivalent) prior to upload to device memory.
 
 ---
 

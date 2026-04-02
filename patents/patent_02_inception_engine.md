@@ -438,7 +438,9 @@ Portal = [R | t]  (3x4 matrix)
 
 The Inception Engine was validated as part of the Zero-Matrix prototype (see FIG. 5 for training convergence):
 
-**Hardware:** NVIDIA RTX 5070 Ti (16 GB VRAM, Blackwell sm_120), CUDA 13.2, OptiX SDK 9.1.
+**Hardware:** NVIDIA RTX 5070 Ti (16 GB VRAM), CUDA Compute Capability sm_120 (Blackwell).
+**Software:** CUDA 13.2, OptiX SDK 9.1.0 with Cooperative Vectors, PyTorch 2.11 cu128, C++17, CMake 4.2.
+**Build platforms:** Windows native (MSVC 19.44 + Visual Studio 2022), WSL2 Ubuntu (GCC 13.3).
 
 **Architecture:**
 - 4 levels: 64 domains x 64 subdomains x 256 concepts x 1024 leaves
@@ -476,6 +478,17 @@ The 1.8% perplexity increase demonstrates that the Inception Engine achieves nea
 | 16         | 7.91   | +10.7%            |
 
 With 24+ candidates (2.7x search space reduction), the hierarchical BVH traversal achieves exact parity with the original linear gate across all 16 MoE layers.
+
+**RT Core Hardware Validation (2026-04-02):**
+
+The OptiX 9.1 pipeline was compiled and benchmarked on the same RTX 5070 Ti hardware using the full RT Core acceleration path:
+
+| Mode | Latency (µs/batch) | Throughput (M q/s) | Accuracy | GAS Size |
+|---|---|---|---|---|
+| AABB sync | 28.5 | 9.0 | 100% | 3 KB |
+| Triangle async | 19.1 | 13.4 | 100% | 11 KB |
+
+The 4-level Instance Acceleration Structure (IAS) used by the Inception Engine maps directly to OptiX's multi-level traversable hierarchy, with each level corresponding to one IAS level. The nested `optixTrace()` call navigates all 4 levels in a single hardware-accelerated traversal.
 
 ---
 
