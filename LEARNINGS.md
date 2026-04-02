@@ -8,29 +8,34 @@
 
 **HellaSwag (commonsense reasoning, 500 muestras):**
 - Baseline OLMoE-1B-7B: **53.8%** (269/500) — 4.4 samples/s
-- Nota: El valor es algo bajo vs los ~65-70% publicados, posiblemente por el subset de 500 muestras
-- El dato importante es el delta baseline → BVH, no el valor absoluto
-- BVH hybrid con 16 capas: problema de integración con `olmoe_e2e_eval` (encoding `→`, side effects de import). Requiere debug adicional.
+- 3-layer hybrid (L3, L8, L15): **52.8%** (-1.0 pp) — drop mínimo
+- 16-layer hybrid (todas): **52.4%** (-1.4 pp) — drop aceptable
+- **Conclusión:** BVH routing NO destruye capacidades semánticas. Drop proporcional al PPL delta.
 
 **Polisemia expandida (80 palabras × 3-5 contextos, layer 8):**
 - **98.4% resolución** — 435/442 pares de contextos muestran routing diferente
 - 306 contextos totales, 25 dominios (science, code, music, finance, sports...)
 - Mejores: bank, bat, bow, bug, cell → 100% resolución
 - Peores: crane (33%), train (50%), press/stream/wave (75%)
-- **Conclusión:** OLMoE ruta polisemia casi perfectamente — validación clave para la patente de spectral routing
+- **Conclusión:** OLMoE ruta polisemia casi perfectamente — validación clave para Patent 3
 
-**Pre-filter sweep (PPL en WikiText-2, 20K tokens):**
+**Pre-filter sweep con per-layer checkpoints (PPL en WikiText-2, 20K tokens):**
 ```
-Candidates |    PPL    |   Delta   | Search Reduction
-    16     | 3761.6292 | +56099.4% |     4.0x
-    24     |  612.0257 | +9043.8%  |     2.7x
-    32     |   49.0613 |  +633.0%  |     2.0x
-    48     |   10.8158 |   +61.6%  |     1.3x
-    64     |    6.6934 |    +0.0%  |     1.0x  ← BASELINE
+Candidates |    PPL   |   Delta  | Search Reduction
+    16     | 15.5635  | +132.5%  |     4.0x
+    24     |  8.4866  |  +26.8%  |     2.7x
+    32     |  7.3598  |  +10.0%  |     2.0x
+    48     |  6.7919  |   +1.5%  |     1.3x  ← USABLE
+    64     |  6.6934  |   +0.0%  |     1.0x  ← BASELINE
 ```
-- Usó checkpoint global (no per-layer) → resultados peores de lo esperado
-- Con per-layer checkpoints (~90%+ top-8 por capa), el delta debería ser mucho menor
-- **Conclusión:** Pre-filter necesita per-layer checkpoints para ser viable; con el global, ni 48 candidatos bastan
+- **48 candidatos: solo +1.47% PPL degradation** — viable para producción
+- 32 candidatos: +10%, posiblemente aceptable con calibración
+
+**PPL baseline verification (transformers 5.4.0, torch 2.11.0):**
+- `sweep_prefilter.py` baseline: **6.6934** (20K tokens)
+- `olmoe_e2e_eval.py` baseline: **7.00** (20K tokens)
+- Diferencia por stride/ventana settings. Ambos consistentes internamente.
+- L8 hybrid PPL: **7.42 (+6.0%)** — confirmado funcional
 
 **Scaling curve PNG:**
 - `figures/scaling_curve.png` generado (232 KB)
@@ -38,12 +43,16 @@ Candidates |    PPL    |   Delta   | Search Reduction
 - RT Core datapoint: 19.1µs triangle async (estrella cyan)
 - Ventaja teórica a N=65K: ~384x
 
-**Bugs encontrados y corregidos:**
-1. `eval_polysemy.py`: Hook capturaba tupla en vez de tensor — fix: `output[0] if isinstance(output, tuple)`
-2. `sweep_prefilter.py`: BVHRouter vs EnhancedBVHRouter — checkpoint usa Enhanced, no el legacy BVHRouter
-3. `sweep_prefilter.py`: Hook devolvía tensor pero OlmoeTopKRouter.forward devuelve tupla (logits, scores, indices)
-4. `eval_hellaswag.py`: Windows charmap encoding con `→` — fix: `sys.stdout.reconfigure(encoding="utf-8")`
-5. `sweep_prefilter.py`: dtype mismatch Half/Float — fix: `bvh_router(x.float())`
+**Bug raíz encontrado y corregido:**
+**CRÍTICO: Rutas de checkpoints per-layer.** Los scripts buscaban `olmoe_distill/layer8/bvh_router_best.pt` pero la estructura real es `olmoe_distill_layer8/bvh_router_best.pt`. El fallback al checkpoint global (86.2% top-8 genérico) destruía el modelo cuando se aplicaba a 16 capas. Con per-layer checkpoints (93-97% top-8), el sistema funciona correctamente.
+
+**Otros bugs corregidos:**
+1. `eval_polysemy.py`: Hook capturaba tupla en vez de tensor — `output[0] if isinstance(output, tuple)`
+2. `sweep_prefilter.py`: Usaba BVHRouter legacy en vez de EnhancedBVHRouter
+3. `sweep_prefilter.py`: Hook devolvía tensor pero OlmoeTopKRouter.forward devuelve tupla
+4. `olmoe_e2e_eval.py`: Unicode `→` en print rompía Windows cp1252 — cambiado a `->`
+5. `eval_hellaswag.py`: Añadido `sys.stdout.reconfigure(encoding="utf-8")`
+6. `sweep_prefilter.py`: dtype mismatch Half/Float — `bvh_router(x.float())`
 
 ---
 

@@ -72,10 +72,22 @@ def replace_router_layers(model, router_layers: List[int], router_dir: str,
     from olmoe_e2e_eval import replace_gate_with_bvh
 
     replaced = []
+    # Checkpoint naming: checkpoints/olmoe_distill_layer{N}/bvh_router_best.pt
+    base_dir = os.path.dirname(router_dir)  # e.g. checkpoints/
+    base_name = os.path.basename(router_dir)  # e.g. olmoe_distill
     for layer_idx in router_layers:
-        ckpt_path = os.path.join(router_dir, f"layer{layer_idx}",
-                                 "bvh_router_best.pt")
+        # Try per-layer checkpoint first (olmoe_distill_layer8/)
+        ckpt_path = os.path.join(
+            base_dir, f"{base_name}_layer{layer_idx}",
+            "bvh_router_best.pt"
+        )
         if not os.path.exists(ckpt_path):
+            # Fallback: subdirectory format (olmoe_distill/layer8/)
+            ckpt_path = os.path.join(
+                router_dir, f"layer{layer_idx}", "bvh_router_best.pt"
+            )
+        if not os.path.exists(ckpt_path):
+            # Last fallback: global checkpoint
             ckpt_path = os.path.join(router_dir, "bvh_router_best.pt")
 
         if not os.path.exists(ckpt_path):

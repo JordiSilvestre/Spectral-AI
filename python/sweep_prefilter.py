@@ -155,11 +155,23 @@ def install_prefilter_hooks(model, router_dir: str, layers: List[int],
     """
     installed = []
 
+    # Checkpoint naming: checkpoints/olmoe_distill_layer{N}/bvh_router_best.pt
+    base_dir = os.path.dirname(router_dir)  # e.g. checkpoints/
+    base_name = os.path.basename(router_dir)  # e.g. olmoe_distill
+
     for layer_idx in layers:
-        # Find checkpoint (per-layer first, then fallback)
-        ckpt_path = os.path.join(router_dir, f"layer{layer_idx}",
-                                 "bvh_router_best.pt")
+        # Try per-layer checkpoint first (olmoe_distill_layer8/)
+        ckpt_path = os.path.join(
+            base_dir, f"{base_name}_layer{layer_idx}",
+            "bvh_router_best.pt"
+        )
         if not os.path.exists(ckpt_path):
+            # Fallback: subdirectory format
+            ckpt_path = os.path.join(
+                router_dir, f"layer{layer_idx}", "bvh_router_best.pt"
+            )
+        if not os.path.exists(ckpt_path):
+            # Last fallback: global checkpoint
             ckpt_path = os.path.join(router_dir, "bvh_router_best.pt")
         if not os.path.exists(ckpt_path):
             continue

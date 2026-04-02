@@ -1296,7 +1296,7 @@ def replace_gate_with_bvh(
             return full_probs, topk_scores, topk_global
 
         original_gate.forward = _hybrid_forward
-        mode_str = (f"HYBRID monkey-patch (BVH→{n_candidates} candidates, "
+        mode_str = (f"HYBRID monkey-patch (BVH->{n_candidates} candidates, "
                     f"full softmax, norm={_norm_topk})")
     else:
         # Pure BVH: replace module entirely
