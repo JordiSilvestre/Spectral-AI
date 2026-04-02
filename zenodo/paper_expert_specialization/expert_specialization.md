@@ -11,7 +11,7 @@ Independent Researcher
 
 ## Abstract
 
-We present a comprehensive analysis of expert specialization patterns in OLMoE-1B-7B, a 7-billion-parameter Mixture-of-Experts (MoE) language model with 64 experts per layer across 16 MoE layers. Contrary to the common assumption that MoE experts specialize by semantic topic (e.g., "science expert", "code expert"), our analysis reveals that experts primarily specialize by **syntactic token type**: content words, function words, punctuation, and capitalized tokens. The most topic-specialized expert achieves only 6.8% activation rate for its primary topic (vs. 3.3% uniform baseline across 30 categories), indicating near-uniform topic distribution. We further discover that expert co-activation naturally forms 4 clusters of 16 experts per layer -- a structure that aligns with our BVH router's 4x4x4 hierarchy -- but these clusters are **not stable across layers** (20--31% inter-layer stability), implying that each layer requires its own BVH organization. Expert selectivity follows a **U-shaped curve** across layers: high in early layers (0.517--0.609), low in middle layers (0.384--0.421), and high again in late layers (0.510--0.592).
+We present a comprehensive analysis of expert specialization patterns in OLMoE-1B-7B, a 7-billion-parameter Mixture-of-Experts (MoE) language model with 64 experts per layer across 16 MoE layers. Contrary to the common assumption that MoE experts specialize by semantic topic (e.g., "science expert", "code expert"), our analysis reveals that experts primarily specialize by **syntactic token type**: content words, function words, punctuation, and capitalized tokens. The most topic-specialized expert achieves only 6.8% activation rate for its primary topic (vs. 3.3% uniform baseline across 30 categories), indicating near-uniform topic distribution. We further discover that expert co-activation naturally forms 4 clusters of 16 experts per layer -- a structure that aligns with our BVH router's 4x4x4 hierarchy -- but these clusters are **not stable across layers** (20--31% inter-layer stability), and not all layers produce exactly 4 clusters (7/16 layers have a 5th outlier cluster of 1--2 experts), implying that each layer requires its own BVH organization. Expert selectivity follows a **U-shaped curve** across layers: high in early layers (0.517--0.609), low in middle layers (0.384--0.421), and high again in late layers (0.510--0.592).
 
 ---
 
@@ -117,7 +117,7 @@ Early layers perform initial token categorization (distinguishing content from f
 
 ### 3.4 Co-Activation Clusters Are Per-Layer
 
-Co-activation analysis reveals a natural 4-cluster structure with 16 experts per cluster at every layer -- this aligns with a 4x4x4 BVH hierarchy. However, cluster membership is **not stable across layers**:
+Co-activation analysis reveals a predominantly 4-cluster structure at most layers (9/16 layers produce exactly 4 clusters of 16 experts each), aligning with our 4x4x4 BVH hierarchy. The remaining 7 layers produce a 5th outlier cluster of 1--2 experts. Cluster membership is **not stable across layers**:
 
 | Layer Transition | Stability |
 |---|---|
@@ -150,7 +150,7 @@ These findings have direct implications for our BVH-based MoE routing system (Sp
 
 3. **U-shaped optimization:** Middle layers (L5--L8) have lower selectivity, meaning routing accuracy matters less there. This aligns with our observation that L8 has the lowest BVH accuracy (89.3%) -- middle layers are inherently harder to route because experts process more uniformly.
 
-4. **Natural 4-cluster hierarchy:** The 4 x 16 cluster structure validates the BVH branching factor of 4 used in our 3-level hierarchy (4 x 4 x 4 = 64 experts).
+4. **Natural 4-cluster hierarchy:** The predominantly 4 x 16 cluster structure (9/16 layers) validates the BVH branching factor of 4 used in our 3-level hierarchy (4 x 4 x 4 = 64 experts). The 7 layers with outlier clusters suggest some experts resist clean geometric partitioning.
 
 ---
 
