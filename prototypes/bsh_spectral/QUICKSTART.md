@@ -210,7 +210,7 @@ pip install numpy
 
 ## Contacto / Referencia
 
-- **Arquitectura**: Consulta `CLAUDE.md` (proyecto raíz)
+- **Arquitectura**: Consulta `ARCHITECTURE.md` (proyecto raíz)
 - **Decisiones**: Ver `LEARNINGS.md`
 - **Headers C++**: `include/token_geometry.h`, etc.
 

@@ -246,4 +246,4 @@ Las siguientes metricas no son teoricas — han sido medidas en el prototipo:
 | `python/simulator.py` | Simulacion O(N log N) vs O(N^2) (numpy) |
 | `python/scaling_inception.py` | Benchmark OptiX vs cuBLAS vs FlashAttention |
 | `python/benchmark_expert_types.py` | Comparativa FP32/FP16/Ternary |
-| `CLAUDE.md` | Tabla comparativa original y formulas matematicas |
+| `ARCHITECTURE.md` | Tabla comparativa original y formulas matematicas |

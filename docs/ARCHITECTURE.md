@@ -1,6 +1,6 @@
 # SpectralAI Zero-Matrix — System Architecture
 
-> Last updated: 2026-03-27. For full mathematical details see CLAUDE.md.
+> Last updated: 2026-03-27. For full mathematical details see ARCHITECTURE.md.
 
 ## Overview
 

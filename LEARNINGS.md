@@ -2046,7 +2046,7 @@ python3 download_embeddings_v2.py --source gensim --model glove-wiki-gigaword-50
 
 ```
 v0.1 (Prototipo Actual)
-├── Estructura de datos TokenNode ✅ (en CLAUDE.md)
+├── Estructura de datos TokenNode ✅ (en ARCHITECTURE.md)
 ├── Headers compartidos ✅ (optical_attention.h, token_geometry.h)
 ├── Kernels OptiX core ✅ (ray_attention.cu, closest_hit.cu, miss.cu, ray_generation.cu)
 ├── BVH construction (CPU, usando Embree o implementación propia)
