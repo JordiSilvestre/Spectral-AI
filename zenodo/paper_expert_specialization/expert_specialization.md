@@ -126,7 +126,7 @@ Co-activation analysis reveals a predominantly 4-cluster structure at most layer
 | L2 -> L3 | 31.2% |
 | L3 -> L4 | 29.7% |
 
-On average, only ~25% of experts remain in the same cluster between adjacent layers. This means a single BVH tree cannot serve all layers -- each layer requires its own geometric organization.
+On average, only ~25% of experts remain in the same cluster between adjacent layers (measured by cluster ID overlap; pair-based Jaccard stability yields similar values: 23--27%). This means a single BVH tree cannot serve all layers -- each layer requires its own geometric organization.
 
 ### 3.5 Content Expert Evolution
 
