@@ -181,7 +181,7 @@ if(NOT MSVC)
     endif()
 
     if(SPECTRAL_ENABLE_LINEINFO)
-        string(APPEND CMAKE_CUDA_FLAGS " --lineinfo")
+        string(APPEND CMAKE_CUDA_FLAGS " -lineinfo")
     endif()
 
     # Optimización
@@ -189,10 +189,6 @@ if(NOT MSVC)
 
     # Host compiler warnings (GCC/Clang only)
     string(APPEND CMAKE_CUDA_FLAGS " -Xcompiler=-Wall")
-    # MSVC: lineinfo added as nvcc-native flag (single dash form for MSVC mode)
-    if(SPECTRAL_ENABLE_LINEINFO)
-        string(APPEND CMAKE_CUDA_FLAGS " -lineinfo")
-    endif()
 endif()
 
 message(STATUS "CUDA architectures: ${CMAKE_CUDA_ARCHITECTURES}")
@@ -253,22 +249,35 @@ if(SPECTRAL_BUILD_OPTIX AND OptiX_INCLUDE_DIR)
         optix_router_hitgroup.cu
     )
 
-    # OptiX PTX must target a single virtual architecture.
-    # nvcc --ptx does not support multiple -gencode flags.
+    # OptiX PTX/IR must target a single virtual architecture.
+    # nvcc --ptx/--optix-ir does not support multiple -gencode flags.
     # compute_120 = Blackwell (RTX 5070 Ti); OptiX JIT-compiles to the actual GPU.
     # Previous: compute_89 (Ada). Updated 2026-04-01 for sm_120.
+    #
+    # OptiX 9.0+ recommends --optix-ir instead of --ptx to avoid ptxas
+    # validation of OptiX-specific intrinsics (_optix_get_payload, etc.)
+    # that are resolved at runtime by the OptiX JIT compiler.
+    if(OPTIX_VERSION_RAW GREATER_EQUAL 90000)
+        set(OPTIX_COMPILE_FLAG --optix-ir)
+        set(OPTIX_OUTPUT_EXT ".optixir")
+        message(STATUS "OptiX 9.0+ detected: using --optix-ir (avoids ptxas validation of OptiX intrinsics)")
+    else()
+        set(OPTIX_COMPILE_FLAG --ptx)
+        set(OPTIX_OUTPUT_EXT ".ptx")
+        message(STATUS "OptiX <9.0 detected: using --ptx")
+    endif()
     set(PTX_ARCH_FLAG -arch=compute_120)
 
     set(PTX_FILES "")
     foreach(SHADER ${OPTIX_SHADERS})
         get_filename_component(SHADER_NAME ${SHADER} NAME_WE)
-        set(PTX_FILE ${PTX_OUTPUT_DIR}/${SHADER_NAME}.ptx)
+        set(PTX_FILE ${PTX_OUTPUT_DIR}/${SHADER_NAME}${OPTIX_OUTPUT_EXT})
         list(APPEND PTX_FILES ${PTX_FILE})
 
         add_custom_command(
             OUTPUT "${PTX_FILE}"
             COMMAND "${CUDAToolkit_NVCC_EXECUTABLE}"
-                --ptx
+                ${OPTIX_COMPILE_FLAG}
                 -O3
                 --use_fast_math
                 -std=c++17
@@ -279,7 +288,7 @@ if(SPECTRAL_BUILD_OPTIX AND OptiX_INCLUDE_DIR)
                 "${OPTIX_SHADER_DIR}/${SHADER}"
                 -o "${PTX_FILE}"
             DEPENDS "${OPTIX_SHADER_DIR}/${SHADER}"
-            COMMENT "Compiling OptiX shader ${SHADER} -> ${SHADER_NAME}.ptx"
+            COMMENT "Compiling OptiX shader ${SHADER} -> ${SHADER_NAME}${OPTIX_OUTPUT_EXT}"
             VERBATIM
         )
     endforeach()
@@ -288,17 +297,21 @@ if(SPECTRAL_BUILD_OPTIX AND OptiX_INCLUDE_DIR)
     add_custom_target(optix_ptx ALL DEPENDS ${PTX_FILES})
     message(STATUS "Created target: optix_ptx (${OPTIX_SHADERS})")
 
-    # ── Copy PTX to build root for easy access ─────────────────
-    # The Python bridge (optix_router_bridge.py) loads PTX from build/
-    set(COMBINED_PTX "${CMAKE_BINARY_DIR}/spectral_kernels.ptx")
+    # ── Copy PTX/IR to build root for easy access ──────────────
+    # The Python bridge (optix_router_bridge.py) loads the shader from build/
+    # combined_ptx depends on the optix_ptx TARGET (not the raw PTX_FILES list)
+    # to avoid triggering a duplicate ptxas validation pass on OptiX intrinsics.
+    set(COMBINED_PTX "${CMAKE_BINARY_DIR}/spectral_kernels${OPTIX_OUTPUT_EXT}")
+    set(RAY_GEN_OUTPUT "${PTX_OUTPUT_DIR}/ray_generation${OPTIX_OUTPUT_EXT}")
     add_custom_command(
         OUTPUT "${COMBINED_PTX}"
-        COMMAND ${CMAKE_COMMAND} -E copy "${PTX_OUTPUT_DIR}/ray_generation.ptx" "${COMBINED_PTX}"
-        DEPENDS ${PTX_FILES}
-        COMMENT "Copying ray_generation.ptx as spectral_kernels.ptx"
+        COMMAND ${CMAKE_COMMAND} -E copy "${RAY_GEN_OUTPUT}" "${COMBINED_PTX}"
+        DEPENDS "${RAY_GEN_OUTPUT}"
+        COMMENT "Copying ray_generation${OPTIX_OUTPUT_EXT} as spectral_kernels${OPTIX_OUTPUT_EXT}"
         VERBATIM
     )
     add_custom_target(combined_ptx ALL DEPENDS "${COMBINED_PTX}")
+    add_dependencies(combined_ptx optix_ptx)
 
     # ── OptiX host code library ──────────────────────────────────
     add_library(spectral_optix STATIC
@@ -398,7 +411,7 @@ int main(int argc, char** argv) {
     # ── RT Router benchmark executable ───────────────────────────
     file(WRITE ${CMAKE_BINARY_DIR}/rt_router_benchmark_main.cpp
 "// Auto-generated benchmark runner for RT Core Router
-#include <optix_function_table_definition.h>
+// optix_function_table_definition.h already provided by libspectral_rt_router
 #include <iostream>
 #include <string>
 #include <cstdlib>

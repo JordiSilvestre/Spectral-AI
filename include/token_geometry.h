@@ -13,6 +13,7 @@
 #ifndef SPECTRAL_TOKEN_GEOMETRY_H_
 #define SPECTRAL_TOKEN_GEOMETRY_H_
 
+#include <cmath>
 #include <cuda_runtime.h>
 #include <cuda_fp16.h>
 #include <optix.h>

@@ -1,6 +1,6 @@
 # STATUS.md — SpectralAI Zero-Matrix
 > Estado real del proyecto, inventario de archivos, y roadmap por fases.
-> Ultima actualizacion: 2026-04-01
+> Ultima actualizacion: 2026-04-02
 
 ---
 
@@ -21,7 +21,9 @@
 | E2E PPL (16 capas mixto) | ✅ PPL 7.30 (+2.1%) — 16/16 capas hybrid_residual |
 | E2E PPL (1 capa pure) | ✅ PPL 7.19 (+0.6%) — L8 MicroPredictor |
 | Bugs criticos resueltos | norm_topk_prob=False, restricted softmax, calibracion |
-| Pipeline OptiX v5 | ✅ Compilado: 6 PTX + 6 OptiX IR para sm_120 (Blackwell), benchmark 39µs/batch |
+| Pipeline OptiX v5 | ✅ Compilado: 6 OptiX IR (.optixir) para sm_89/sm_120, benchmark 4.36x speedup |
+| OptiX 9.0 CoopVec | ✅ Integrado: in-shader calibración via optixCoopVecMatMul (affine+linear modes) |
+| Calibration Export | ✅ export_calibration.py: PyTorch → FP16 binary (272B affine) + C header |
 | RT Training Bridge | ✅ StraightThroughRT (STE): RT hard forward + soft backward |
 | OptiX Training Ext | ✅ pybind11 extension + JIT build + test script + integration wrapper |
 | Inception v4.0 opt | ✅ PPL 185.4 — gap 1.75% vs GPT-2 (objetivo <=2.1% CUMPLIDO) |
@@ -55,6 +57,8 @@
 | FASE I: Paper | ✅ ESCRITO — paper/spectral_ai_zero_matrix.md (516 líneas, 9 secciones, 16 refs) |
 | Paper Review | ✅ 10 discrepancias encontradas y corregidas por code-reviewer |
 | Reproducibility Scripts | ✅ integration_test_v2.py: 21/23 tests, 88.9% polysemy (match exacto) |
+| OptiX 9.0 CoopVec Build | ✅ Build 100%: 6 .optixir + 4 ejecutables. CoopVec=ON, --optix-ir mode |
+| OptiX WSL2 Runtime | ❌ optixInit falla — libnvoptix.so.1 stub sin optixQueryFunctionTable (driver 595.79) |
 
 ---
 

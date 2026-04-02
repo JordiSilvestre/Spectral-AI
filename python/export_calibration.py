@@ -38,21 +38,39 @@ CALIBRATION_MODE_LINEAR = 2
 
 
 def load_calibration_state(checkpoint_path: str) -> dict:
-    """Load calibration state from a checkpoint file."""
-    ckpt = torch.load(checkpoint_path, map_location="cpu", weights_only=True)
+    """Load calibration state from a checkpoint file.
 
-    # The checkpoint may contain calibration data directly or nested
+    Supports two checkpoint formats:
+      1. calibrate_router.py format: router checkpoint with 'calibration_state'
+         and 'calibration_mode' keys embedded alongside router weights.
+      2. Standalone format: dict with 'state' and 'mode' keys directly.
+    """
+    try:
+        ckpt = torch.load(checkpoint_path, map_location="cpu", weights_only=True)
+    except Exception:
+        ckpt = torch.load(checkpoint_path, map_location="cpu", weights_only=False)
+
+    # Format 1: calibrate_router.py embeds calibration inside router checkpoint
+    if "calibration_state" in ckpt and "calibration_mode" in ckpt:
+        return {
+            "mode": ckpt["calibration_mode"],
+            "state": ckpt["calibration_state"],
+        }
+
+    # Format 2: standalone calibration checkpoint
     if "calibration" in ckpt:
         return ckpt["calibration"]
     if "state" in ckpt and "mode" in ckpt:
         return ckpt
-    # Try to find calibration keys directly
+
+    # Format 3: raw state dict (scale/bias or weight/bias directly)
     if "scale" in ckpt or "weight" in ckpt:
         return ckpt
 
     raise ValueError(
         f"Cannot find calibration weights in {checkpoint_path}. "
-        "Expected keys: 'calibration', or 'state'+'mode', or 'scale'/'weight'."
+        "Expected: 'calibration_state'+'calibration_mode' (calibrate_router.py format), "
+        "or 'state'+'mode', or 'scale'/'weight' keys."
     )
 
 

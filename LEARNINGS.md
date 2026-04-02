@@ -4,6 +4,38 @@
 
 ---
 
+### [2026-04-02] OptiX 9.0 Cooperative Vectors — Integración completa
+
+**Objetivo:** Eliminar round-trip PyTorch en calibración BVH → in-shader via `optixCoopVecMatMul` (Tensor Cores).
+
+**Archivos creados/modificados:**
+- `python/export_calibration.py` (NUEVO) — Exporta pesos calibración PyTorch → FP16 binary (272 bytes affine, 8336 bytes linear) + C header
+- `cuda/closest_hit.cu` — Añadido `apply_coopvec_calibration()` con `optixCoopVecMatMul` (affine + linear modes)
+- `include/optical_attention.h` — Struct `CalibrationWeights` con affine_scale/bias (half[64]) + linear_matrix_ptr + linear_bias
+- `CMakeLists.txt` — Detección OptiX 9.0+, flag `SPECTRAL_COOPVEC_ENABLED`, compilación `--optix-ir` (no PTX)
+- `python/bvh_router_bridge.py` — `load_calibration_weights()` + `has_calibration` property
+
+**Resultados de build (WSL2, CUDA 13.2, OptiX 9.1, RTX 5070 Ti):**
+- ✅ Build 100% exitoso: 6 shaders `.optixir` + 4 ejecutables + 3 libs estáticas
+- ✅ `spectral_benchmark`: 4.36x speedup (N=1K), 1.78x (N=10K) — CUDA kernel vs MatMul
+- ✅ `export_calibration.py`: 272 bytes affine binary + C header exportados desde checkpoint real
+- ✅ `HybridBVHRouter.load_calibration_weights()`: Carga y valida correctamente (mode=affine, 128 params)
+- ❌ `optixInit()` falla en WSL2 — `optixQueryFunctionTable` no exportado por libnvoptix stub (driver 595.79)
+
+**Decisiones de build importantes:**
+1. **`--optix-ir` vs `--ptx`:** OptiX 9.0+ requiere OptiX IR para cooperative vectors. PTX falla porque `ptxas` intenta validar intrínsecos OptiX (`_optix_get_payload`, etc.) que solo se resuelven en el JIT de OptiX en runtime.
+2. **`-lineinfo` vs `--lineinfo`:** Doble guión causa que gcc lo interprete como flag propio. Un solo guión funciona con nvcc en Linux/WSL.
+3. **`optix_function_table_definition.h`:** Solo incluir UNA VEZ por ejecutable. Incluirlo en lib + main causa `multiple definition of g_optixFunctionTable`.
+
+**Limitación WSL2:** OptiX runtime (RT Cores) NO funciona en WSL2 con driver 595.79. La lib `/usr/lib/wsl/lib/libnvoptix.so.1` es un stub sin `optixQueryFunctionTable`. Los shaders `.optixir` compilados son correctos — necesitan ejecutarse en Windows nativo o con driver WSL actualizado.
+
+**Próximos pasos:**
+- Probar pipeline OptiX completo en Windows nativo (Visual Studio)
+- O esperar driver NVIDIA con soporte OptiX completo en WSL2
+- Latencia target: <20µs total (BVH 10µs + calibración CoopVec ~5µs)
+
+---
+
 ### [2026-04-02] Prior art research + Patent hardening + Provisional filing prep
 
 **Prior Art encontrado (NINGUNO invalida las patentes):**

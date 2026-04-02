@@ -23,6 +23,7 @@
 #include <cuda.h>
 #include <optix.h>
 #include <optix_stubs.h>
+#include <optix_function_table_definition.h>
 #include <cstdio>
 #include <cstdlib>
 #include <cmath>
@@ -30,6 +31,7 @@
 #include <chrono>
 #include <string>
 #include <vector>
+#include <algorithm>
 #include <fstream>
 
 #include "../include/token_geometry.h"
