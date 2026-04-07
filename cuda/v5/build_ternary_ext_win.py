@@ -16,6 +16,7 @@ Environment assumptions (edit the PATHS section below if needed):
 
 import os
 import sys
+import site
 import subprocess
 import textwrap
 import shutil
@@ -27,7 +28,7 @@ from pathlib import Path
 
 VCVARSALL    = r"C:\Program Files (x86)\Microsoft Visual Studio\18\BuildTools\VC\Auxiliary\Build\vcvarsall.bat"
 CUDA_HOME    = r"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.2"
-TORCH_HOME   = r"C:\Users\jsilv\AppData\Roaming\Python\Python314\site-packages\torch"
+TORCH_HOME   = os.environ.get("TORCH_HOME", os.path.join(site.getsitepackages()[0], "torch"))  # Auto-detect torch location
 PYTHON_HOME  = r"C:\Python314"
 SM_ARCH      = "sm_120"
 COMPUTE_ARCH = "compute_120"

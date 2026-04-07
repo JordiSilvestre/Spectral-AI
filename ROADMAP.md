@@ -111,8 +111,8 @@ Fuente: `patents/patent_01_rt_attention.md` Seccion 11, `docs/PATENT_BENCHMARK_C
 
 **Comando:**
 ```bash
-cd "/mnt/j/Proyectos/SPECTRAL AI"
-export PATH=/usr/local/cuda/bin:/home/jordi/.local/bin:$PATH
+cd "/path/to/spectral-ai"
+export PATH=/usr/local/cuda/bin:$HOME/.local/bin:$PATH
 bash scripts/train_remaining_layers.sh
 ```
 

@@ -1391,12 +1391,7 @@ def benchmark_routing(
 
 def main():
     parser = argparse.ArgumentParser(description="Enhanced BVH Router distillation from OLMoE")
-    # Auto-detect Windows vs WSL model path
-    _default_model = (
-        "J:/Proyectos/models/olmoe-1b-7b"
-        if os.name == "nt"
-        else "/mnt/j/Proyectos/models/olmoe-1b-7b"
-    )
+    _default_model = os.environ.get("OLMOE_MODEL_DIR", "./olmoe-1b-7b")
     parser.add_argument("--model-dir", type=str, default=_default_model)
     parser.add_argument("--layer", type=int, default=8,
                         help="OLMoE layer to extract (0-15)")

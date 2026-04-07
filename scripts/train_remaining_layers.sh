@@ -18,7 +18,7 @@
 #   FASE C: Evaluar PPL 16/16
 #
 # Usage (en WSL):
-#   cd /mnt/j/Proyectos/SPECTRAL\ AI
+#   cd /path/to/spectral-ai
 #   source .venv_wsl/bin/activate
 #   bash scripts/train_remaining_layers.sh
 # ============================================================

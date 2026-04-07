@@ -3,7 +3,7 @@
 export PATH=/usr/local/cuda-13.2/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 export LD_LIBRARY_PATH=/usr/local/cuda-13.2/lib64
 
-PROJECT="/mnt/j/Proyectos/SpectralAI Zero-Matrix"
+PROJECT="${PROJECT_DIR:-$(cd "$(dirname "$0")/../.." && pwd)}"
 VENV="$PROJECT/.venv_wsl"
 
 echo "=== Creating WSL2 venv ==="

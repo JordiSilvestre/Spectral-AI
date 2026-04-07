@@ -4,8 +4,8 @@
 
 set -e
 
-export HOME=/home/jordi
-VENV="$HOME/liquidbit_venv"
+export HOME="${HOME:-$(eval echo ~)}"
+VENV="${VENV_DIR:-$HOME/venv}"
 PROJECT="/tmp/spectral"
 
 # Activar venv

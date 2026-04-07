@@ -28,7 +28,7 @@
 #   - CUDA GPU available
 #
 # Usage (WSL2):
-#   cd /mnt/j/Proyectos/SPECTRAL\ AI
+#   cd /path/to/spectral-ai
 #   source .venv_wsl/bin/activate
 #   bash scripts/patent_benchmarks.sh
 # ============================================================
@@ -52,7 +52,7 @@ SCRIPTS_DIR="${PROJECT_DIR}/scripts"
 RESULTS_DIR="${PROJECT_DIR}/results"
 TIMESTAMP="$(date +%Y%m%d)"
 LOGFILE="${RESULTS_DIR}/patent_benchmark_${TIMESTAMP}.log"
-MODEL_DIR="${MODEL_DIR:-/mnt/j/Proyectos/models/olmoe-1b-7b}"
+MODEL_DIR="${MODEL_DIR:-/path/to/olmoe-1b-7b}"
 DEVICE="${DEVICE:-cuda}"
 
 # How many seconds to allow per benchmark (default: 30 minutes)

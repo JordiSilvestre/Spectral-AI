@@ -24,9 +24,10 @@ pip3 list 2>/dev/null | grep -E "torch|numpy|tqdm|tiktoken" 2>&1
 
 echo ""
 echo "=== Venv check ==="
-ls -la "/mnt/j/Proyectos/SpectralAI Zero-Matrix/.venv/" 2>&1
+PROJECT_DIR="${PROJECT_DIR:-$(cd "$(dirname "$0")/../.." && pwd)}"
+ls -la "$PROJECT_DIR/.venv/" 2>&1
 
 echo ""
 echo "=== libbvh_router.so ==="
-ls -la "/mnt/j/Proyectos/SpectralAI Zero-Matrix/cuda/v5/libbvh_router.so" 2>&1
-nm -D "/mnt/j/Proyectos/SpectralAI Zero-Matrix/cuda/v5/libbvh_router.so" 2>&1 | grep bvh_router | head -5
+ls -la "${PROJECT_DIR:-$(dirname "$0")/../..}/cuda/v5/libbvh_router.so" 2>&1
+nm -D "${PROJECT_DIR:-$(dirname "$0")/../..}/cuda/v5/libbvh_router.so" 2>&1 | grep bvh_router | head -5

@@ -275,7 +275,7 @@ def load_olmoe_layer(
 if __name__ == "__main__":
     import sys
 
-    model_dir = sys.argv[1] if len(sys.argv) > 1 else "/mnt/j/Proyectos/models/olmoe-1b-7b"
+    model_dir = sys.argv[1] if len(sys.argv) > 1 else os.environ.get("OLMOE_MODEL_DIR", "./olmoe-1b-7b")
     layer_idx = int(sys.argv[2]) if len(sys.argv) > 2 else 8
 
     print("=" * 60)

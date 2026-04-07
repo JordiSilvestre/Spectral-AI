@@ -100,7 +100,7 @@ Additional metrics:
 
 ## Reproduction Commands
 
-All commands run from WSL2 in `/mnt/j/Proyectos/SPECTRAL AI`:
+All commands run from WSL2 in `the project root`:
 
 ```bash
 # 1. Build CUDA extensions (first time only)

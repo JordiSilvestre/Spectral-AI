@@ -10,7 +10,7 @@ Compara:
 
 Ejecutar desde WSL2:
   cd /tmp/spectral
-  source /home/jordi/liquidbit_venv/bin/activate
+  source $HOME/venv/bin/activate  # Adjust to your virtualenv path
   python python/benchmark_e2e_final.py
 """
 

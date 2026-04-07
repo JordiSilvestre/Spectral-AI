@@ -2,9 +2,9 @@
 # setup_and_run_fase5.sh — Setup symlink + run FASE 5 benchmark
 set -e
 
-export HOME=/home/jordi
-VENV="$HOME/liquidbit_venv"
-PROJECT_WIN="/mnt/j/Proyectos/SpectralAI Zero-Matrix"
+export HOME="${HOME:-$(eval echo ~)}"
+VENV="${VENV_DIR:-$HOME/venv}"
+PROJECT_WIN="${PROJECT_DIR:-/tmp/spectral}"  # Set to your project path
 PROJECT="/tmp/spectral"
 
 # Recrear symlink si no existe

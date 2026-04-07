@@ -169,7 +169,7 @@ spectral-ai/
 
 ```bash
 # WSL2 (recommended for Python pipeline)
-cd /mnt/j/Proyectos/SPECTRAL\ AI
+cd /path/to/spectral-ai
 python3 -m venv .venv && source .venv/bin/activate
 pip install torch transformers accelerate safetensors datasets scikit-learn
 

@@ -2,7 +2,8 @@
 export PATH=/usr/local/cuda-13.2/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 export LD_LIBRARY_PATH=/usr/local/cuda-13.2/lib64
 
-cd "/mnt/j/Proyectos/SpectralAI Zero-Matrix/cuda/v5"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+cd "$SCRIPT_DIR"
 
 echo "=== Compilando test_router ==="
 nvcc -O3 \

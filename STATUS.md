@@ -474,7 +474,7 @@ Analisis exhaustivo de los 64 expertos de OLMoE revela:
 **Resultado actual (antes de KV cache):** 1.4 tok/s, 30x VRAM, coherente
 **Ejecutar ahora:**
 ```bash
-cd /mnt/j/Proyectos/SPECTRAL\ AI
+cd /path/to/spectral-ai
 source .venv_wsl/bin/activate
 python3 python/real_model_demo.py --model qwen-1.5b --max-tokens 64
 ```

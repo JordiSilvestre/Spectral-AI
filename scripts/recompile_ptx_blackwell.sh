@@ -15,7 +15,7 @@
 set -euo pipefail
 
 # Paths
-PROJECT_DIR="/mnt/j/Proyectos/SPECTRAL AI"
+PROJECT_DIR="${PROJECT_DIR:-.}"
 CUDA_DIR="${PROJECT_DIR}/cuda"
 PTX_OUTPUT="${PROJECT_DIR}/build/ptx"
 INCLUDE_DIR="${PROJECT_DIR}/include"

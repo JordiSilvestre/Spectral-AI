@@ -41,7 +41,7 @@ if not defined CUDA_HOME (
 echo CUDA Home: %CUDA_HOME%
 
 REM Ensure ninja and Python Scripts are in PATH
-set "PATH=C:\Users\jsilv\AppData\Roaming\Python\Python314\Scripts;%PATH%"
+set "PATH=%APPDATA%\Python\Python314\Scripts;%PATH%"
 
 REM Navigate to project root
 cd /d "J:\Proyectos\SPECTRAL AI"

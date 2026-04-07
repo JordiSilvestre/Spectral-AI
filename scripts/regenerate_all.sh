@@ -5,7 +5,7 @@
 # Run this in WSL after a data loss to get back to FASE 3 state.
 #
 # Prerequisites:
-#   - OLMoE model at /mnt/j/Proyectos/models/olmoe-1b-7b
+#   - OLMoE model at /path/to/olmoe-1b-7b
 #   - Python venv with: torch transformers accelerate safetensors datasets scikit-learn
 #
 # Usage:
@@ -20,7 +20,7 @@ echo "============================================================"
 echo "  SpectralAI — Full Pipeline Regeneration"
 echo "============================================================"
 
-MODEL_DIR="/mnt/j/Proyectos/models/olmoe-1b-7b"
+MODEL_DIR="/path/to/olmoe-1b-7b"
 LAYERS="0 4 8 12 15"
 
 # ── Step 1: Extract hidden states ────────────────────────────
