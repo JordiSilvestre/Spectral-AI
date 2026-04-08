@@ -143,7 +143,6 @@ spectral-ai/
 ├── include/               # C++ public headers
 ├── src/                   # C++ implementations
 ├── tests/                 # 223 automated tests
-├── patents/               # 3 technical design documents + 17 figures
 ├── paper/                 # Academic paper (arXiv submission)
 ├── figures/               # Publication figures
 ├── scripts/               # Automation scripts

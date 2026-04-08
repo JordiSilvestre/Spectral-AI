@@ -6,7 +6,7 @@ Tests 50 polysemous English words across 2-3 contexts each, measuring
 whether SpectralAI's optical routing mechanisms produce different expert
 routing for different senses of the same word.
 
-Configurations tested (matching Patent P3 Table, Section 11):
+Configurations tested (matching Technical Design P3 Table, Section 11):
   1. Single PrismaticRefraction (Snell only)
   2. + ChromaticAberration (4 bands)
   3. + TotalInternalReflection
@@ -530,7 +530,7 @@ def _get_training_routing(
     """
     Simplified routing for training: encoder + refraction only.
     TIR and Phase are applied only at eval time as decision-boundary
-    mechanisms (matching the patent design where they add post-hoc
+    mechanisms (matching the technical design design where they add post-hoc
     routing refinement).
     """
     encoder = modules["encoder"]
@@ -704,7 +704,7 @@ def evaluate_polysemy(
 def print_summary_table(
     results: List[Tuple[str, float, int, int]],
 ) -> None:
-    """Print patent-style summary table."""
+    """Print technical design-style summary table."""
     header = f"| {'Mechanism':<25} | {'Polysemy Accuracy':>18} | {'Resolved':>10} |"
     separator = f"|{'-' * 27}|{'-' * 20}|{'-' * 12}|"
 

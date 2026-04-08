@@ -355,9 +355,9 @@ Analisis exhaustivo de los 64 expertos de OLMoE revela:
 | `docs/MEMORY_BREAKTHROUGH.md` | Analisis VRAM y cache | Actual |
 | `docs/BENCHMARK_TEORICO.md` | Benchmarks vs estado del arte | Actual |
 | `python/README_TRAINING.md` | Guia de training | Actual |
-| `patents/patent_01_rt_attention.md` | Technical design: RT Core Attention | Referencia |
-| `patents/patent_02_inception_engine.md` | Technical design: Inception Engine | Referencia |
-| `patents/patent_03_spectral_routing.md` | Technical design: Spectral/Snell | Referencia |
+| `technical-designs/technical design_01_rt_attention.md` | Technical design: RT Core Attention | Referencia |
+| `technical-designs/technical design_02_inception_engine.md` | Technical design: Inception Engine | Referencia |
+| `technical-designs/technical design_03_spectral_routing.md` | Technical design: Spectral/Snell | Referencia |
 
 ---
 
@@ -520,7 +520,7 @@ python3 python/finetune_ternary_experts.py --model qwen-0.5b --epochs 50
 
 # Exporta: checkpoints/ternary/ternary_experts/{layer_N}/*.npy
 ```
-**Target patente:** 375x VRAM (7.86 MB active), cosine >0.97, sparsity ~50%
+**Target technical designe:** 375x VRAM (7.86 MB active), cosine >0.97, sparsity ~50%
 
 ### PASO 5: Retrain TODAS las 16 capas con Spectral + topk_matching_loss — 🔄 EN CURSO
 ```bash

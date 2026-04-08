@@ -4,11 +4,11 @@
 
 ---
 
-## 1. CLAIMS NUMERICOS DE LAS PATENTES (Certificados 2026-03-30)
+## 1. CLAIMS NUMERICOS DE LAS DISEÑOS TÉCNICOS (Certificados 2026-03-30)
 
-Fuente: `patents/patent_01_rt_attention.md` Seccion 11, `docs/PATENT_BENCHMARK_CERTIFIED.md`
+Fuente: `docs/technical_design_01.md` Seccion 11, `docs/BENCHMARK_CERTIFIED.md`
 
-| # | Claim | Valor Patente | Medido (RTX 5070 Ti) | Estado |
+| # | Claim | Valor Technical Designe | Medido (RTX 5070 Ti) | Estado |
 |---|-------|---------------|----------------------|--------|
 | C1 | Routing latency (CUDA ext) | **10 µs** | 11 µs (B=256), 22 µs (B=1) | **CUMPLIDO** |
 | C2 | Speedup CUDA ext vs PyTorch | **105x** | 89-227x (batch dependent) | **CUMPLIDO** |
@@ -23,7 +23,7 @@ Fuente: `patents/patent_01_rt_attention.md` Seccion 11, `docs/PATENT_BENCHMARK_C
 
 **Estado: 10/10 claims cumplidos, 5 superados (C4, C5, C8, C9, C10).**
 
-**Reproduccion:** `scripts/patent_benchmark.py`, `docs/PATENT_BENCHMARK_CERTIFIED.md`
+**Reproduccion:** `scripts/benchmark.py`, `docs/BENCHMARK_CERTIFIED.md`
 
 ---
 
@@ -55,14 +55,14 @@ Fuente: `patents/patent_01_rt_attention.md` Seccion 11, `docs/PATENT_BENCHMARK_C
 - 6 PTX compilados para compute_89
 **Scripts:** `cuda/v5/build_optix_ext.py`, `build_ptx_win.bat`
 
-### Certificacion de Patentes — ✅ COMPLETADA (2026-03-30)
+### Certificacion de Technical Designes — ✅ COMPLETADA (2026-03-30)
 **Objetivo:** Validar y certificar TODOS los claims con numeros medidos.
 **Entorno:** WSL2 Ubuntu + RTX 5070 Ti, ambas extensiones CUDA compiladas (.so JIT).
 **Resultados:**
 - 9/10 claims cumplidos, 3 superados (C4: 4.03MB, C5: 731x, C9: 690µs)
 - Projection layer 1536→128 añadida (router 890 KB vs 9.4 MB sin proyeccion)
 - BVH shape forzado a 4x4x4 (CUDA kernel hardcoded, no 3x3x3)
-**Documentos:** `docs/PATENT_BENCHMARK_CERTIFIED.md`, patentes actualizadas
+**Documentos:** `docs/BENCHMARK_CERTIFIED.md`, documentos actualizados
 
 ---
 
@@ -128,13 +128,13 @@ bash scripts/train_remaining_layers.sh
 ## 4. FASE E: Benchmark Suite Final — ✅ COMPLETADA
 
 **Resultado:** 10/10 claims cumplidos, 4 superados.
-**Documento:** `docs/PATENT_BENCHMARK_CERTIFIED.md`
+**Documento:** `docs/BENCHMARK_CERTIFIED.md`
 
 ---
 
 ## 5. FASE F: Demo Final End-to-End — ⏳ PENDIENTE
 
-**Objetivo:** Demo grabable para patentes e inversores. Pipeline completo visible.
+**Objetivo:** Demo grabable para technical designes e inversores. Pipeline completo visible.
 **Depende de:** FASES D y E completadas.
 
 **Que debe mostrar:**
@@ -144,7 +144,7 @@ bash scripts/train_remaining_layers.sh
 4. Texto coherente generado (codigo Python, respuestas naturales)
 5. VRAM activa < 8 MB (streaming layer-by-layer)
 6. Velocidad > 45 tok/s (con CUDA POPCOUNT extension)
-7. Summary final con TODOS los numeros de patente
+7. Summary final con TODOS los numeros de technical designe
 
 **Mejoras pendientes para la demo:**
 | Mejora | Impacto | Dificultad |
@@ -152,7 +152,7 @@ bash scripts/train_remaining_layers.sh
 | CUDA POPCOUNT en inference | 33→45+ tok/s | Media (extension ya compilada) |
 | Streaming 1-layer | 31.7→<8 MB VRAM | Baja (solo cambiar prefetch strategy) |
 | Routing diversity fix | Cosmético pero importante para demo | Media (calibracion post-FASE D) |
-| OLMoE-1B-7B en vez de Qwen | Claims exactos de la patente | Alta (requiere mas VRAM) |
+| OLMoE-1B-7B en vez de Qwen | Claims exactos de la technical designe | Alta (requiere mas VRAM) |
 
 **Comando:**
 ```bash
@@ -162,7 +162,7 @@ python3 python/real_model_demo.py --model qwen-0.5b --max-tokens 128 \
 
 **Criterio de exito:**
 - [ ] Video de 2-3 minutos mostrando pipeline completo
-- [ ] Todos los numeros de patente visibles en output
+- [ ] Todos los numeros de technical designe visibles en output
 - [ ] Texto generado coherente y util
 
 ---
@@ -214,7 +214,7 @@ python3 python/real_model_demo.py --model qwen-0.5b --max-tokens 128 \
 ## 8. FASE I: Escalado y Futuro — 🔮 PLANIFICADO
 
 **Objetivo:** Escalar la tecnologia a modelos grandes y produccion.
-**Timeline:** Despues del patent filing.
+**Timeline:** Despues del technical design filing.
 
 | Sub-fase | Descripcion | Hardware |
 |---|---|---|

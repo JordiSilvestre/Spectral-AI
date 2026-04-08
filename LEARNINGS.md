@@ -13,7 +13,7 @@
 4. Pre-filter "+0.0% con 24 cand": FALSO (medido con checkpoint global buggy). Real: +26.8%
 5. Añadido HellaSwag downstream (2000 samples) — dato nuevo para reviewers
 6. Test count: 232 -> 239
-7. Patentes 1, 2, 3 actualizadas con datos verificados
+7. Technical Designes 1, 2, 3 actualizadas con datos verificados
 
 **CRITICO: L8 es la peor capa (89.3%), NO la mejor.** Dato anterior (97.2%) era de L10.
 El paper anterior confundía L8 con L10 en Table 1. Ahora corregido.
@@ -33,7 +33,7 @@ El paper anterior confundía L8 con L10 en Table 1. Ahora corregido.
 - 306 contextos totales, 25 dominios (science, code, music, finance, sports...)
 - Mejores: bank, bat, bow, bug, cell → 100% resolución
 - Peores: crane (33%), train (50%), press/stream/wave (75%)
-- **Conclusión:** OLMoE ruta polisemia casi perfectamente — validación clave para Patent 3
+- **Conclusión:** OLMoE ruta polisemia casi perfectamente — validación clave para Technical Design 3
 
 **Pre-filter sweep con per-layer checkpoints (PPL en WikiText-2, 20K tokens):**
 ```
@@ -120,9 +120,9 @@ Triangle async: 19.1 µs/batch  → 13.4M queries/s  (100% accuracy)  ← BEST
 
 ---
 
-### [2026-04-02] Prior art research + Patent hardening + Provisional filing prep
+### [2026-04-02] Prior art research + Technical Design hardening + Provisional filing prep
 
-**Prior Art encontrado (NINGUNO invalida las patentes):**
+**Prior Art encontrado (NINGUNO invalida las technical designes):**
 
 1. **RTNN (PPoPP 2022)** — RT Cores para kNN search, 2.2-65× speedup. Valida el premise pero NO hace atención ni MoE routing. github.com/horizon-research/rtnn
    - **Aplicable:** Query reordering y query partitioning podrían mejorar nuestro OptiX de 39µs
@@ -143,10 +143,10 @@ Triangle async: 19.1 µs/batch  → 13.4M queries/s  (100% accuracy)  ← BEST
 
 7. **SiDA-MoE (MLSys 2024)** — Hash-based routing. Hallazgo: degradación PPL disminuye con modelos más grandes → nuestro +2.1% en OLMoE 1B probablemente sería menor en modelos 7B+
 
-**Patent hardening (108 claims, 33 independientes):**
-- Patent 1: 28 → 34 claims (10 indep). Añadidos: software-only, CRM, broadest spatial attention, two-phase, confidence-gated, KV-cache replacement
-- Patent 2: 25 → 30 claims (11 indep). Eliminado OptiX lock-in, añadidos: generic hierarchical, Fourier standalone, wormhole, software-only, incremental update
-- Patent 3: 38 → 44 claims (14 indep). Broadened optical terms, añadidos: generic context-dependent routing, multi-band, TIR, phase coherence, training loss, CRM
+**Technical Design hardening (108 claims, 33 independientes):**
+- Technical Design 1: 28 → 34 claims (10 indep). Añadidos: software-only, CRM, broadest spatial attention, two-phase, confidence-gated, KV-cache replacement
+- Technical Design 2: 25 → 30 claims (11 indep). Eliminado OptiX lock-in, añadidos: generic hierarchical, Fourier standalone, wormhole, software-only, incremental update
+- Technical Design 3: 38 → 44 claims (14 indep). Broadened optical terms, añadidos: generic context-dependent routing, multi-band, TIR, phase coherence, training loss, CRM
 
 **Decisión: Provisional primero ($195) → arXiv → sponsors → non-provisional (mes 9-10)**
 
@@ -154,14 +154,14 @@ Triangle async: 19.1 µs/batch  → 13.4M queries/s  (100% accuracy)  ← BEST
 
 ---
 
-### [2026-04-01] Paper académico escrito + Patent audit completo
+### [2026-04-01] Paper académico escrito + Technical Design audit completo
 
-**Archivos:** `paper/spectral_ai_zero_matrix.md` (NUEVO), `tests/test_patent_claims.py` (NUEVO)
+**Archivos:** `paper/spectral_ai_zero_matrix.md` (NUEVO), `tests/test_technical design_claims.py` (NUEVO)
 
 **Paper:** "Zero-Matrix Attention: Replacing O(N²) with O(N log N) Hardware-Accelerated Ray Tracing"
 - 516 líneas, ~5,600 palabras, 9 secciones, 8 tablas, 16 referencias verificadas
 - 3 contribuciones: RT Attention, Inception Engine, Spectral Routing
-- Todos los datos cruzados contra LEARNINGS.md, STATUS.md, y 3 patentes
+- Todos los datos cruzados contra LEARNINGS.md, STATUS.md, y 3 technical designes
 - 10 discrepancias encontradas por code-reviewer y corregidas:
   - Inception delta: +2.1% → +1.8% (185.4/182.2 = 1.76%)
   - Overhead: clarificado 0.04% single-band vs 0.12% chromatic
@@ -171,8 +171,8 @@ Triangle async: 19.1 µs/batch  → 13.4M queries/s  (100% accuracy)  ← BEST
   - Añadida fila pre-filter 0.0% degradation en Table 2
 - Referencia arXiv 2603.28771 (Meneses et al. 2026) verificada como real
 
-**Patent Audit (30 tests):**
-- 30/30 tests pasando en `tests/test_patent_claims.py`
+**Technical Design Audit (30 tests):**
+- 30/30 tests pasando en `tests/test_technical design_claims.py`
 - Verifica: TokenNode struct, BVH 3 niveles, confidence-gated formula, speedup range,
   KV cache math, Inception capacity, Snell's law, TIR, polysemy data, OptiX shaders,
   CMake targets
@@ -180,14 +180,14 @@ Triangle async: 19.1 µs/batch  → 13.4M queries/s  (100% accuracy)  ← BEST
   KV cache model_dim
 
 **Reproducibilidad verificada (WSL + RTX 5070 Ti + CUDA 12.8):**
-- `integration_test_v2.py`: 21/23 tests, 88.9% polysemy (8/9) — match exacto con patentes
-- `patent_benchmark.py`: **9/9 claims PASS** — C1=9.5μs, C3=55.4tok/s, C4=4.03MB, C5=731×, C9=411.9μs
+- `integration_test_v2.py`: 21/23 tests, 88.9% polysemy (8/9) — match exacto con technical designes
+- `technical design_benchmark.py`: **9/9 claims PASS** — C1=9.5μs, C3=55.4tok/s, C4=4.03MB, C5=731×, C9=411.9μs
 - `benchmark_e2e_final.py`: Routing speedup **112-139× (batch 1-256)**, kernel 9.6-11.1μs
   - Batch=1: 1,260μs PyTorch → 11μs CUDA = 112.6×
   - Batch=256: 1,412μs PyTorch → 10μs CUDA = 139.0×
   - Throughput pico: 92.5M tok/s (batch=1024)
 
-**Decisión:** Patentes primero (provisional $350×3), luego arXiv preprint, luego NeurIPS 2026.
+**Decisión:** Technical Designes primero (provisional $350×3), luego arXiv preprint, luego NeurIPS 2026.
 
 ---
 
@@ -250,7 +250,7 @@ else:
 - Elimina el compounding: solo los tokens donde el BVH acierta usan BVH
 - Un solo hiperparametro (threshold) controla el espectro completo calidad/velocidad
 
-**Claim de patente:**
+**Claim de technical designe:**
 "Confidence-gated sparse geometric routing with continuous quality-speed tradeoff:
 69% de tokens routeados con O(log N) BVH traversal, 31% con gate lineal fallback,
 controlado por un unico parametro de confianza."
@@ -299,7 +299,7 @@ El weight mode NO es el cuello de botella. El problema es el **compounding de ac
 | Pure 3 capas (render_eq)  | 7.33 | +2.5%  |
 ```
 
-**Conclusion:** Para patentes, los claims fuertes son:
+**Conclusion:** Para technical designes, los claims fuertes son:
 - Hybrid 16 capas: 7.66 PPL (+7.2%) — "O(log N) routing, degradacion minima"
 - Pure 3 capas: 7.33 PPL (+2.5%) — "MatMul-free routing en 3 capas"
 - La selectividad del analisis es dato interesante para el paper pero no mejora PPL directamente
@@ -537,10 +537,10 @@ emerge con N>>64 expertos. Para el paper necesitamos demostrar el scaling.
 | BVH scaling (N=65536)    | Analitico      | ~170x ventaja    | LLM-scale projection          |
 ```
 
-**Nota sobre numeros de patente:**
-- Patent claim C2 (89-227x speedup): VALIDADO con 85-170x medido
-- Patent claim C4 (VRAM 375x): SUPERADO con 731x medido (4.03 MB active)
-- Patent claim C5 (949us E2E): SUPERADO con 690us medido
+**Nota sobre numeros de technical designe:**
+- Technical Design claim C2 (89-227x speedup): VALIDADO con 85-170x medido
+- Technical Design claim C4 (VRAM 375x): SUPERADO con 731x medido (4.03 MB active)
+- Technical Design claim C5 (949us E2E): SUPERADO con 690us medido
 
 ---
 
@@ -572,11 +572,11 @@ top-8 overlap de 85% → 3+ experts incorrectos → routing sub-optimo → PPL a
 
 ---
 
-### [2026-03-30] Patent Claims Certificados: 9/10 cumplidos, 3 superados
+### [2026-03-30] Technical Design Claims Certificados: 9/10 cumplidos, 3 superados
 
-**Archivos:** `docs/PATENT_BENCHMARK_CERTIFIED.md`, `scripts/patent_benchmark.py`
+**Archivos:** `docs/TECHNICAL DESIGN_BENCHMARK_CERTIFIED.md`, `scripts/technical design_benchmark.py`
 
-**Contexto:** Los numeros de la patente (51.9 tok/s, 7.86 MB, 375x, 949µs, 88.9%) venian de sesiones anteriores sin documentacion reproducible. Se ejecuto todo desde cero en WSL2 con mediciones sistematicas.
+**Contexto:** Los numeros de la technical designe (51.9 tok/s, 7.86 MB, 375x, 949µs, 88.9%) venian de sesiones anteriores sin documentacion reproducible. Se ejecuto todo desde cero en WSL2 con mediciones sistematicas.
 
 **Hallazgos clave:**
 1. **VRAM 4.03 MB (superado vs 7.86 MB claim):** Gracias a projection layer 1536→128 que reduce router de 9.4 MB a 890 KB
@@ -585,7 +585,7 @@ top-8 overlap de 85% → 3+ experts incorrectos → routing sub-optimo → PPL a
 4. **BVH shape bug:** `_compute_bvh_shape()` daba 3x3x3=27 para 24 experts, pero CUDA kernel hardcoded a 4x4x4=64. Forzado a 4x4x4 siempre para 9-64 experts.
 5. **PCA con N<D:** 68 calibration samples < 128 router_dim. SVD solo produce min(N,D) components. Fix: rellenar dims restantes con small random values.
 
-**Leccion:** Siempre ejecutar y medir antes de poner numeros en una patente. 3 de 10 claims fueron SUPERADOS, lo que valida que los claims originales eran conservadores.
+**Leccion:** Siempre ejecutar y medir antes de poner numeros en una technical designe. 3 de 10 claims fueron SUPERADOS, lo que valida que los claims originales eran conservadores.
 
 ---
 
@@ -635,7 +635,7 @@ top-8 overlap de 85% → 3+ experts incorrectos → routing sub-optimo → PPL a
 
 **Archivos clave:** `cuda/optix_router_host.cpp`, `cuda/v5/optix_training_ext.cu`, `python/benchmark_optix_latency.py`
 
-**Problema:** La latencia de 94µs era ~9.4x peor que el claim de patente (10µs). El benchmark CUDA kernel nativo (sin OptiX) ya lograba 10µs.
+**Problema:** La latencia de 94µs era ~9.4x peor que el claim de technical designe (10µs). El benchmark CUDA kernel nativo (sin OptiX) ya lograba 10µs.
 
 **Análisis de cuellos de botella:**
 1. `cudaDeviceSynchronize()` en cada `route()` call: ~30-50µs de pipeline bubble
@@ -778,7 +778,7 @@ con Quantization-Aware Training usando Straight-Through Estimator.
 - Spatial loss convergió: 3.58 → 0.11 (estructura BVH estable)
 - Texto generado coherente: "The history of the British Empire..."
 - LR warmup + spatial every step + learnable alpha_mix + portal reg reforzado funcionaron
-- **Conclusión: atención O(N log N) sin MatMul a 1.75% de O(N²) — resultado de patente fuerte**
+- **Conclusión: atención O(N log N) sin MatMul a 1.75% de O(N²) — resultado de technical designe fuerte**
 
 ---
 
@@ -833,7 +833,7 @@ El código pasaba `position_ids=position_ids` como keyword → TypeError → fal
 
 **Fix:** Extraer también los MLP originales FP16 (`block.mlp`) y usarlos para generación. Los expertos ternarios se mantienen para el VRAM comparison (muestran ~35% del tamaño). La demo muestra streaming de capas completas (Attn FP16 + MLP FP16) — una capa a la vez en GPU — que sigue siendo 99x reducción de VRAM.
 
-**Lección crítica:** El claim de patente "99x VRAM reduction" viene del streaming layer-by-layer, NO de la compresión ternaria. La ternaria necesita fine-tuning separado. Los dos conceptos no deben mezclarse en la demo principal.
+**Lección crítica:** El claim de technical designe "99x VRAM reduction" viene del streaming layer-by-layer, NO de la compresión ternaria. La ternaria necesita fine-tuning separado. Los dos conceptos no deben mezclarse en la demo principal.
 
 ---
 
@@ -956,7 +956,7 @@ El código pasaba `position_ids=position_ids` como keyword → TypeError → fal
 - Ley de Snell = refracción óptica real
 - BVH traversal = interferencia óptica (pero 3D limitado vs 2048D fotónico)
 
-**Decisión:** Subir `spectral_dim` de 16 → 64 para mayor resolución temática. Claim de patente P3 actualizada para cubrir compatibilidad con hardware fotónico futuro.
+**Decisión:** Subir `spectral_dim` de 16 → 64 para mayor resolución temática. Claim de technical designe P3 actualizada para cubrir compatibilidad con hardware fotónico futuro.
 
 **Benchmark triángulos vs AABB (RT Cores):**
 - AABB: 41.7µs, 0% accuracy (cajas se solapan)
@@ -1556,7 +1556,7 @@ a CUDA antes de calibración. La falta de calibración hacía que todos los prom
 - **Checkpoints entrenados** (.pt) — NO recuperables del transcript, re-entrenados desde cero
 - **Datos extraídos** (real_hiddens_*.pt, ~856 MB/capa) — NO recuperables, re-extraídos
 - **Código fuente** — Recuperado del transcript JSONL (77 archivos)
-- **10 archivos regenerados por agente:** kernel CUDA (`bvh_router_kernel.cu`), demo (`real_model_demo.py`), 3 patentes, 3 docs técnicos
+- **10 archivos regenerados por agente:** kernel CUDA (`bvh_router_kernel.cu`), demo (`real_model_demo.py`), 3 technical designes, 3 docs técnicos
 
 **Qué puede no cuadrar con resultados anteriores:**
 1. **Versión de transformers:** 4.46.3 (actual) vs versión anterior → baseline PPL diferente (7.15 vs 6.11)
@@ -2076,7 +2076,7 @@ v1.0 (Investigación)
 - Targets CMake: liquidbit_core/optix/rt_router → spectral_core/optix/rt_router
 - Python: lyra_techniques → spectral_techniques, liquidbit_lm → spectral_lm, etc.
 - Git remote: jordisilvestre/Spectral-AI.git
-- Patents/ NO tocados (documentos legales)
+- Technical Designs/ NO tocados (documentos legales)
 
 ### Analisis GPU: ¿Usamos toda la tarjeta?
 
@@ -2151,7 +2151,7 @@ Los RT Cores requieren el pipeline OptiX v4 funcional (FASE 4 del roadmap).
 - RTXRMQ usa RT Cores para queries → nosotros para ATENCION DE LLM
 - Photonic Transformer usa hardware optico real → nosotros SIMULAMOS en RT Cores existentes
 - Nadie combina: BVH routing O(N log N) + codificacion espectral + Snell para polisemia
-- Nuestro claim de patente P3 cubre exactamente este gap
+- Nuestro claim de technical designe P3 cubre exactamente este gap
 
 ---
 
@@ -2350,7 +2350,7 @@ El problema de PPL=1002 era exclusivamente de la ESCALA de pesos post-softmax:
 - Cascada 16 capas: 0.15^16 ≈ 0 → modelo destruido
 - Hybrid: gate original da pesos correctos → PPL 7.91
 
-**Implicación para patentes:** Esto VALIDA la tesis central:
+**Implicación para technical designes:** Esto VALIDA la tesis central:
 - BVH jerárquico reemplaza búsqueda lineal O(N) → O(log N)
 - RT Cores pueden hacer la selección de candidatos en hardware
 - Los pesos pueden calcularse con gate ligero post-selección
@@ -2369,7 +2369,7 @@ El problema de PPL=1002 era exclusivamente de la ESCALA de pesos post-softmax:
 **Conclusión clave:** Con 24 candidatos (2.7x reducción) el BVH iguala EXACTAMENTE
 al gate lineal. El salto ocurre entre 20 y 24 candidatos — con 20 ya se pierden
 experts correctos. Con RT Cores evaluando a velocidad de hardware, usar 64 candidatos
-no tiene coste adicional, pero el dato de 24=perfecto es valioso para la patente.
+no tiene coste adicional, pero el dato de 24=perfecto es valioso para la technical designe.
 
 **Pendiente:** ~~Reentrenar L11~~, ~~resolver escala de pesos en modo BVH puro~~. Ver entradas posteriores.
 
@@ -2552,7 +2552,7 @@ with <4% degradation using hardware RT Cores. O(log N) vs O(N) complexity."
 
 **Para la SIGUIENTE FASE (F):** Mejorar accuracy del BVH router es el único camino.
 - Retrain con data augmentation / multi-ray en training
-- Cone tracing (patentable)
+- Cone tracing (technical designable)
 - Hybrid training (2% gate residual)
 - Objetivo: 16 capas PPL <7.5
 
@@ -2604,7 +2604,7 @@ Funciona aceptable para 1 capa (7.31) pero escala muy mal. relu_log es superior.
 | 256 | 24.7 | 2,112 | **85x** |
 | 1024 | 16.6 | — | **61.6M tok/s** |
 
-**Rango: 85-170x speedup** — consistente con patent claim C2 (89-227x).
+**Rango: 85-170x speedup** — consistente con technical design claim C2 (89-227x).
 Verificado con `benchmark_e2e_final.py` (98-153x) y `benchmark_cuda_pipeline.py` (85-170x).
 Ambos confirman kernel ~12-25 us, PyTorch baseline ~1.5-3.8 ms.
 

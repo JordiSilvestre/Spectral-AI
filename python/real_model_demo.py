@@ -462,7 +462,7 @@ class DemoSummary:
 class SpectralKVPruner:
     """BVH-inspired KV cache pruner — the 'spectral laser' that trims attention.
 
-    Implements the patent claim: instead of attending to ALL S cached positions,
+    Implements the technical design claim: instead of attending to ALL S cached positions,
     each new token traces a virtual ray through 3D semantic space and attends
     only to the K geometrically nearest tokens.
 
@@ -708,7 +708,7 @@ class SpectralAIRealPipeline:
         # Router uses a compact embed_dim (128) for minimal VRAM.
         # A projection layer maps model hidden_size → router_dim before routing.
         model_hidden = self._hf_model.config.hidden_size
-        router_dim = 128  # Compact: keeps router at ~348 KB (patent: 89,047 params)
+        router_dim = 128  # Compact: keeps router at ~348 KB (technical design: 89,047 params)
 
         self._proj_down = nn.Linear(model_hidden, router_dim, bias=False)
         self._proj_down = self._proj_down.to(self.device)

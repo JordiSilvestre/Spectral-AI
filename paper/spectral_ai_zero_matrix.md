@@ -514,7 +514,7 @@ The confidence-gated routing mechanism provides a practical deployment path: ope
 
 Perhaps most significantly, our approach democratizes LLM inference: the computational requirements shift from datacenter GPU clusters (H100, ~€30,000/unit) to consumer-grade GPUs (RTX 5070 Ti, ~€800), leveraging silicon that is already present but previously unutilized. As RT Core hardware continues to improve in throughput and programmability, the performance gap between geometric routing and matrix multiplication will only widen.
 
-**Reproducibility.** All code, trained checkpoints, and benchmark scripts are available at [repository URL]. The system includes 239 automated tests (including checkpoint path regression tests and 30 patent claim verification tests), ensuring consistency between documented claims and measured results.
+**Reproducibility.** All code, trained checkpoints, and benchmark scripts are available at [repository URL]. The system includes 239 automated tests (including checkpoint path regression tests and 30 technical design claim verification tests), ensuring consistency between documented claims and measured results.
 
 ---
 

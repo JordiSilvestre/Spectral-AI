@@ -73,8 +73,7 @@ spectral-ai/
 │   └── alpha_bsh.cpp           # AlphaBSH orchestration Phase A/B
 │
 ├── tests/                  # 223 automated tests
-├── patents/                # 3 technical design documents
-│   └── figures/                # 17 patent figures + FIGURE_SPECS.md
+│   └── figures/                # 17 technical design figures + FIGURE_SPECS.md
 ├── paper/                  # Academic paper (arXiv submission)
 ├── figures/                # Publication figures
 ├── results/                # Evaluation result JSONs

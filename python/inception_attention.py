@@ -54,7 +54,7 @@ class InceptionConfig:
         temperature_decay:float = 0.995,  # Annealing por epoch
         lambda_absorption:float = 0.1,    # Decay de energía del rayo
         dropout:          float = 0.1,
-        advanced_optics:  bool  = False,  # Patent P3 Claims 21-33
+        advanced_optics:  bool  = False,  # Technical Design P3 Claims 21-33
         chromatic_bands:  int   = 4,      # Bands for ChromaticAberration
         interference_rays:int   = 4,      # Rays for PhaseCoherentInterference
     ):
@@ -202,7 +202,7 @@ class PrismaticRefraction(nn.Module):
 
 # ─────────────────────────────────────────────────────────────────
 # 3b. Chromatic Aberration — Multi-Band Spectral Decomposition
-#     Patent P3 Claims 21-25
+#     Technical Design P3 Claims 21-25
 # ─────────────────────────────────────────────────────────────────
 
 class ChromaticAberration(nn.Module):
@@ -215,7 +215,7 @@ class ChromaticAberration(nn.Module):
     angles through a prism — each band captures a different aspect of context
     (topic, tone, formality, temporal reference).
 
-    Patent P3 Claims 21-25.
+    Technical Design P3 Claims 21-25.
     """
 
     def __init__(self, n_spheres: int, spectral_dim: int, n_bands: int = 4):
@@ -262,7 +262,7 @@ class ChromaticAberration(nn.Module):
 
 # ─────────────────────────────────────────────────────────────────
 # 3c. Total Internal Reflection — Hard Routing Boundary
-#     Patent P3 Claims 26-29
+#     Technical Design P3 Claims 26-29
 # ─────────────────────────────────────────────────────────────────
 
 class TotalInternalReflection(nn.Module):
@@ -276,7 +276,7 @@ class TotalInternalReflection(nn.Module):
     Uses Straight-Through Estimator for differentiability:
     forward = hard TIR decision, backward = soft gradient.
 
-    Patent P3 Claims 26-29.
+    Technical Design P3 Claims 26-29.
     """
 
     SNELL_EPSILON: float = 0.01
@@ -330,7 +330,7 @@ class TotalInternalReflection(nn.Module):
 
 # ─────────────────────────────────────────────────────────────────
 # 3d. Phase-Coherent Multi-Ray Interference
-#     Patent P3 Claims 30-33
+#     Technical Design P3 Claims 30-33
 # ─────────────────────────────────────────────────────────────────
 
 class PhaseCoherentInterference(nn.Module):
@@ -342,7 +342,7 @@ class PhaseCoherentInterference(nn.Module):
     Physical analogy: superposition of waves. When rays arrive in phase,
     amplitudes add (constructive). Out of phase, they cancel (destructive).
 
-    Patent P3 Claims 30-33.
+    Technical Design P3 Claims 30-33.
     """
 
     def __init__(self, spectral_dim: int, n_rays: int = 4):
@@ -598,7 +598,7 @@ class InceptionTraversal(nn.Module):
         self.portal3 = AffinePortal(cfg.total_l3)
         self.refract3 = make_refraction(cfg.total_l3)
 
-        # Advanced optics: TIR + Phase Interference (Patent P3 Claims 26-33)
+        # Advanced optics: TIR + Phase Interference (Technical Design P3 Claims 26-33)
         if cfg.advanced_optics:
             self.tir1 = TotalInternalReflection(cfg.total_l1)
             self.tir2 = TotalInternalReflection(cfg.total_l2)

@@ -270,7 +270,7 @@ python python/olmoe_e2e_eval.py \
 - [ ] Pipeline asincrono tri-core (FASE 6)
 
 ### P4 — Negocio
-- [ ] Filing 3 patentes provisionales USPTO ($1,050)
+- [ ] Filing 3 technical designes provisionales USPTO ($1,050)
 - [ ] Demo con BitNet 2B
 - [ ] Decidir nombre empresa (SpectralAI propuesto)
 - [ ] Paper NeurIPS/ICML 2027

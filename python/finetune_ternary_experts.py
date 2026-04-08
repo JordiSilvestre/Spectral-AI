@@ -2,7 +2,7 @@
 """
 finetune_ternary_experts.py -- Quantization-Aware Training for Ternary Experts
 
-Recreates the ~14h fine-tuning pipeline to match patent-claimed performance:
+Recreates the ~14h fine-tuning pipeline to match technical design-claimed performance:
   - 375x VRAM reduction (7.86 MB active vs 2964 MB FP16)
   - 51.9 tok/s throughput
   - PPL 6.16 (+0.8% vs baseline)
@@ -892,8 +892,8 @@ def run_finetune(config: TernaryFinetuneConfig) -> None:
     log.info("Avg cosine:  %.4f", avg_cos)
     log.info("Avg sparsity: %.1f%%", avg_sparsity * 100)
 
-    # Patent-target comparison
-    log.info("\n--- Patent Target Comparison ---")
+    # Technical Design-target comparison
+    log.info("\n--- Technical Design Target Comparison ---")
     total_ternary_mb = sum(
         mlp.gate_proj.weight_latent.numel()
         + mlp.up_proj.weight_latent.numel()

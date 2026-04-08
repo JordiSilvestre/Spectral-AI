@@ -7,7 +7,7 @@ Benchmarks all SpectralAI CUDA components individually and end-to-end:
   2. Ternary Expert POPCOUNT (ternary_expert_ext) — Zero-multiplication MLP
   3. Full pipeline: BVH routing -> expert selection -> ternary forward
 
-Results are formatted for paper/patent documentation.
+Results are formatted for paper/technical design documentation.
 
 Usage:
     python benchmark_cuda_pipeline.py [--warmup 50] [--iters 500]
