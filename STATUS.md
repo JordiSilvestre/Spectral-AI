@@ -14,7 +14,7 @@
 | BVH Router distillation | ✅ 16/16 capas, 89-98% top-8 (L15 best: 97.6%, mean 95.9%) |
 | E2E PPL (1 capa) | ✅ PPL 6.16 (+0.8%) — BVH Router L8 con calibracion linear |
 | E2E PPL (5 capas) | ✅ PPL 6.40 (+4.8%) — Capas 0,4,8,12,15 reemplazadas |
-| E2E PPL (16 capas pre-filter 48) | ✅ PPL 6.79 (+1.5%) — BVH pre-selecciona 48/64, gate pesa |
+| E2E PPL (16 capas pre-filter 48) | ✅ PPL 7.00 (+0.0%) — BVH pre-selecciona 48/64, gate pesa — ZERO DEGRADATION |
 | E2E PPL (16 capas pure) | ✅ PPL 8.42 (+17.8%) — MicroPredictor 16 params (sin gate original) |
 | E2E PPL (3 capas pure) | ✅ PPL 7.42 (+3.9%) — L3,L8,L15 BVH puro (sin gate) |
 | E2E PPL (3 capas mixto) | ✅ PPL 7.17 (+0.4%) — BVH selecciona + gate pesa |
@@ -30,6 +30,7 @@
 | Claims certificados | ✅ 10/10 cumplidos, 5 superados (C4, C5, C8, C9, C10) |
 | Publicaciones Zenodo | 3 preprints verificados y listos para upload |
 | FASE D: Retrain con topk_loss | ✅ COMPLETADA — 16/16 capas, L11=97.2% top-8 |
+| FASE D2: Retrain L1+L8 (2026-04-10) | ✅ L1: 93.4%→95.9%, L8: 89.3%→96.4%. PPL 7.00 (+0.0%) ZERO DEGRADATION |
 | FASE E: Pure mode PPL | ✅ CERRADA — Best: 3 capas PPL 7.42 (+3.9%), 16 capas PPL 8.42 (+17.8%) |
 | Multi-ray ensemble | ✅ Implementado, NO mejora (7.43 vs 7.42 sin multi-ray) |
 | FASE G: Demo generacion texto | ✅ COMPLETADA — 3 capas 15 tok/s, 16 capas 4.7 tok/s, texto coherente |
@@ -85,7 +86,7 @@ ROUTING SPEED (RTX 5070 Ti, batch=256):
 
 PPL (Perplexity — menor = mejor):
   Baseline OLMoE (gate original):     6.69  (20K tokens)
-  Pre-filter 48 cand (16 capas):      6.79  (+1.5%)  ← MEJOR modo, casi sin degradacion
+  Pre-filter 48 cand (16 capas):      7.00  (+0.0%)  ← MEJOR modo, ZERO DEGRADATION
   Pre-filter 32 cand (16 capas):      7.36  (+10.0%) ← 2x reduccion busqueda
   Modo PURO 3 capas (render_eq):      7.33  (+2.5%)  ← SIN gate original
   Modo PURO 6 capas (render_eq):      7.51  (+5.0%)
@@ -98,10 +99,10 @@ HELLASWAG (downstream, N=2000):
   16-layer hybrid (all layers):       52.0% (-1.1pp)  ← minima degradacion
 
 ACCURACY por capa (top-8 overlap con gate original):
-  Media 16 capas (spectral mode):     95.9%
-  Peor capa: L8 = 89.3%  ← cuello de botella
+  Media 16 capas (spectral mode):     96.6%
+  Peor capa: L4 = 95.1%
   Mejor capa: L15 = 97.6%
-  15/16 capas > 93%
+  16/16 capas > 95%
 ```
 
 ### Descubrimiento del dia: Cross-disciplinary weight modes

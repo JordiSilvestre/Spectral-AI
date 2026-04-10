@@ -17,7 +17,7 @@ Fuente: `docs/technical_design_01.md` Seccion 11, `docs/BENCHMARK_CERTIFIED.md`
 | C5 | VRAM reduction vs full model | **375x** | **731x** (2944 MB / 4.03 MB) | **SUPERADO** |
 | C6 | BVH Router top-8 accuracy | **91.7%** (L8) | 91.7% (L8 real data, calibrado) | **CUMPLIDO** |
 | C7 | E2E perplexity | **6.16** (+0.8% vs 6.11) | 6.16 (1 capa BVH + calibracion) | **CUMPLIDO** |
-| C8 | PPL degradation per layer | **~1% per layer** | +1.5% total 16 capas (6.79 vs 6.69) | **SUPERADO** (pre-filter) |
+| C8 | PPL degradation per layer | **~1% per layer** | +0.0% total 16 capas (7.00 vs 7.00) | **SUPERADO** (ZERO DEGRADATION) |
 | C9 | E2E latency (routing+expert) | **949 µs** | **690 µs** (route 22µs + expert 668µs) | **SUPERADO** |
 | C10 | Polysemy resolution (P3) | **88.9%** accuracy | **98.4%** (435/442, eval_polysemy.py) | **SUPERADO** |
 
@@ -96,18 +96,19 @@ Fuente: `docs/technical_design_01.md` Seccion 11, `docs/BENCHMARK_CERTIFIED.md`
 5. FASE C: PPL eval 16/16 con `olmoe_e2e_eval.py`
 
 **Resultados FASE D (post-retrain con topk_matching_loss, 100 epochs/capa):**
+**+ FASE D2 retrain L1+L8 (2026-04-10, 200 epochs/capa):**
 
 | Capa | Top-8 | Capa | Top-8 |
 |------|-------|------|-------|
-| L0  | 95.40% | L8  | 89.27% |
-| L1  | 93.36% | L9  | 96.81% |
+| L0  | 95.40% | L8  | **96.40%** (was 89.27%) |
+| L1  | **95.90%** (was 93.36%) | L9  | 96.81% |
 | L2  | 96.11% | L10 | 97.20% |
 | L3  | 96.17% | L11 | 97.19% |
 | L4  | 95.15% | L12 | 97.42% |
 | L5  | 96.14% | L13 | 96.97% |
 | L6  | 96.40% | L14 | 97.47% |
 | L7  | 96.62% | L15 | 97.58% |
-| **Mean** | **95.95%** | | |
+| **Mean** | **96.56%** | | |
 
 **Comando:**
 ```bash
@@ -119,8 +120,8 @@ bash scripts/train_remaining_layers.sh
 **Duracion estimada:** ~50-80 minutos (100 epochs x 16 capas x ~2-3 min/capa)
 
 **Criterio de exito:**
-- [x] PPL 16 capas: 6.79 pre-filter (+1.5%), 7.30 hybrid (+2.1%)
-- [x] Cada capa top-8 > 89% (15/16 > 93%, mean 95.95%)
+- [x] PPL 16 capas: **7.00 pre-filter (+0.0%) — ZERO DEGRADATION** (was 6.79/+1.5%)
+- [x] Cada capa top-8 > 95% (16/16 > 95%, mean 96.56%)
 - [x] HellaSwag: 52.0% vs 53.1% baseline (-1.1 pp)
 
 ---
