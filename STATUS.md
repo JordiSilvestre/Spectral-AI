@@ -1,6 +1,6 @@
 # STATUS.md — SpectralAI
 > Estado real del proyecto, inventario de archivos, y roadmap por fases.
-> Ultima actualizacion: 2026-04-02
+> Ultima actualizacion: 2026-04-10
 
 ---
 
@@ -61,6 +61,10 @@
 | OptiX WSL2 Runtime | ❌ optixInit falla — libnvoptix.so.1 stub sin optixQueryFunctionTable (driver 595.79) |
 | OptiX Windows Build | ✅ Build 100% MSVC 19.44 + CUDA 13.2 + OptiX 9.1 |
 | RT Core Benchmark (Win) | ✅ Triangle async: 19.1µs/batch, 13.4M q/s, 100% accuracy, ~48x vs PyTorch gate |
+| FASE G: OptiX Optimization | ✅ COMPLETADA — 19.1µs < 20µs target, 100% hit rate |
+| FASE H: Publicacion | ✅ COMPLETADA — 3 DOIs Zenodo, GitHub publico (8 stars), Reddit/LinkedIn/X/HN |
+| Profiling Inferencia | ✅ Routing = 2.8% del tiempo total (1.45ms de 52ms, OLMoE-1B-7B, 301 tokens) |
+| Repo Cleanup | ✅ Archivos obsoletos movidos a archive/ (datos sueltos, scripts legacy) |
 
 ---
 
@@ -161,29 +165,12 @@ Analisis exhaustivo de los 64 expertos de OLMoE revela:
 - Comando: `python3 olmoe_bvh_distill.py --layer 8 --epochs 200 --spectral --topk-weight 0.3`
 - Estimado: ~35 min cada una. Objetivo: subir a 96%+
 
-**2. BVH semantico per-layer (basado en expert analysis)**
-- Usar clusters de co-activacion de cada capa para organizar el arbol BVH
-- Cada capa tiene su propio arbol optimizado
-- Integrar en retrofit_bvh.py
+**2. Endorsement arXiv**
+- Contactar 5-10 investigadores para endorsement
+- 3 papers ya tienen DOI en Zenodo
 
-**3. Re-evaluar 16 capas con render_eq (tras retrain L1 + BVH semantico)**
-- Prediccion: si L1 sube a 96%, PPL 16 capas deberia bajar de 9.17 a ~8.0-8.5
-- Con BVH semantico: potencialmente mejor
-
-**4. FASE H: Publicacion Academica**
-- 3 preprints Zenodo escritos y verificados
-- Pendiente: upload Zenodo, endorsement arXiv, submit NeurIPS/ICLR
-- NUEVO: "Expert specialization is syntactic, not semantic" -- publicable
-
-**5. FASE I: Paper**
-- Resultados ya publicables:
-  - Modo puro: PPL +2.5% (3 capas render_eq)
-  - Modo mixto: PPL +0.4% (3 capas hybrid)
-  - Routing: 85-170x speedup
-  - Scaling: O(log N) demostrado
-  - Cross-disciplinary: 11 modos, 3 convergen
-  - NUEVO: Deep expert analysis en 16 capas
-- Falta: completar 16 capas para tabla completa
+**3. Demo video (FASE F)**
+- Grabar pipeline completo para inversores/conferencias
 
 ### Decisiones tomadas
 

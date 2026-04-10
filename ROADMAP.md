@@ -1,6 +1,6 @@
 # ROADMAP.md — SpectralAI
 > Roadmap completo: fases completadas, en curso y pendientes.
-> Ultima actualizacion: 2026-04-02
+> Ultima actualizacion: 2026-04-10
 
 ---
 
@@ -165,47 +165,52 @@ python3 python/real_model_demo.py --model qwen-0.5b --max-tokens 128 \
 - [ ] Todos los numeros de technical designe visibles en output
 - [ ] Texto generado coherente y util
 
+### Nuevo dato: Profiling de inferencia (2026-04-10)
+
+Profiled OLMoE-1B-7B forward pass (301 tokens, RTX 5070 Ti, 5 runs):
+```
+Total forward pass:      52 ms
+Routing gates (16 capas): 1.45 ms → 2.8% del tiempo total
+Expert MLPs:             32.95 ms → 63.4%
+Attention:               10.41 ms → 20.0%
+```
+**Conclusion:** Routing es ~3% del tiempo hoy (64 experts). Crece linealmente con N experts.
+
 ---
 
-## 6. FASE G: Optimizacion OptiX (10µs target) — ⏳ PENDIENTE
+## 6. FASE G: Optimizacion OptiX (10µs target) — ✅ COMPLETADA
 
 **Objetivo:** Bajar latencia OptiX de 94µs a ~10µs para igualar CUDA kernel.
-**Depende de:** Nada (independiente, puede correr en paralelo con FASE D).
 
-**Tecnicas a explorar:**
-1. Persistent launch params (evitar rebuild por frame)
-2. CUDA streams + async launch
-3. SBT compaction (reducir Shader Binding Table)
-4. Batch coalescing (agrupar queries)
-5. Triangle mesh optimization (8 tris/expert → 4 tris/expert)
-
-**Estado actual:**
-- `route()`: 94 µs (batch=256)
-- `route_topk(k=8)`: 323 µs
-- Hit rate: 95%
-- GAS: 2.5 KB
+**Resultado (Windows nativo, RTX 5070 Ti):**
+- `route()` Triangle async: **19.1 µs/batch** → 13.4M q/s
+- Hit rate: **100%**
+- Speedup vs PyTorch gate: **~48x**
 
 **Criterio de exito:**
-- [ ] `route()` < 20 µs (batch=256)
-- [ ] Hit rate > 98%
+- [x] `route()` < 20 µs (batch=256) → **19.1 µs CUMPLIDO**
+- [x] Hit rate > 98% → **100% CUMPLIDO**
 
 ---
 
-## 7. FASE H: Publicacion Academica — 🔄 EN CURSO
+## 7. FASE H: Publicacion Academica — ✅ COMPLETADA (2026-04-09)
 
 **Objetivo:** Publicar preprints en Zenodo/arXiv y submit a conferencias.
 
-**Publicaciones:**
-| # | Titulo | Archivo | Plataforma |
+**Publicaciones (LIVE con DOI):**
+| # | Titulo | DOI | Plataforma |
 |---|---|---|---|
-| P1 | SpectralAI: RT Core Attention + Inception Engine | `zenodo/preprint_spectral_ai.md` | Zenodo + arXiv |
-| P2 | Spectral Routing | `zenodo/spectral_routing.md` | Zenodo + arXiv |
-| P3 | Expert Specialization Analysis | `zenodo/paper_expert_specialization/` | Zenodo + arXiv |
+| P1 | SpectralAI: O(N log N) Hardware-Accelerated Expert Routing | [10.5281/zenodo.19457288](https://doi.org/10.5281/zenodo.19457288) | Zenodo |
+| P2 | Expert Specialization in MoE Language Models | [10.5281/zenodo.19457411](https://doi.org/10.5281/zenodo.19457411) | Zenodo |
+| P3 | Spectral Routing: Context-Dependent Expert Selection | [10.5281/zenodo.19457473](https://doi.org/10.5281/zenodo.19457473) | Zenodo |
 
-**Pasos:**
+**Difusion completada (2026-04-09):**
 - [x] Documentos Zenodo escritos y verificados
-- [ ] Upload a Zenodo (obtener DOIs)
-- [ ] Publicar en LinkedIn + X + Reddit r/MachineLearning
+- [x] Upload a Zenodo (3 DOIs obtenidos)
+- [x] GitHub repo publico: https://github.com/JordiSilvestre/Spectral-AI (8 stars)
+- [x] Publicar en LinkedIn, X (Twitter), Hacker News
+- [x] Publicar en Reddit r/deeplearning (activo, buena recepcion)
+- [x] Publicar en Reddit r/LocalLLaMA (cerrado por moderadores tras trolling)
 - [ ] Pedir endorsement arXiv (5-10 contactos)
 - [ ] Submit a NeurIPS 2026 (deadline mayo) o ICLR 2027 (deadline septiembre)
 
@@ -237,26 +242,28 @@ python3 python/real_model_demo.py --model qwen-0.5b --max-tokens 128 \
 
 ---
 
-## 10. TIMELINE ACTUALIZADO (2026-04-02)
+## 10. TIMELINE ACTUALIZADO (2026-04-10)
 
 ```
 COMPLETADO (30 Mar):
   [DONE] FASE A: Ternary fine-tuning 24 capas
   [DONE] FASE B: Demo ternario integrado
   [DONE] FASE C: OptiX build completo
-  [DONE] Certificacion de claims (10/10 cumplidos, 4 superados)
+  [DONE] Certificacion de claims (10/10 cumplidos, 5 superados)
 
 COMPLETADO (31 Mar - 1 Abr):
   [DONE] FASE D: Retrain 16 capas — mean 95.95%, PPL 6.79 pre-filter
   [DONE] FASE E: Benchmark suite final
 
-HOY (2 Abr):
-  [DONE] FASE H: Documentos Zenodo escritos y verificados (3 publicaciones)
-  [>>>>] Upload Zenodo + publicacion en redes
+COMPLETADO (2-9 Abr):
+  [DONE] FASE G: OptiX 19.1µs (target <20µs CUMPLIDO)
+  [DONE] FASE H: 3 papers Zenodo con DOI + GitHub publico + Reddit/LinkedIn/X/HN
+  [DONE] Repo cleanup: archivos obsoletos movidos a archive/
+  [DONE] Profiling: routing = 2.8% del tiempo total inferencia (OLMoE-1B-7B)
 
-PROXIMOS DIAS:
+PROXIMOS PASOS:
+  [>>>>] Retrain L8 (89.3% → 96%+) y L1 (93.4% → 96%+)
   [    ] FASE F: Demo final + video (opcional)
-  [    ] FASE G: Optimizacion OptiX (opcional)
   [    ] Endorsement arXiv + submit conferencia (NeurIPS/ICLR/MLSys)
 
 FUTURO:
