@@ -91,7 +91,7 @@ Input tokens
 [Embedding] --> [3D Projection (PCA, 2048 → 3D)]
      |
      v
-[BVH Router] -- 4 levels × 3D = 12 semantic dimensions
+[BVH Router] -- 4 nested 3D levels (hierarchical, not 12 independent dims)
      |          Level 1: Domains (4 clusters)
      |          Level 2: Subdomains (4 per domain = 16)
      |          Level 3: Experts (4 per subdomain = 64)
@@ -109,7 +109,7 @@ Input tokens
 
 1. **RT Core Routing:** Expert centroids are organized as AABB bounding boxes in a BVH tree. At inference, a ray from the token position traverses the tree using the GPU's dedicated RT Cores (the same silicon that traces light in games). This finds the top-k experts in O(log N) instead of O(N) dot products. The RT Cores are normally idle during inference — this puts them to work.
 
-2. **Inception Engine:** Unlike Vulkan (limited to TLAS + BLAS = 2 levels), OptiX allows nested IAS → IAS structures. We use 4 nested levels, each operating in its own 3D coordinate space with independent transforms. This encodes 12 semantic dimensions (4 levels × 3D) using only hardware designed for 3D.
+2. **Inception Engine:** Unlike Vulkan (limited to TLAS + BLAS = 2 levels), OptiX allows nested IAS → IAS structures. We use 4 nested levels, each operating in its own 3D coordinate space with independent transforms. This creates a hierarchical routing structure across 4 nested 3D spaces — the information is still geometric, not 12 independent semantic dimensions.
 
 3. **Spectral Routing:** Tokens carry a "wavelength" (context vector). At domain boundaries, Snell's Law refracts compatible contexts through while incompatible ones trigger Total Internal Reflection, bouncing the token to the correct semantic domain. This resolves polysemy: "bank" (river) routes differently from "bank" (financial) without duplicating parameters.
 
@@ -226,7 +226,7 @@ Three preprints on Zenodo:
 
 | Title | DOI |
 |---|---|
-| SpectralAI: O(N log N) Hardware-Accelerated Expert Routing via RT Core BVH Traversal | [10.5281/zenodo.19457288](https://doi.org/10.5281/zenodo.19457288) |
+| SpectralAI: O(log N) Hardware-Accelerated Expert Routing via RT Core BVH Traversal | [10.5281/zenodo.19457288](https://doi.org/10.5281/zenodo.19457288) |
 | Expert Specialization in MoE Language Models: Syntactic Roles Dominate Semantic Topics | [10.5281/zenodo.19457411](https://doi.org/10.5281/zenodo.19457411) |
 | Spectral Routing: Context-Dependent Expert Selection via Optical Refraction | [10.5281/zenodo.19457473](https://doi.org/10.5281/zenodo.19457473) |
 

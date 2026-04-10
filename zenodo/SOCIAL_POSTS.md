@@ -13,7 +13,7 @@
 
 I just published 3 research papers on Zenodo exploring a question nobody seems to be asking: NVIDIA GPUs have dedicated RT Cores for ray tracing that sit completely idle during LLM inference. What if we repurposed them?
 
-**SpectralAI** replaces the O(N^2) routing in Mixture-of-Experts models with O(N log N) BVH traversal on RT Cores:
+**SpectralAI** replaces the O(N) linear gate in Mixture-of-Experts models with O(log N) BVH traversal on RT Cores:
 
 - 113-218x routing speedup
 - 731x VRAM reduction

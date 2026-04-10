@@ -11,7 +11,7 @@ Independent Researcher
 
 ## Abstract
 
-We present SpectralAI, a system that replaces the O(N^2) matrix multiplication in Mixture-of-Experts (MoE) routing with O(N log N) Bounding Volume Hierarchy (BVH) traversal on dedicated NVIDIA RT Core hardware. Our approach makes two contributions: (1) *RT Attention* -- a method that projects token embeddings into 3D geometric space and uses hardware-accelerated BVH traversal for expert selection, achieving 113--218x routing speedup and 731x VRAM reduction; and (2) *Inception Engine* -- a nested Instance Acceleration Structure (IAS) architecture that composes four levels of 3D spaces into an effective 12-dimensional structural representation, bypassing the hardware's native 3D limitation. We validate on OLMoE-1B-7B (7B parameters, 64 experts, 16 MoE layers) using an NVIDIA RTX 5070 Ti: BVH pre-filter mode achieves PPL 6.79 (+1.5% vs baseline) across all 16 layers, hybrid mode achieves PPL 7.17 (+0.4% for 3 layers), and downstream HellaSwag accuracy drops only 1.1 percentage points at 16-layer replacement (52.0% vs 53.1% baseline, N=2,000). RT Core routing runs at 19.1 us/batch with 13.4M queries/s and 100% accuracy. To the best of our knowledge, this is the first system to repurpose GPU ray tracing cores for neural network expert routing.
+We present SpectralAI, a system that replaces the O(N) linear gate in Mixture-of-Experts (MoE) routing with O(log N) Bounding Volume Hierarchy (BVH) traversal on dedicated NVIDIA RT Core hardware. Our approach makes two contributions: (1) *RT Attention* -- a method that projects token embeddings into 3D geometric space and uses hardware-accelerated BVH traversal for expert selection, achieving 113--218x routing speedup and 731x VRAM reduction; and (2) *Inception Engine* -- a nested Instance Acceleration Structure (IAS) architecture that composes four levels of 3D spaces into an effective 12-dimensional structural representation, bypassing the hardware's native 3D limitation. We validate on OLMoE-1B-7B (7B parameters, 64 experts, 16 MoE layers) using an NVIDIA RTX 5070 Ti: BVH pre-filter mode achieves PPL 6.79 (+1.5% vs baseline) across all 16 layers, hybrid mode achieves PPL 7.17 (+0.4% for 3 layers), and downstream HellaSwag accuracy drops only 1.1 percentage points at 16-layer replacement (52.0% vs 53.1% baseline, N=2,000). RT Core routing runs at 19.1 us/batch with 13.4M queries/s and 100% accuracy. To the best of our knowledge, this is the first system to repurpose GPU ray tracing cores for neural network expert routing.
 
 ---
 
@@ -19,13 +19,13 @@ We present SpectralAI, a system that replaces the O(N^2) matrix multiplication i
 
 The transformer attention mechanism computes pairwise interactions between all tokens, resulting in O(N^2) complexity. For 100K tokens, this requires ~80 trillion FLOPs and ~307 GB KV cache (96 layers), necessitating clusters of datacenter GPUs. Meanwhile, consumer GPUs contain dedicated RT Cores for BVH traversal that remain completely idle during LLM inference.
 
-We observe that finding which tokens are "relevant" to a query is analogous to finding which geometric objects a ray intersects. This motivates our approach: project tokens into a learned 3D routing space structured as a BVH, and use RT Cores for O(log N) traversal instead of O(N^2) matrix multiplication.
+We observe that finding which expert should process a token is analogous to finding which geometric objects a ray intersects. This motivates our approach: project tokens into a learned 3D routing space structured as a BVH, and use RT Cores for O(log N) traversal instead of the O(N) dot products in the standard linear gate.
 
 **Contributions:**
 
 1. **RT Attention:** A hierarchical BVH router with 3 levels (branching factor 4) that replaces the linear gate in MoE models. 89--98% top-8 accuracy (mean 95.9%), 113--218x speedup, 731x VRAM reduction. Includes confidence-gated routing for adaptive speed-accuracy tradeoff.
 
-2. **Inception Engine:** 4-level nested IAS that achieves 12-dimensional structural representation using only 3D hardware. Each level applies a learned affine transformation ("dimensional portal"). Capacity: ~1 billion routing entities. PPL within 1.8% of GPT-2 baseline.
+2. **Inception Engine:** 4-level nested IAS that creates hierarchical routing across 4 nested 3D spaces using only 3D hardware. Each level applies a learned affine transformation ("dimensional portal"). Note: this is a hierarchical decomposition, not 12 independent semantic dimensions. Capacity: ~1 billion routing entities. PPL within 1.8% of GPT-2 baseline.
 
 ---
 
