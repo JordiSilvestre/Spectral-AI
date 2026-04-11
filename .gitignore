@@ -69,6 +69,7 @@ build_ptx_win.bat
 # Temp scripts (underscore prefix = scratch)
 _*.py
 _*.bat
+!**/__init__.py
 _*.txt
 
 # Logs

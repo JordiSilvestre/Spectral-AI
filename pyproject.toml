@@ -1,0 +1,38 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.backends.legacy:build"
+
+[project]
+name = "spectral-ai"
+version = "0.1.0"
+description = "O(log N) MoE expert routing via hardware-accelerated BVH traversal on NVIDIA RT Cores"
+readme = "README.md"
+license = { text = "Apache-2.0" }
+authors = [{ name = "Jordi Silvestre Lopez" }]
+requires-python = ">=3.10"
+keywords = ["mixture-of-experts", "routing", "ray-tracing", "BVH", "LLM", "CUDA"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+dependencies = [
+    "torch>=2.0",
+    "numpy>=1.24",
+    "scikit-learn>=1.3",
+]
+
+[project.optional-dependencies]
+eval = ["transformers>=4.40", "datasets>=2.18", "accelerate>=0.27", "safetensors>=0.4"]
+dev  = ["pytest>=7.0"]
+
+[project.urls]
+Homepage   = "https://github.com/JordiSilvestre/Spectral-AI"
+Repository = "https://github.com/JordiSilvestre/Spectral-AI"
+Paper      = "https://doi.org/10.5281/zenodo.19457288"
+
+[tool.setuptools.packages.find]
+where   = ["."]
+include = ["spectral_ai*"]
